@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("account.profile") }}{% endblock %}
+
+{% block content %}
+
+<section class="tz-card">
+
+  <!-- close -->
+  <div class="tz-page-header">
+    <button class="tz-page-close" onclick="history.back()">✕</button>
+  </div>
+
+  <h1 class="tz-title">{{ t("account.profile") }}</h1>
+
+  <!-- avatar -->
+<div class="tz-profile-avatar">
+
+  <label class="tz-avatar-upload">
+
+    {% if user.avatar %}
+      <img src="{{ user.avatar }}" class="tz-avatar-img">
+    {% else %}
+      <div class="tz-avatar-placeholder">👤</div>
+    {% endif %}
+
+    <input type="file" name="avatar" accept="image/*" hidden>
+
+  </label>
+
+</div>
+
+  <!-- FORM -->
+  <form method="post" enctype="multipart/form-data" class="tz-profile-list">
+
+  <!-- avatar upload -->
+  <div class="tz-field">
+    <input type="file" name="avatar" accept="image/*">
+  </div>
+
+    <!-- name -->
+    <div class="tz-field">
+      <div class="tz-account-row-title">{{ t("profile.name") }}</div>
+      <input name="name" value="{{ user.name }}" class="tz-input">
+    </div>
+
+    <!-- email (auth flow) -->
+    <a href="{{ url_for('auth.email_page') }}" class="tz-account-row">
+      <div class="tz-account-row-center">
+        <div class="tz-account-row-title">{{ t("profile.email") }}</div>
+        <div class="tz-account-row-sub">
+          {{ user.email or t("profile.not_defined") }}
+        </div>
+      </div>
+      <div class="tz-account-row-right">›</div>
+    </a>
+
+    <!-- phone (auth flow) -->
+    <a href="{{ url_for('auth.phone') }}" class="tz-account-row">
+      <div class="tz-account-row-center">
+        <div class="tz-account-row-title">{{ t("profile.phone") }}</div>
+        <div class="tz-account-row-sub">
+          {{ user.phone or t("profile.not_defined") }}
+        </div>
+      </div>
+      <div class="tz-account-row-right">›</div>
+    </a>
+
+    <!-- birthdate -->
+    <div class="tz-field">
+      <div class="tz-account-row-title">{{ t("profile.birthdate") }}</div>
+      <input type="date" name="birthdate" value="{{ user.birthdate }}" class="tz-input">
+    </div>
+
+    <button class="tz-btn tz-btn-primary">
+      {{ t("common.save") }}
+    </button>
+
+  </form>
+
+</section>
+
+{% endblock %}
