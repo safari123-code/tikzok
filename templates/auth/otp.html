@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-page">
+
+<h2>OTP → {{ phone }}</h2>
+
+<form method="post">
+<input class="auth-input" placeholder="code">
+<button class="auth-btn">{{ t("common.continue") }}</button>
+</form>
+
+</div>
+
+{% endblock %}

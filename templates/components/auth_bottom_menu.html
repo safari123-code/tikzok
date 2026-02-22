@@ -1,0 +1,33 @@
+<!-- =========================
+AUTH BOTTOM MENU
+========================= -->
+
+<div class="auth-bottom">
+
+  <!-- PHONE -->
+  <a href="/auth/phone" class="circle-btn">
+      📱
+  </a>
+
+  <!-- GOOGLE -->
+  <a href="/auth/google" class="circle-btn">
+      G
+  </a>
+
+  <!-- FACEBOOK -->
+  <a href="/auth/facebook" class="circle-btn">
+      f
+  </a>
+
+  <!-- LOGIN / LOGOUT -->
+  {% if session.get("user_id") %}
+      <a href="/auth/logout" class="circle-btn">
+          ⎋
+      </a>
+  {% else %}
+      <a href="/auth/login" class="circle-btn">
+          🔐
+      </a>
+  {% endif %}
+
+</div>

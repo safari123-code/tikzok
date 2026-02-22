@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ t("payment.method.title") }}{% endblock %}
+
+{% block extra_js %}
+<script defer>
+  window.__PAY_CTX__ = {{ {
+    "amount": amount,
+    "points": points,
+    "is_forfait_minutes": is_forfait_minutes
+  } | tojson }};
+</script>
+<script defer src="{{ url_for('static', filename='js/payment_method.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="tz-page">
+  <h1 class="tz-title">{{ t("payment.method.title") }}</h1>
+
+  <form method="post" action="{{ url_for('payment.method_post') }}" class="tz-stack">
+    <section class="tz-card tz-card--green">
+      <div class="tz-row tz-row--gap">
+        <div>⭐</div>
+        <div class="tz-grow">
+          <div class="tz-muted tz-small">{{ t("payment.method.points") }}</div>
+          <div class="tz-strong" id="pointsLine"></div>
+        </div>
+
+        {% if not is_forfait_minutes %}
+          <label class="tz-switch">
+            <input type="checkbox" name="use_points" value="1" id="usePoints">
+            <span class="tz-switch__ui"></span>
+          </label>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="tz-card tz-card--soft">
+      <div class="tz-row">
+        {% if not is_forfait_minutes %}
+          <div class="tz-grow tz-strong">{{ phone }}</div>
+        {% endif %}
+        <div class="tz-amount-sm" id="finalAmount"></div>
+      </div>
+    </section>
+
+    <label class="tz-check">
+      <input type="checkbox" name="save_card" value="1" checked>
+      <span>{{ t("payment.method.saveCard") }}</span>
+    </label>
+
+    <div class="tz-section-title">{{ t("payment.method.chooseMethod") }}</div>
+
+    <div class="tz-radio-card">
+      <label class="tz-radio-tile">
+        <input type="radio" name="method" value="card" checked>
+        <span class="tz-radio-tile__body">
+          <span class="tz-strong">{{ t("payment.method.cardPayment") }}</span>
+          <span class="tz-muted tz-small">{{ t("payment.method.cardPaymentDesc") }}</span>
+        </span>
+      </label>
+
+      <label class="tz-radio-tile">
+        <input type="radio" name="method" value="apple">
+        <span class="tz-radio-tile__body">
+          <span class="tz-strong">{{ t("payment.method.applePay") }}</span>
+          <span class="tz-muted tz-small">{{ t("payment.method.applePayDesc") }}</span>
+        </span>
+      </label>
+
+      <label class="tz-radio-tile">
+        <input type="radio" name="method" value="google">
+        <span class="tz-radio-tile__body">
+          <span class="tz-strong">{{ t("payment.method.googlePay") }}</span>
+          <span class="tz-muted tz-small">{{ t("payment.method.googlePayDesc") }}</span>
+        </span>
+      </label>
+
+      <label class="tz-radio-tile">
+        <input type="radio" name="method" value="paypal">
+        <span class="tz-radio-tile__body">
+          <span class="tz-strong">{{ t("payment.method.paypal") }}</span>
+          <span class="tz-muted tz-small">{{ t("payment.method.paypalDesc") }}</span>
+        </span>
+      </label>
+
+      <label class="tz-radio-tile">
+        <input type="radio" name="method" value="wallet">
+        <span class="tz-radio-tile__body">
+          <span class="tz-strong">{{ t("payment.method.wallet") }}</span>
+          <span class="tz-muted tz-small">{{ t("payment.method.walletDesc") }}</span>
+        </span>
+      </label>
+    </div>
+
+    <button type="submit" class="tz-primary-btn" id="payBtn"></button>
+  </form>
+</div>
+{% endblock %}

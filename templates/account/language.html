@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{# ---------------------------
+# Language page — FINAL
+# --------------------------- #}
+
+{% block title %}{{ t("common.language") }} — Tikzok{% endblock %}
+
+{% block content %}
+
+<section class="tz-card">
+
+  <h1 class="tz-title">
+    {{ t("common.language") }}
+  </h1>
+
+  <div class="tz-stack">
+
+    <a
+      class="tz-lang-btn {% if current_lang == 'en' %}is-active{% endif %}"
+      href="{{ url_for('i18n.change_lang', lang='en', next=next_url) }}"
+      role="button"
+    >
+      🇬🇧 {{ t("lang.en") }}
+    </a>
+
+    <a
+      class="tz-lang-btn {% if current_lang == 'fr' %}is-active{% endif %}"
+      href="{{ url_for('i18n.change_lang', lang='fr', next=next_url) }}"
+      role="button"
+    >
+      🇫🇷 {{ t("lang.fr") }}
+    </a>
+
+  </div>
+
+</section>
+
+{% endblock %}

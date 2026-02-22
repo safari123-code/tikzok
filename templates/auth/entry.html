@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-page">
+
+<h2>{{ t("auth.choose") }}</h2>
+
+<div class="tz-stack">
+<a class="tz-primary-btn" href="{{ url_for('auth.email_page') }}">
+{{ t("auth.email") }}
+</a>
+
+<a class="tz-primary-btn" href="{{ url_for('auth.phone') }}">
+{{ t("auth.phone") }}
+</a>
+</div>
+
+</div>
+
+{% endblock %}

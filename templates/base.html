@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="{{ session.get('lang','fr') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <title>{% block title %}Tikzok{% endblock %}</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+  <!-- ========================= Navbar ========================= -->
+  {% include "components/navbar.html" %}
+
+  <!-- ========================= Page content ========================= -->
+  <main class="tz-container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ========================= Footer ========================= -->
+  {% include "components/footer.html" %}
+
+  <!-- ========================= Side menu ========================= -->
+  <div class="side-menu" id="sideMenu">
+    <div class="side-menu-content">
+
+      <!-- Recharge -->
+      <a href="{{ url_for('recharge.enter_number_get') }}">
+        {{ t("menu.recharge") }}
+      </a>
+
+      <a href="#">{{ t("menu.history") }}</a>
+      <a href="#">{{ t("menu.account") }}</a>
+
+      {# Language #}
+      {% set _lang = session.get("lang","fr") %}
+      {% set flags = {"fr":"🇫🇷","en":"🇬🇧"} %}
+
+<a
+  href="{{ url_for('i18n.language_get', next=request.full_path) }}"
+  class="tz-account-row"
+>
+  <div class="tz-account-row-left">
+    {{ flags.get(_lang, "🌐") }}
+  </div>
+
+  <div class="tz-account-row-center">
+    <div class="tz-account-row-title">
+      {{ t("common.language") }}
+    </div>
+
+    <div class="tz-account-row-sub">
+      {{ t("lang." + _lang) }}
+    </div>
+  </div>
+
+  <div class="tz-account-row-right">›</div>
+</a>
+      {# Account items #}
+        
+      <a href="#" class="tz-account-row">
+        <div class="tz-account-row-left">📄</div>
+        <div class="tz-account-row-center">
+          <div class="tz-account-row-title">{{ t("account.profile") }}</div>
+        </div>
+        <div class="tz-account-row-right">›</div>
+      </a>
+
+      <a href="#" class="tz-account-row">
+        <div class="tz-account-row-left">⚙️</div>
+        <div class="tz-account-row-center">
+          <div class="tz-account-row-title">{{ t("account.settings") }}</div>
+        </div>
+        <div class="tz-account-row-right">›</div>
+      </a>
+
+      <a href="#" class="tz-account-row">
+        <div class="tz-account-row-left">💳</div>
+        <div class="tz-account-row-center">
+          <div class="tz-account-row-title">{{ t("account.balance") }}</div>
+        </div>
+        <div class="tz-account-row-right">›</div>
+      </a>
+
+<a href="{{ url_for('account.payment_methods') }}" class="tz-account-row">
+  <div class="tz-account-row-left">💰</div>
+
+  <div class="tz-account-row-center">
+    <div class="tz-account-row-title">
+      {{ t("account.payment_methods") }}
+    </div>
+  </div>
+
+  <div class="tz-account-row-right">›</div>
+</a>
+      <!-- ✅ ABOUT (FIXED) -->
+      <a href="{{ url_for('account.about') }}" class="tz-account-row">
+        <div class="tz-account-row-left">ℹ️</div>
+        <div class="tz-account-row-center">
+          <div class="tz-account-row-title">{{ t("account.about") }}</div>
+        </div>
+        <div class="tz-account-row-right">›</div>
+      </a>
+
+      {# Auth #}
+      {% if session.get("user_id") %}
+        <a href="{{ url_for('auth.logout') }}">{{ t("auth.logout") }}</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}">{{ t("auth.login") }}</a>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- ========================= Scripts ========================= -->
+  <script src="{{ url_for('static', filename='js/menu.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>

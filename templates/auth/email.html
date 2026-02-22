@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-page">
+
+<h2>{{ t("auth.email") }}</h2>
+
+<form method="post" action="{{ url_for('auth.email_submit') }}">
+<input class="auth-input" name="email" placeholder="email" required>
+
+{% if error %}
+<div class="auth-error">email invalide</div>
+{% endif %}
+
+<button class="auth-btn">{{ t("common.continue") }}</button>
+</form>
+
+</div>
+
+{% endblock %}

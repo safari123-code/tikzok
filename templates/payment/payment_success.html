@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ t("payment.success.title") }}{% endblock %}
+
+{% block content %}
+<div class="tz-page tz-success">
+  <div class="tz-success__icon">✅</div>
+
+  <h1 class="tz-title">{{ t("payment.success.title") }}</h1>
+  <p class="tz-muted">{{ t("payment.success.message") }}</p>
+
+  <section class="tz-card tz-card--soft">
+    <div class="tz-row"><span class="tz-grow tz-muted">{{ t("payment.success.amount") }}</span><span class="tz-strong">{{ checkout.final_amount }} €</span></div>
+    <div class="tz-divider"></div>
+    <div class="tz-row"><span class="tz-grow tz-muted">{{ t("payment.success.date") }}</span><span class="tz-strong">{{ checkout.paid_at }}</span></div>
+    <div class="tz-divider"></div>
+    <div class="tz-row"><span class="tz-grow tz-muted">{{ t("payment.success.order") }}</span><span class="tz-strong">{{ checkout.order_number }}</span></div>
+    <div class="tz-divider"></div>
+    <div class="tz-row"><span class="tz-grow tz-muted">{{ t("payment.success.reference") }}</span><span class="tz-strong">{{ checkout.reference }}</span></div>
+  </section>
+
+  <a class="tz-primary-btn" href="{{ url_for('recharge.enter_number_get') }}">{{ t("payment.success.finish") }}</a>
+</div>
+{% endblock %}

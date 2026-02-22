@@ -1,0 +1,123 @@
+{
+  "common": {
+    "continue": "Continue",
+    "remove": "Remove",
+    "hello": "Hello",
+    "user": "User",
+    "language": "Language"
+  },
+
+  "account": {
+    "profile": "My details",
+    "settings": "Account settings",
+    "balance": "Tikzok balance",
+    "payment_methods": "Payment methods",
+    "about": "About"
+  },
+
+
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "phone": "Phone",
+    "choose": "Sign in",
+    "email_required": "Email required",
+    "email_invalid": "Invalid email",
+    "phone_required": "Phone number required",
+    "otp_title": "Verification code"
+  },
+
+  "lang": {
+    "fr": "French",
+    "en": "English"
+  },
+
+  "recharge": {
+    "enterNumber": {
+      "title": "Enter number",
+      "beneficiaryNumber": "Recipient number",
+      "phoneExample": "+33…",
+      "enterValidNumber": "Enter a valid number",
+      "searchCountry": "Search…",
+      "contacts": "Contacts"
+    },
+    "selectAmount": {
+      "title": "Choose amount",
+      "operatorNotDetected": "Operator not detected",
+      "editOperator": "Change operator",
+      "amountLabel": "Amount",
+      "chooseInternetPlan": "Choose internet plan",
+      "creditAndTotal": "Credit & total",
+      "amountRow": "Amount",
+      "taxesRow": "Taxes",
+      "receivedAmountTitle": "They receive",
+      "goToPay": "Pay"
+    }
+  },
+
+  "payment": {
+    "method": {
+      "title": "Payment method",
+      "points": "Points",
+      "saveCard": "Save card",
+      "chooseMethod": "Choose a method",
+      "cardPayment": "Card payment",
+      "cardPaymentDesc": "Secure payment",
+      "applePay": "Apple Pay",
+      "applePayDesc": "Coming soon",
+      "googlePay": "Google Pay",
+      "googlePayDesc": "Coming soon",
+      "paypal": "PayPal",
+      "paypalDesc": "Coming soon",
+      "wallet": "Wallet",
+      "walletDesc": "Coming soon"
+    },
+    "card": {
+      "title": "Card payment",
+      "securityNotice": "Your payment information is protected.",
+      "invalidForm": "Invalid form.",
+      "genericError": "An error occurred.",
+      "holderName": "Cardholder name",
+      "number": "Card number",
+      "expiry": "MM/YY",
+      "cvv": "CVV",
+      "payAmount": "Pay"
+    },
+    "success": {
+      "title": "Payment successful",
+      "message": "Your payment has been confirmed.",
+      "amount": "Amount",
+      "date": "Date",
+      "order": "Order",
+      "reference": "Reference",
+      "finish": "Finish"
+    }
+  },    
+
+
+
+
+  "country": {
+    "af": "Afghanistan",
+    "fr": "France",
+    "us": "United States",
+    "de": "Germany",
+    "it": "Italy",
+    "es": "Spain"
+  },
+
+  "about": {
+    "description": "Simple and fast mobile top-up application.",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use"
+  },
+
+
+    "expiry": "Expiry",
+    "empty": {
+      "title": "No payment method",
+      "desc": "Add a payment method to pay faster.",
+      "cta": "Send recharge"
+    }
+  }

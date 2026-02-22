@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("account.about") }}{% endblock %}
+
+{% block content %}
+
+<section class="tz-card tz-about">
+
+  <!-- HEADER -->
+  <div class="tz-about-header">
+    <button class="tz-about-close" onclick="tzCloseAbout()">✕</button>
+  </div>
+
+  <!-- LOGO -->
+  <div class="tz-about-logo">
+    ⚡
+  </div>
+
+  <!-- NAME -->
+  <div class="tz-about-name">
+    Tikzok
+  </div>
+
+  <!-- VERSION -->
+  <div class="tz-about-version">
+    v1.0
+  </div>
+
+  <!-- DESCRIPTION -->
+  <p class="tz-about-desc">
+    {{ t("about.description") }}
+  </p>
+
+  <!-- LEGAL LINKS -->
+  <div class="tz-about-links">
+
+    <a href="#" class="tz-account-row">
+      <div class="tz-account-row-left">🔒</div>
+      <div class="tz-account-row-center">
+        <div class="tz-account-row-title">{{ t("legal.privacy") }}</div>
+      </div>
+      <div class="tz-account-row-right">›</div>
+    </a>
+
+    <a href="#" class="tz-account-row">
+      <div class="tz-account-row-left">📄</div>
+      <div class="tz-account-row-center">
+        <div class="tz-account-row-title">{{ t("legal.terms") }}</div>
+      </div>
+      <div class="tz-account-row-right">›</div>
+    </a>
+
+  </div>
+
+</section>
+
+{% endblock %}

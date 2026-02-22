@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("account.payment_methods") }}{% endblock %}
+
+{% block content %}
+
+<section class="tz-card">
+
+  <!-- ✅ CLOSE -->
+<div class="tz-page-header">
+  <button class="tz-page-close" onclick="history.back()">✕</button>
+</div>
+
+  <h1 class="tz-title">
+    {{ t("account.payment_methods") }}
+  </h1>
+
+  {# EMPTY STATE #}
+  {% if not cards %}
+
+    <div class="tz-empty">
+
+      <div class="tz-empty-icon">💳</div>
+
+      <div class="tz-empty-title">
+        {{ t("payment.empty.title") }}
+      </div>
+
+      <div class="tz-empty-desc">
+        {{ t("payment.empty.desc") }}
+      </div>
+
+      <a href="{{ url_for('recharge.enter_number_get') }}" class="tz-btn tz-btn-primary">
+        {{ t("payment.empty.cta") }}
+      </a>
+
+    </div>
+
+  {% else %}
+
+  <div class="tz-list">
+
+    {% for card in cards %}
+    <div class="tz-card-item">
+
+      <div class="tz-card-item-left">💳</div>
+
+      <div class="tz-card-item-center">
+        <div class="tz-card-item-title">
+          {{ card.brand }} •••• {{ card.last4 }}
+        </div>
+
+        <div class="tz-card-item-sub">
+          {{ t("payment.expiry") }} {{ card.expiry }}
+        </div>
+      </div>
+
+      <div class="tz-card-item-right">⋯</div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+
+  {% endif %}
+
+</section>
+
+{% endblock %}

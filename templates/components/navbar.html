@@ -1,0 +1,31 @@
+{# ---------------------------
+# Navbar Tikzok
+# --------------------------- #}
+
+<header class="tz-navbar">
+
+  <div class="tz-navbar-inner">
+
+    <!-- LEFT : User -->
+    <div class="tz-navbar-left">
+      <div class="tz-strong">
+        {{ session.get("user_name", t("common.user")) }}
+      </div>
+    </div>
+
+    <!-- RIGHT : Menu toggle only -->
+    <div class="tz-navbar-right">
+
+      <button
+        id="menuToggle"
+        class="menu-toggle"
+        aria-label="{{ t('common.menu') }}"
+      >
+        ☰
+      </button>
+
+    </div>
+
+  </div>
+
+</header>

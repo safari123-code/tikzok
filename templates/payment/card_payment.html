@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ t("payment.card.title") }}{% endblock %}
+
+{% block extra_js %}
+<script defer src="{{ url_for('static', filename='js/card_payment.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="tz-page">
+  <h1 class="tz-title">{{ t("payment.card.title") }}</h1>
+
+  <section class="tz-card tz-card--soft">
+    <div class="tz-row">
+      <div class="tz-strong">{{ checkout.phone }}</div>
+      <div class="tz-amount-sm">{{ checkout.final_amount }} €</div>
+    </div>
+  </section>
+
+  <form method="post" action="{{ url_for('payment.card_post') }}" class="tz-stack" autocomplete="on">
+    <label class="tz-check">
+      <input type="checkbox" name="save_card" value="1" {% if checkout.save_card %}checked{% endif %} disabled>
+      <span>{{ t("payment.method.saveCard") }}</span>
+    </label>
+
+    <div class="tz-muted tz-small">{{ t("payment.card.securityNotice") }}</div>
+
+    {% if payment_error %}
+      <div class="tz-alert">
+        {% if payment_error == "invalid_form" %}
+          {{ t("payment.card.invalidForm") }}
+        {% else %}
+          {{ t("payment.card.genericError") }}
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <input class="tz-input" name="card_holder" id="cardHolder" placeholder="{{ t('payment.card.holderName') }}" autocomplete="cc-name" required>
+    <input class="tz-input" name="card_number" id="cardNumber" placeholder="{{ t('payment.card.number') }}" inputmode="numeric" autocomplete="cc-number" required>
+    <div class="tz-row tz-row--gap">
+      <input class="tz-input" name="expiry" id="expiry" placeholder="{{ t('payment.card.expiry') }}" inputmode="numeric" autocomplete="cc-exp" required>
+      <input class="tz-input" name="cvv" id="cvv" placeholder="{{ t('payment.card.cvv') }}" inputmode="numeric" autocomplete="cc-csc" required>
+    </div>
+
+    <button class="tz-primary-btn" id="confirmPayBtn" type="submit">
+      {{ t("payment.card.payAmount") }} {{ checkout.final_amount }} €
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ t("recharge.enterNumber.title") }}{% endblock %}
+
+{% block extra_js %}
+<script defer src="{{ url_for('static', filename='js/enter_number.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="tz-page">
+  <h1 class="tz-title">{{ t("recharge.enterNumber.title") }}</h1>
+
+  <form method="post" action="{{ url_for('recharge.enter_number_post') }}" class="tz-stack">
+    <section class="tz-card tz-card--soft">
+      <div class="tz-card__title">{{ t("recharge.enterNumber.beneficiaryNumber") }}</div>
+
+      <div class="tz-row tz-row--gap">
+        <button type="button"
+                class="tz-flag-btn"
+                id="countryBtn"
+                data-country-iso="{{ country_iso }}">
+          <span id="countryFlag" class="tz-flag">🌍</span>
+        </button>
+
+        <div class="tz-grow">
+          <input
+            class="tz-input {% if phone_error %}tz-input--error{% endif %}"
+            id="phoneInput"
+            name="phone"
+            inputmode="tel"
+            autocomplete="tel"
+            value="{{ initial_phone }}"
+            placeholder="{{ t('recharge.enterNumber.phoneExample') }}"
+          />
+        </div>
+
+        <button type="button" class="tz-icon-btn" id="contactBtn" aria-label="{{ t('recharge.enterNumber.contacts') }}">
+          👤
+        </button>
+      </div>
+
+      <div class="tz-help">
+        <span id="phoneHelp"
+              class="{% if not phone_error %}tz-help--muted{% else %}tz-help--error{% endif %}">
+          {% if phone_error %}
+            {{ t("recharge.enterNumber.enterValidNumber") }}
+          {% else %}
+            {{ t("recharge.enterNumber.enterValidNumber") }}
+          {% endif %}
+        </span>
+      </div>
+    </section>
+
+    <section class="tz-city-card">
+      <img id="cityImage"
+           class="tz-city-card__img"
+           src="{{ url_for('static', filename='images/cities/' ~ country_iso|lower ~ '.jpg') }}"
+           onerror="this.onerror=null;this.src='{{ url_for('static', filename='images/cities/default.jpg') }}';"
+           alt=""
+      />
+    </section>
+
+    <button type="submit" class="tz-primary-btn" id="continueBtn" disabled>
+      {{ t("common.continue") }}
+    </button>
+  </form>
+
+  <!-- Modal picker (simple) -->
+  <div class="tz-modal" id="countryModal" aria-hidden="true">
+    <div class="tz-modal__backdrop" data-close="1"></div>
+    <div class="tz-modal__panel" role="dialog" aria-modal="true">
+      <div class="tz-modal__header">
+        <input class="tz-input" id="countrySearch" placeholder="{{ t('recharge.enterNumber.searchCountry') }}">
+        <button type="button" class="tz-icon-btn" data-close="1">✕</button>
+      </div>
+      <div class="tz-modal__list" id="countryList"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

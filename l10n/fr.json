@@ -1,0 +1,121 @@
+{
+  "common": {
+    "continue": "Continuer",
+    "remove": "Supprimer",
+    "hello": "Bonjour",
+    "user": "Utilisateur",
+    "language": "Langue"
+  },
+
+  "account": {
+    "profile": "Mes coordonnées",
+    "settings": "Paramètres du compte",
+    "balance": "Solde Tikzok",
+    "payment_methods": "Moyens de paiement",
+    "about": "À propos"
+  },
+
+
+  "auth": {
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "email": "Email",
+    "phone": "Téléphone",
+    "choose": "Se connecter",
+    "email_required": "Email requis",
+    "email_invalid": "Email invalide",
+    "phone_required": "Numéro requis",
+    "otp_title": "Code de vérification"
+  },
+
+  "lang": {
+    "fr": "Français",
+    "en": "Anglais"
+  },
+
+  "recharge": {
+    "enterNumber": {
+      "title": "Entrer le numéro",
+      "beneficiaryNumber": "Numéro du bénéficiaire",
+      "phoneExample": "+33…",
+      "enterValidNumber": "Entrez un numéro valide",
+      "searchCountry": "Rechercher…",
+      "contacts": "Contacts"
+    },
+    "selectAmount": {
+      "title": "Choisir le montant",
+      "operatorNotDetected": "Opérateur non détecté",
+      "editOperator": "Modifier l’opérateur",
+      "amountLabel": "Montant",
+      "chooseInternetPlan": "Choisir un forfait internet",
+      "creditAndTotal": "Crédit & total",
+      "amountRow": "Montant",
+      "taxesRow": "Taxes",
+      "receivedAmountTitle": "Ils/Elles reçoivent",
+      "goToPay": "Payer"
+    }
+  },
+
+  "payment": {
+    "method": {
+      "title": "Méthode de paiement",
+      "points": "Points",
+      "saveCard": "Enregistrer la carte",
+      "chooseMethod": "Choisir une méthode",
+      "cardPayment": "Carte bancaire",
+      "cardPaymentDesc": "Paiement sécurisé",
+      "applePay": "Apple Pay",
+      "applePayDesc": "Bientôt disponible",
+      "googlePay": "Google Pay",
+      "googlePayDesc": "Bientôt disponible",
+      "paypal": "PayPal",
+      "paypalDesc": "Bientôt disponible",
+      "wallet": "Wallet",
+      "walletDesc": "Bientôt disponible"
+    },
+    "card": {
+      "title": "Paiement carte",
+      "securityNotice": "Vos informations de paiement sont protégées.",
+      "invalidForm": "Formulaire invalide.",
+      "genericError": "Une erreur est survenue.",
+      "holderName": "Nom du titulaire",
+      "number": "Numéro de carte",
+      "expiry": "MM/AA",
+      "cvv": "CVV",
+      "payAmount": "Payer"
+    },
+    "success": {
+      "title": "Paiement réussi",
+      "message": "Votre paiement a été validé.",
+      "amount": "Montant",
+      "date": "Date",
+      "order": "Commande",
+      "reference": "Référence",
+      "finish": "Terminer"
+    }
+  },
+
+
+
+  "country": {
+    "af": "Afghanistan",
+    "fr": "France",
+    "us": "États-Unis",
+    "de": "Allemagne",
+    "it": "Italie",
+    "es": "Espagne"
+  },
+
+  "about": {
+    "description": "Application de recharge mobile simple et rapide.",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation"
+  },
+
+    "expiry": "Expire",
+    "empty": {
+      "title": "Aucun moyen de paiement",
+      "desc": "Ajoutez un moyen de paiement pour payer plus rapidement.",
+      "cta": "Faire une recharge"
+    }
+  }
