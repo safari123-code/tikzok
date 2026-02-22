@@ -4,7 +4,8 @@
     "remove": "Supprimer",
     "hello": "Bonjour",
     "user": "Utilisateur",
-    "language": "Langue"
+    "language": "Langue",
+      "save": "Enregistrer"
   },
 
   "account": {
@@ -111,7 +112,13 @@
     "privacy": "Politique de confidentialité",
     "terms": "Conditions d'utilisation"
   },
-
+ "profile": {
+  "name": "Nom",
+  "email": "Email",
+  "phone": "Téléphone",
+  "birthdate": "Date de naissance",
+  "not_defined": "Non défini"
+},
     "expiry": "Expire",
     "empty": {
       "title": "Aucun moyen de paiement",

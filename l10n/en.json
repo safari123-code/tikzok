@@ -4,7 +4,8 @@
     "remove": "Remove",
     "hello": "Hello",
     "user": "User",
-    "language": "Language"
+    "language": "Language",
+    "save": "Save"
   },
 
   "account": {
@@ -112,8 +113,14 @@
     "privacy": "Privacy policy",
     "terms": "Terms of use"
   },
-
-
+ "profile": {
+  "name": "Name",
+  "email": "Email",
+  "phone": "Phone",
+  "birthdate": "Birth date",
+  "not_defined": "Not defined"
+},
+   
     "expiry": "Expiry",
     "empty": {
       "title": "No payment method",

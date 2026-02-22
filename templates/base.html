@@ -61,14 +61,17 @@
 </a>
       {# Account items #}
         
-      <a href="#" class="tz-account-row">
-        <div class="tz-account-row-left">📄</div>
-        <div class="tz-account-row-center">
-          <div class="tz-account-row-title">{{ t("account.profile") }}</div>
-        </div>
-        <div class="tz-account-row-right">›</div>
-      </a>
+ <a href="{{ url_for('account.profile') }}" class="tz-account-row">
+   <div class="tz-account-row-left">📄</div>
 
+   <div class="tz-account-row-center">
+     <div class="tz-account-row-title">
+       {{ t("account.profile") }}
+     </div>
+   </div>
+
+   <div class="tz-account-row-right">›</div>
+ </a>
       <a href="#" class="tz-account-row">
         <div class="tz-account-row-left">⚙️</div>
         <div class="tz-account-row-center">
