@@ -1,12 +1,29 @@
 <!doctype html>
-<html lang="{{ session.get('lang','fr') }}">
+<html 
+  lang="{{ session.get('lang','fr') }}"
+  data-tz-copied-text="{{ t('common.copied') }}"
+  data-tz-copy-failed-text="{{ t('common.copyFailed') }}"
+  data-tz-operator-picker-soon="{{ t('recharge.selectAmount.operatorPickerSoon') }}"
+  data-tz-choose-internet-plan="{{ t('recharge.selectAmount.chooseInternetPlan') }}"
+  data-tz-removed-text="{{ t('common.removed') }}"
+>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
+  {% set history_count = history_count if history_count is defined else 0 %}
+
   <title>{% block title %}Tikzok{% endblock %}</title>
 
+  <!-- Main CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+  <!-- Cropper CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css"
+  >
+
   {% block extra_css %}{% endblock %}
 </head>
 
@@ -23,103 +40,121 @@
   <!-- ========================= Footer ========================= -->
   {% include "components/footer.html" %}
 
-  <!-- ========================= Side menu ========================= -->
-  <div class="side-menu" id="sideMenu">
-    <div class="side-menu-content">
+  <!-- ========================= Overlay ========================= -->
+  <div class="side-menu-overlay" id="menuOverlay" aria-hidden="true"></div>
 
-      <!-- Recharge -->
-      <a href="{{ url_for('recharge.enter_number_get') }}">
-        {{ t("menu.recharge") }}
+  <!-- ========================= Side menu ========================= -->
+  <aside class="side-menu" id="sideMenu" aria-hidden="true">
+
+<div class="side-menu-content">
+
+  <!-- USER HEADER -->
+  <a href="{{ url_for('account.profile') }}" class="tz-menu-user">
+
+    <div class="tz-menu-avatar">
+      {% if session.get("user_avatar") %}
+        <img src="{{ session.get('user_avatar') }}">
+      {% else %}
+        <div class="tz-menu-avatar-placeholder">👤</div>
+      {% endif %}
+    </div>
+
+    <div class="tz-menu-user-info">
+      <div class="tz-menu-user-name">
+        {{ session.get("user_name", "Mon compte") }}
+      </div>
+
+      <div class="tz-menu-user-sub">
+        {{ t("account.profile") }}
+      </div>
+    </div>
+
+  </a>
+
+      <!-- HISTORY -->
+      <a href="{{ url_for('history.index_get') }}" class="tz-menu-item">
+        <div class="tz-menu-left">🕘</div>
+        <div class="tz-menu-center">
+          <div class="tz-menu-title">{{ t("menu.history") }}</div>
+        </div>
+
+        {% if history_count %}
+          <div class="tz-menu-badge">{{ history_count }}</div>
+        {% endif %}
+
+        <div class="tz-menu-arrow">›</div>
       </a>
 
-      <a href="#">{{ t("menu.history") }}</a>
-      <a href="#">{{ t("menu.account") }}</a>
-
-      {# Language #}
+      <!-- LANGUAGE -->
       {% set _lang = session.get("lang","fr") %}
       {% set flags = {"fr":"🇫🇷","en":"🇬🇧"} %}
 
-<a
-  href="{{ url_for('i18n.language_get', next=request.full_path) }}"
-  class="tz-account-row"
->
-  <div class="tz-account-row-left">
-    {{ flags.get(_lang, "🌐") }}
-  </div>
-
-  <div class="tz-account-row-center">
-    <div class="tz-account-row-title">
-      {{ t("common.language") }}
-    </div>
-
-    <div class="tz-account-row-sub">
-      {{ t("lang." + _lang) }}
-    </div>
-  </div>
-
-  <div class="tz-account-row-right">›</div>
-</a>
-      {# Account items #}
-        
- <a href="{{ url_for('account.profile') }}" class="tz-account-row">
-   <div class="tz-account-row-left">📄</div>
-
-   <div class="tz-account-row-center">
-     <div class="tz-account-row-title">
-       {{ t("account.profile") }}
-     </div>
-   </div>
-
-   <div class="tz-account-row-right">›</div>
- </a>
-      <a href="#" class="tz-account-row">
-        <div class="tz-account-row-left">⚙️</div>
-        <div class="tz-account-row-center">
-          <div class="tz-account-row-title">{{ t("account.settings") }}</div>
+      <a href="{{ url_for('i18n.language_get', next=request.full_path) }}" class="tz-menu-item">
+        <div class="tz-menu-left">{{ flags.get(_lang, "🌐") }}</div>
+        <div class="tz-menu-center">
+          <div class="tz-menu-title">{{ t("common.language") }}</div>
+          <div class="tz-menu-sub">{{ t("lang." + _lang) }}</div>
         </div>
-        <div class="tz-account-row-right">›</div>
+        <div class="tz-menu-arrow">›</div>
       </a>
 
-      <a href="#" class="tz-account-row">
-        <div class="tz-account-row-left">💳</div>
-        <div class="tz-account-row-center">
-          <div class="tz-account-row-title">{{ t("account.balance") }}</div>
+      <!-- SETTINGS -->
+      <a href="#" class="tz-menu-item">
+        <div class="tz-menu-left">⚙️</div>
+        <div class="tz-menu-center">
+          <div class="tz-menu-title">{{ t("account.settings") }}</div>
         </div>
-        <div class="tz-account-row-right">›</div>
+        <div class="tz-menu-arrow">›</div>
       </a>
 
-<a href="{{ url_for('account.payment_methods') }}" class="tz-account-row">
-  <div class="tz-account-row-left">💰</div>
-
-  <div class="tz-account-row-center">
-    <div class="tz-account-row-title">
-      {{ t("account.payment_methods") }}
-    </div>
-  </div>
-
-  <div class="tz-account-row-right">›</div>
-</a>
-      <!-- ✅ ABOUT (FIXED) -->
-      <a href="{{ url_for('account.about') }}" class="tz-account-row">
-        <div class="tz-account-row-left">ℹ️</div>
-        <div class="tz-account-row-center">
-          <div class="tz-account-row-title">{{ t("account.about") }}</div>
+      <!-- PAYMENT METHODS -->
+      <a href="{{ url_for('account.payment_methods') }}" class="tz-menu-item">
+        <div class="tz-menu-left">💰</div>
+        <div class="tz-menu-center">
+          <div class="tz-menu-title">{{ t("account.payment_methods") }}</div>
         </div>
-        <div class="tz-account-row-right">›</div>
+        <div class="tz-menu-arrow">›</div>
       </a>
 
-      {# Auth #}
-      {% if session.get("user_id") %}
-        <a href="{{ url_for('auth.logout') }}">{{ t("auth.logout") }}</a>
-      {% else %}
-        <a href="{{ url_for('auth.login') }}">{{ t("auth.login") }}</a>
-      {% endif %}
+      <!-- ABOUT -->
+      <a href="{{ url_for('account.about') }}" class="tz-menu-item">
+        <div class="tz-menu-left">ℹ️</div>
+        <div class="tz-menu-center">
+          <div class="tz-menu-title">{{ t("account.about") }}</div>
+        </div>
+        <div class="tz-menu-arrow">›</div>
+      </a>
 
-    </div>
-  </div>
+<!-- ================= AUTH BUTTON ================= -->
+
+<div class="tz-menu-auth">
+
+  {% if session.get("user_id") %}
+
+  <a href="{{ url_for('auth.logout_confirm') }}" class="tz-glass-btn tz-logout-btn">
+    🚪 {{ t("auth.logout") }}
+  </a>
+
+  {% else %}
+
+  <a href="{{ url_for('auth.login') }}" class="tz-glass-btn tz-login-btn">
+    🔐 {{ t("auth.login") }}
+  </a>
+
+  {% endif %}
+
+</div>
 
   <!-- ========================= Scripts ========================= -->
-  <script src="{{ url_for('static', filename='js/menu.js') }}"></script>
+
+  <!-- Cropper -->
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js">
+  </script>
+
+  <!-- App scripts -->
+  <script defer src="{{ url_for('static', filename='js/menu.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
 
   {% block extra_js %}{% endblock %}

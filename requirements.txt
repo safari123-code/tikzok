@@ -2,3 +2,7 @@ requests
 Flask
 gunicorn
 Werkzeug
+SQLAlchemy
+psycopg2-binary
+alembic
+redis

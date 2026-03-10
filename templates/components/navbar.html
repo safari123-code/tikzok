@@ -8,12 +8,34 @@
 
     <!-- LEFT : User -->
     <div class="tz-navbar-left">
+
       <div class="tz-strong">
-        {{ session.get("user_name", t("common.user")) }}
+
+        {% if session.get("user_name") %}
+
+          {% set hour = now().hour %}
+
+          {% if hour < 12 %}
+            {{ t("common.goodMorning") }} {{ session.get("user_name") }} 👋
+
+          {% elif hour < 18 %}
+            {{ t("common.goodAfternoon") }} {{ session.get("user_name") }} ☀️
+
+          {% else %}
+            {{ t("common.goodEvening") }} {{ session.get("user_name") }} 🌙
+          {% endif %}
+
+        {% else %}
+
+          {{ t("common.user") }}
+
+        {% endif %}
+
       </div>
+
     </div>
 
-    <!-- RIGHT : Menu toggle only -->
+    <!-- RIGHT : Menu -->
     <div class="tz-navbar-right">
 
       <button

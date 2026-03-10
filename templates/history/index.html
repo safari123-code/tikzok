@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("menu.history") }}{% endblock %}
+
+{% block content %}
+
+<div class="tz-stack">
+
+  <!-- =========================
+       Header avec bouton retour
+  ========================== -->
+  <div class="tz-history-header">
+
+    <button 
+      onclick="window.history.back()" 
+      class="tz-close-btn"
+      aria-label="Back"
+    >
+      ✕
+    </button>
+
+    <h2 class="tz-page-title">
+      {{ t("menu.history") }}
+    </h2>
+
+  </div>
+
+  <!-- =========================
+       Empty state
+  ========================== -->
+  {% if not items %}
+
+    <div class="tz-empty-card">
+      <div class="tz-empty-icon">🕘</div>
+      <div class="tz-empty-text">
+        {{ t("history.empty") }}
+      </div>
+    </div>
+
+  {% else %}
+
+    <!-- =========================
+         History list
+    ========================== -->
+    {% for item in items %}
+
+      <div class="tz-history-card">
+
+        <div class="tz-history-left">
+          <div class="tz-history-phone">
+            {{ item.phone }}
+          </div>
+
+          <div class="tz-history-date">
+            {{ item.date }}
+          </div>
+        </div>
+
+        <div class="tz-history-amount">
+          + {{ "%.2f"|format(item.amount|float) }} €
+        </div>
+
+      </div>
+
+    {% endfor %}
+
+  {% endif %}
+
+</div>
+
+{% endblock %}

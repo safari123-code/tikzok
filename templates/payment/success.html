@@ -1,0 +1,70 @@
+{# ---------------------------
+   Feature: Payment Success (Flutter-like + copy animations)
+--------------------------- #}
+{% extends "base.html" %}
+{% block title %}{{ t("payment.success.title") }}{% endblock %}
+
+{% block extra_js %}
+<script defer src="{{ url_for('static', filename='js/tz_toast.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/payment_success.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="tz-page tz-container">
+  <div class="tz-success" style="min-height:70vh; display:flex; flex-direction:column; justify-content:center;">
+    <div style="width:130px;height:130px;border-radius:999px;margin:0 auto; display:flex; align-items:center; justify-content:center;
+                background: radial-gradient(circle at 30% 30%, rgba(76,175,80,.18), rgba(255,255,255,1));">
+      <div class="tz-success__icon" style="margin:0;">✅</div>
+    </div>
+
+    <h1 class="tz-title" style="text-align:center; margin-top:18px; font-size:26px;">
+      {{ t("payment.success.title") }}
+    </h1>
+
+    <div class="tz-muted" style="text-align:center; margin-top:8px;">
+      {{ t("payment.success.message") }}
+    </div>
+
+    <div class="tz-card tz-card--soft" style="margin-top:26px;">
+      <div class="tz-row">
+        <div class="tz-muted">{{ t("payment.amountLabel") }}</div>
+        <div class="tz-strong">{{ amount }} €</div>
+      </div>
+      <div class="tz-divider"></div>
+
+      <div class="tz-row">
+        <div class="tz-muted">{{ t("payment.dateLabel") }}</div>
+        <div class="tz-strong">{{ date }}</div>
+      </div>
+      <div class="tz-divider"></div>
+
+      <div class="tz-row">
+        <div class="tz-muted">{{ t("payment.orderLabel") }}</div>
+        <div class="tz-row tz-row--gap" style="justify-content:flex-end;">
+          <div class="tz-strong" id="orderNumberText" style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            {{ order_number }}
+          </div>
+          <button type="button" class="tz-icon-btn tz-copy-btn" data-copy-target="orderNumberText" aria-label="{{ t('common.copy') }}">📋</button>
+        </div>
+      </div>
+      <div class="tz-divider"></div>
+
+      <div class="tz-row">
+        <div class="tz-muted">{{ t("payment.referenceLabel") }}</div>
+        <div class="tz-row tz-row--gap" style="justify-content:flex-end;">
+          <div class="tz-strong" id="referenceText" style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            {{ reference }}
+          </div>
+          <button type="button" class="tz-icon-btn tz-copy-btn" data-copy-target="referenceText" aria-label="{{ t('common.copy') }}">📋</button>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" action="{{ url_for('payment.success_finish_post') }}" style="margin-top:22px;">
+      <button type="submit" class="tz-primary-btn">
+        {{ t("payment.finish") }}
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

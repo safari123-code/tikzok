@@ -1,131 +1,297 @@
 // ---------------------------
-// Select amount UX (Flutter-like)
+// Feature: Forfait behavior (Flutter parity)
 // ---------------------------
-(function () {
-  const ctx = window.__TZ_CTX__ || {};
-  const taxRate = Number(ctx.tax_rate || 0.10);
 
-  const fixedWrap = document.getElementById("fixedAmountsWrap");
+(function () {
+
+  const form = document.getElementById("selectAmountForm");
+  if (!form) return;
+
+  const continueBtn = document.getElementById("continueBtn");
+  const amountCard = document.getElementById("amountCard");
   const amountDisplay = document.getElementById("amountDisplay");
-  const pointsEarned = document.getElementById("pointsEarned");
+  const amountInput = document.getElementById("amountInput");
 
   const rowAmount = document.getElementById("rowAmount");
   const rowTax = document.getElementById("rowTax");
   const rowReceived = document.getElementById("rowReceived");
+  const pointsEarnedText = document.getElementById("pointsEarnedText");
 
-  const quoteLoader = document.getElementById("quoteLoader");
-  const moneyToggle = document.getElementById("moneyToggle");
-  const moneyDetails = document.getElementById("moneyDetails");
+  const moneyBtn = document.getElementById("moneyAccordionBtn");
+  const moneyPanel = document.getElementById("moneyPanel");
   const chevron = document.getElementById("moneyChevron");
+  const quoteLoader = document.getElementById("quoteLoader");
 
-  const goPayBtn = document.getElementById("goPayBtn");
+  const fixedWrap = document.getElementById("fixedAmountWrap");
+  const range = document.getElementById("amountRange");
 
-  let operatorId = ctx.operator?.id || null;
-  let amount = 5.0;
-  let debounce = null;
+  const forfaitCard = document.getElementById("forfaitCard");
+  const forfaitTitle = document.getElementById("forfaitTitle");
+  const removeForfaitBtn = document.getElementById("removeForfaitBtn");
+  const forfaitGb = document.getElementById("forfaitGb");
+  const forfaitPrice = document.getElementById("forfaitPrice");
 
-  function moneyOpen(open) {
-    moneyDetails.style.display = open ? "block" : "none";
-    chevron.textContent = open ? "▴" : "▾";
+  const taxRate = parseFloat(amountCard?.dataset?.taxRate || "0.10");
+  const operatorId = amountCard?.dataset?.operatorId || "";
+  const pointsRate = parseFloat(amountCard?.dataset?.pointsRate || "0.025");
+
+  const currency = amountCard?.dataset?.currency || "EUR";
+  const rate = parseFloat(amountCard?.dataset?.rate || "1");
+
+  let debounceT = null;
+
+  function fmt2(v) {
+    return (Math.round(Number(v || 0) * 100) / 100).toFixed(2);
   }
 
-  function calcTax(a) {
-    return +(a * taxRate).toFixed(2);
-  }
-  function totalToPay(a) {
-    return +(a + calcTax(a)).toFixed(2);
-  }
-  function points(a) {
-    return +(a * 0.025).toFixed(2);
-  }
+  function setSelectedButton(v) {
+    if (!fixedWrap) return;
 
-  function setAmount(a) {
-    amount = +a;
-    amountDisplay.textContent = `${amount.toFixed(2)} €`;
-    pointsEarned.textContent = points(amount).toFixed(2);
-
-    rowAmount.textContent = `${amount.toFixed(2)} €`;
-    rowTax.textContent = `${calcTax(amount).toFixed(2)} €`;
-
-    moneyOpen(true);
-    scheduleQuote();
-  }
-
-  function renderFixedAmounts() {
-    const fixed = (ctx.amounts && ctx.amounts.fixedAmounts) ? ctx.amounts.fixedAmounts : [];
-    fixedWrap.innerHTML = "";
-
-    if (!Array.isArray(fixed) || fixed.length === 0) return;
-
-    fixed.forEach(v => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "tz-amt-btn";
-      btn.textContent = `${Number(v).toFixed(0)} €`;
-      btn.addEventListener("click", () => {
-        [...fixedWrap.querySelectorAll(".tz-amt-btn")].forEach(x => x.classList.remove("is-selected"));
-        btn.classList.add("is-selected");
-        setAmount(Number(v));
-      });
-      fixedWrap.appendChild(btn);
+    fixedWrap.querySelectorAll(".tz-amt-btn").forEach((b) => {
+      b.classList.toggle("is-selected", parseFloat(b.dataset.amount) === v);
     });
-
-    // default
-    setAmount(Number(fixed[0]));
-    fixedWrap.querySelector(".tz-amt-btn")?.classList.add("is-selected");
   }
 
-  async function fetchQuote() {
-    if (!operatorId) return;
+  function setMoneyOpen(open) {
+    if (!moneyBtn || !moneyPanel) return;
 
-    quoteLoader.hidden = false;
-    try {
-      const res = await fetch("/recharge/api/quote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ operatorId, amount }),
-      });
+    moneyPanel.style.display = open ? "block" : "none";
 
-      if (!res.ok) throw new Error("quote");
-      const data = await res.json();
-      if (!data.ok) throw new Error("quote");
+    if (chevron) chevron.textContent = open ? "▴" : "▾";
 
-      const localAmount = data.localAmount;
-      const localCurrency = data.localCurrency;
-      rowReceived.textContent = `${Number(localAmount).toFixed(0)} ${localCurrency}`;
-    } catch (e) {
-      // fallback: show EUR
-      rowReceived.textContent = `${amount.toFixed(0)} EUR`;
-    } finally {
-      quoteLoader.hidden = true;
+    moneyBtn.setAttribute("aria-expanded", String(open));
+  }
+
+  function scrollToDetails() {
+    window.setTimeout(() => {
+      moneyPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 200);
+  }
+
+  function setAmountLocked(locked) {
+
+    if (fixedWrap) {
+      fixedWrap.style.opacity = locked ? "0.45" : "1";
+      fixedWrap.style.pointerEvents = locked ? "none" : "auto";
+    }
+
+    if (range) {
+      range.disabled = !!locked;
+      range.style.opacity = locked ? "0.45" : "1";
     }
   }
 
-  function scheduleQuote() {
-    if (debounce) clearTimeout(debounce);
-    debounce = setTimeout(fetchQuote, 250);
+  function updateUI(amount) {
+
+    const a = Number(amount || 0);
+
+    if (amountInput) amountInput.value = fmt2(a);
+
+    if (amountDisplay) amountDisplay.textContent = `${fmt2(a)} €`;
+
+    if (rowAmount) rowAmount.textContent = `${fmt2(a)} €`;
+
+    if (rowTax) rowTax.textContent = `${fmt2(a * taxRate)} €`;
+
+    if (pointsEarnedText) {
+
+      const points = fmt2(a * pointsRate);
+
+      pointsEarnedText.textContent =
+        pointsEarnedText.textContent.replace(/[0-9]+(\.[0-9]+)?/, points);
+    }
+
+    // ---------------------------
+    // Total à payer
+    // ---------------------------
+
+    const total = a + (a * taxRate);
+
+    if (continueBtn) {
+
+      const payTemplate = continueBtn?.dataset?.payText || "Pay {amount}";
+      const formatted = `${fmt2(total)} €`;
+
+      continueBtn.textContent = payTemplate.replace("{amount}", formatted);
+    }
+
   }
 
-  async function persistTotalAndGoPay() {
-    // store total in session before going to /payment/method
-    const total = totalToPay(amount);
-    await fetch("/recharge/api/store-total", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ total: total.toFixed(2) }),
-    }).catch(() => { /* ignore */ });
+  async function fetchQuote(amount) {
 
-    window.location.href = "/payment/method";
+    const gb = forfaitGb?.value;
+
+    if (gb && rowReceived) {
+      rowReceived.textContent = gb;
+      return;
+    }
+
+    if (!operatorId) {
+
+      if (rowReceived) {
+
+        const converted = Math.round(amount * rate);
+
+        rowReceived.textContent = `${converted} ${currency}`;
+      }
+
+      return;
+    }
+
+    if (quoteLoader) quoteLoader.style.display = "block";
+
+    try {
+
+      const res = await fetch("/recharge/api/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operatorId: operatorId, amount: amount }),
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (!data?.ok) return;
+
+      if (data.localAmount != null && data.localCurrency && rowReceived) {
+
+        rowReceived.textContent =
+          `${Math.round(Number(data.localAmount))} ${data.localCurrency}`;
+
+      } else {
+
+        const converted = Math.round(amount * rate);
+
+        if (rowReceived) {
+          rowReceived.textContent = `${converted} ${currency}`;
+        }
+
+      }
+
+    } finally {
+
+      if (quoteLoader) quoteLoader.style.display = "none";
+
+    }
   }
 
-  moneyToggle?.addEventListener("click", () => {
-    const open = moneyDetails.style.display !== "block";
-    moneyOpen(open);
+  function scheduleQuote(amount) {
+
+    if (debounceT) window.clearTimeout(debounceT);
+
+    debounceT = window.setTimeout(() => fetchQuote(amount), 250);
+  }
+
+  function applyForfaitStateFromInputs() {
+
+    const gb = (forfaitGb?.value || "").trim();
+    const priceStr = (forfaitPrice?.value || "").trim();
+
+    const hasForfait = !!gb && !!priceStr && !Number.isNaN(Number(priceStr));
+
+    if (hasForfait) {
+
+      const p = Number(priceStr);
+
+      updateUI(p);
+      setSelectedButton(p);
+      setMoneyOpen(true);
+      setAmountLocked(true);
+      scheduleQuote(p);
+      scrollToDetails();
+
+    } else {
+
+      setAmountLocked(false);
+
+    }
+  }
+
+  moneyBtn?.addEventListener("click", () => {
+
+    const isOpen = moneyPanel.style.display !== "none";
+    setMoneyOpen(!isOpen);
+
   });
 
-  goPayBtn?.addEventListener("click", persistTotalAndGoPay);
+  fixedWrap?.addEventListener("click", (e) => {
 
-  renderFixedAmounts();
-  moneyOpen(true);
-  fetchQuote();
+    const btn = e.target.closest(".tz-amt-btn");
+    if (!btn) return;
+
+    const v = parseFloat(btn.dataset.amount);
+
+    setSelectedButton(v);
+    updateUI(v);
+    setMoneyOpen(true);
+    scheduleQuote(v);
+    scrollToDetails();
+
+  });
+
+  range?.addEventListener("input", () => {
+
+    updateUI(parseFloat(range.value));
+
+  });
+
+  range?.addEventListener("change", () => {
+
+    const v = parseFloat(range.value);
+
+    setMoneyOpen(true);
+    scheduleQuote(v);
+    scrollToDetails();
+
+  });
+
+  forfaitCard?.addEventListener("click", (e) => {
+
+    if (e.target && e.target.closest("#removeForfaitBtn")) return;
+
+    const url = forfaitCard.dataset.forfaitUrl;
+
+    if (url) window.location.href = url;
+
+  });
+
+  removeForfaitBtn?.addEventListener("click", (e) => {
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (forfaitGb) forfaitGb.value = "";
+    if (forfaitPrice) forfaitPrice.value = "";
+
+    const fallback = document.documentElement.dataset.tzChooseInternetPlan || "";
+
+    if (forfaitTitle) forfaitTitle.textContent = fallback;
+
+    removeForfaitBtn.style.display = "none";
+
+    const amount = parseFloat(amountInput?.value || "0");
+
+    scheduleQuote(amount);
+
+    setAmountLocked(false);
+
+    tzToast?.(document.documentElement.dataset.tzRemovedText || "");
+
+    removeForfaitBtn.style.transform = "scale(.98)";
+
+    window.setTimeout(() => (removeForfaitBtn.style.transform = ""), 120);
+
+  });
+
+  updateUI(parseFloat(amountInput?.value || "0"));
+
+  setMoneyOpen(true);
+
+  scheduleQuote(parseFloat(amountInput?.value || "0"));
+
+  scrollToDetails();
+
+  applyForfaitStateFromInputs();
+
 })();

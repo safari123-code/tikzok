@@ -1,87 +1,178 @@
+{# ---------------------------
+   Feature: Select Amount (Flutter-like)
+--------------------------- #}
 {% extends "base.html" %}
 {% block title %}{{ t("recharge.selectAmount.title") }}{% endblock %}
 
 {% block extra_js %}
-<script defer>
-  window.__TZ_CTX__ = {{ {
-    "tax_rate": tax_rate,
-    "operator": operator,
-    "amounts": amounts
-  } | tojson }};
-</script>
+<script defer src="{{ url_for('static', filename='js/tz_toast.js') }}"></script>
 <script defer src="{{ url_for('static', filename='js/select_amount.js') }}"></script>
 {% endblock %}
 
 {% block content %}
-<div class="tz-page">
+<div class="tz-page tz-container">
+
   <h1 class="tz-title">{{ t("recharge.selectAmount.title") }}</h1>
 
-  <section class="tz-card">
-    <div class="tz-row tz-row--gap">
-      <div class="tz-icon">📱</div>
-      <div class="tz-grow">
-        <div class="tz-strong">
-          <span id="phoneDisplay">{{ phone }}</span>
-          <a class="tz-link" href="{{ url_for('recharge.enter_number_get') }}">✎</a>
-        </div>
-        <div class="tz-muted" id="operatorLine">
-          {% if operator and operator.get('name') %}
-            {{ operator.get('name') }} • {{ operator.get('country_name','') }}
-          {% else %}
-            {{ t("recharge.selectAmount.operatorNotDetected") }}
-          {% endif %}
-        </div>
-      </div>
+  <form method="post" action="{{ url_for('recharge.select_amount_post') }}" class="tz-stack" id="selectAmountForm">
+    <input type="hidden" name="min_amount" value="{{ min_amount or 2 }}">
+    <input type="hidden" name="max_amount" value="{{ max_amount or 50 }}">
 
-      {% if operator and operator.get('logo_url') %}
-        <img class="tz-operator-logo" src="{{ operator.get('logo_url') }}" alt="">
+    {# ---------------------------
+       Phone + Operator Card
+    --------------------------- #}
+    <section class="tz-card">
+      <div class="tz-row">
+        <div class="tz-grow">
+          <div class="tz-strong" style="font-size:15px;">
+            {{ phone }}
+            <a class="tz-link" style="margin-left:8px;" href="{{ url_for('recharge.enter_number_get') }}">✎</a>
+          </div>
+          <div class="tz-small tz-muted" style="margin-top:4px;">
+            {% if operator.name %}
+              {{ operator.name }} • {{ operator.country }}
+            {% else %}
+              {{ t("recharge.selectAmount.operatorNotDetected") }}
+            {% endif %}
+          </div>
+        </div>
+
+        {% if operator.logo_url %}
+          <img src="{{ operator.logo_url }}" alt="" style="width:34px;height:34px;object-fit:contain;" />
+        {% else %}
+          <span class="tz-muted" aria-hidden="true">📶</span>
+        {% endif %}
+
+        <a
+  href="{{ url_for('recharge.select_operator_get') }}"
+  class="tz-icon-btn"
+  aria-label="{{ t('recharge.selectAmount.editOperator') }}"
+ >
+  📥
+</a>
+      </div>
+    </section>
+
+{# ---------------------------
+   Feature: Amount Card
+--------------------------- #}
+<section class="tz-card tz-card--highlight"
+ id="amountCard"
+ data-tax-rate="{{ tax_rate }}"
+ data-operator-id="{{ operator.id or '' }}"
+ data-points-rate="0.025"
+ data-currency="{{ operator.currency_code or 'EUR' }}"
+ data-rate="{{ currency_rate or 1 }}">
+
+      <div class="tz-card__title">{{ t("recharge.selectAmount.amountLabel") }}</div>
+
+      <div class="tz-amount" id="amountDisplay">{{ "%.2f"|format(amount) }} €</div>
+
+      {% if fixed_amounts and fixed_amounts|length > 0 %}
+        <div class="tz-wrap" id="fixedAmountWrap">
+          {% for v in fixed_amounts %}
+            <button type="button"
+                    class="tz-amt-btn {% if v == amount %}is-selected{% endif %}"
+                    data-amount="{{ v }}">
+              {{ "%.0f"|format(v) }} €
+            </button>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="padding:6px 4px;">
+          <input id="amountRange" type="range"
+                 min="{{ min_amount or 2 }}" max="{{ max_amount or 50 }}"
+                 step="1" value="{{ amount }}"
+                 style="width:100%;">
+        </div>
       {% endif %}
 
-      <button type="button" class="tz-icon-btn" id="editOperatorBtn" title="{{ t('recharge.selectAmount.editOperator') }}">📥</button>
-    </div>
-  </section>
+      <input type="hidden" name="amount" id="amountInput" value="{{ amount }}">
 
-  <section class="tz-card tz-card--highlight">
-    <div class="tz-card__title">{{ t("recharge.selectAmount.amountLabel") }}</div>
-    <div class="tz-amount" id="amountDisplay">5.00 €</div>
-
-    <div id="fixedAmountsWrap" class="tz-wrap"></div>
-
-    <div class="tz-row tz-row--gap tz-points">
-      <span>🎁</span>
-      <span id="pointsEarned"></span>
-    </div>
-  </section>
-
-  <section class="tz-card tz-card--purple" id="forfaitCard">
-    <div class="tz-row tz-row--gap">
-      <div>📶</div>
-      <div class="tz-grow">
-        <div class="tz-strong" id="forfaitLabel">{{ t("recharge.selectAmount.chooseInternetPlan") }}</div>
+      <div class="tz-row" style="margin-top:10px;">
+        <div class="tz-check">
+          <span aria-hidden="true">🎁</span>
+          <span id="pointsEarnedText">{{ t("recharge.selectAmount.pointsEarned", {"points": ("%.2f"|format(amount * 0.025)) }) }}</span>
+        </div>
       </div>
-      <button type="button" class="tz-link tz-danger" id="removeForfaitBtn" hidden>{{ t("common.remove") }}</button>
+    </section>
+
+{# ---------------------------
+   Feature: Forfait Card (Flutter parity)
+--------------------------- #}
+<section class="tz-card tz-card--purple" id="forfaitCard" data-forfait-url="{{ url_for('recharge.select_forfait_get') }}">
+  <div class="tz-row">
+    <div class="tz-check">
+      <span aria-hidden="true">📶</span>
+      <div class="tz-strong" id="forfaitTitle">
+        {% if session.get("recharge_forfait") %}
+          {{ session.get("recharge_forfait").gb }} • {{ session.get("recharge_forfait").price }} €
+        {% else %}
+          {{ t("recharge.selectAmount.chooseInternetPlan") }}
+        {% endif %}
+      </div>
     </div>
-  </section>
 
-  <section class="tz-card tz-card--green" id="moneyCard">
-    <button type="button" class="tz-accordion" id="moneyToggle">
-      <span>👛</span>
-      <span class="tz-grow tz-strong">{{ t("recharge.selectAmount.creditAndTotal") }}</span>
-      <span id="moneyChevron">▾</span>
-    </button>
+    {% if session.get("recharge_forfait") %}
+      <button type="button" class="tz-link-btn tz-danger" id="removeForfaitBtn">
+        {{ t("common.remove") }}
+      </button>
+    {% endif %}
+  </div>
 
-    <div id="moneyDetails" class="tz-accordion__panel">
-      <div class="tz-divider"></div>
-      <div class="tz-row"><span class="tz-grow">{{ t("recharge.selectAmount.amountRow") }}</span><span id="rowAmount"></span></div>
-      <div class="tz-row"><span class="tz-grow">{{ t("recharge.selectAmount.taxesRow") }}</span><span id="rowTax"></span></div>
-      <div class="tz-row tz-strong"><span class="tz-grow">{{ t("recharge.selectAmount.receivedAmountTitle") }}</span><span id="rowReceived"></span></div>
-      <div id="quoteLoader" class="tz-linear-loader" hidden></div>
-    </div>
-  </section>
+  <input type="hidden" name="forfait_gb" id="forfaitGb" value="{{ session.get('recharge_forfait', {}).get('gb','') }}">
+  <input type="hidden" name="forfait_price" id="forfaitPrice" value="{{ session.get('recharge_forfait', {}).get('price','') }}">
+</section>
 
-  <form method="post" action="{{ url_for('payment.method_get') }}">
-    <!-- on stocke le total en session via JS POST dédié si tu veux; ici simple: submit -> route payment -->
-    <button type="button" class="tz-primary-btn" id="goPayBtn">{{ t("recharge.selectAmount.goToPay") }}</button>
+    {# ---------------------------
+       Money Accordion Card
+    --------------------------- #}
+    <section class="tz-card tz-card--green" id="moneyCard" data-received="{{ received_display }}">
+      <button type="button" class="tz-accordion" id="moneyAccordionBtn" aria-expanded="true">
+        <div class="tz-check">
+          <span aria-hidden="true">👛</span>
+          <div class="tz-strong">{{ t("recharge.selectAmount.creditAndTotal") }}</div>
+        </div>
+        <div class="tz-muted" id="moneyChevron">▴</div>
+      </button>
+
+      <div class="tz-accordion__panel" id="moneyPanel">
+        <div class="tz-divider"></div>
+
+        <div class="tz-row">
+          <div class="tz-muted">{{ t("recharge.selectAmount.amountRow") }}</div>
+          <div class="tz-strong" id="rowAmount">{{ "%.2f"|format(amount) }} €</div>
+        </div>
+
+        <div class="tz-row" style="margin-top:10px;">
+          <div class="tz-muted">{{ t("recharge.selectAmount.taxesRow") }}</div>
+          <div class="tz-strong" id="rowTax">{{ "%.2f"|format(amount * tax_rate) }} €</div>
+        </div>
+
+ <div class="tz-row" style="margin-top:10px;">
+  <div class="tz-muted">{{ t("recharge.selectAmount.receivedAmountTitle") }}</div>
+  <div class="tz-strong" id="rowReceived">
+    {% if session.get("recharge_forfait") %}
+      {{ session.get("recharge_forfait").gb }}
+    {% else %}
+      {{ received_display }}
+    {% endif %}
+  </div>
+ </div>
+    </section>
+
+    {# ---------------------------
+       Pay Button (go to payment method)
+    --------------------------- #}
+    <button
+  type="submit"
+  class="tz-primary-btn"
+  id="continueBtn"
+  data-pay-text="{{ t('payment.method.pay') }}"
+>
+  {{ t("payment.method.pay") }} {{ "%.2f"|format(amount + (amount * tax_rate)) }} €
+ </button>
   </form>
+
 </div>
 {% endblock %}

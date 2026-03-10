@@ -2,6 +2,10 @@
 
 {% block title %}{{ t("account.profile") }}{% endblock %}
 
+{% block extra_js %}
+<script defer src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 
 <section class="tz-card">
@@ -13,39 +17,51 @@
 
   <h1 class="tz-title">{{ t("account.profile") }}</h1>
 
-  <!-- avatar -->
-<div class="tz-profile-avatar">
-
-  <label class="tz-avatar-upload">
-
-    {% if user.avatar %}
-      <img src="{{ user.avatar }}" class="tz-avatar-img">
-    {% else %}
-      <div class="tz-avatar-placeholder">👤</div>
-    {% endif %}
-
-    <input type="file" name="avatar" accept="image/*" hidden>
-
-  </label>
-
-</div>
-
   <!-- FORM -->
-  <form method="post" enctype="multipart/form-data" class="tz-profile-list">
+  <form method="post" enctype="multipart/form-data" class="tz-stack">
 
-  <!-- avatar upload -->
-  <div class="tz-field">
-    <input type="file" name="avatar" accept="image/*">
-  </div>
+    <!-- avatar -->
+    <div class="tz-profile-avatar">
 
-    <!-- name -->
-    <div class="tz-field">
-      <div class="tz-account-row-title">{{ t("profile.name") }}</div>
-      <input name="name" value="{{ user.name }}" class="tz-input">
+      <label class="tz-avatar-upload">
+
+        {% if user.avatar %}
+          <img
+            src="{{ user.avatar }}"
+            class="tz-avatar-img"
+            id="avatarPreview"
+          >
+        {% else %}
+          <div class="tz-avatar-placeholder" id="avatarPreview">
+            👤
+          </div>
+        {% endif %}
+
+        <input
+          type="file"
+          name="avatar"
+          id="avatarInput"
+          accept="image/*"
+          hidden
+        >
+
+      </label>
+
     </div>
 
-    <!-- email (auth flow) -->
-    <a href="{{ url_for('auth.email_page') }}" class="tz-account-row">
+    <!-- name -->
+    <section class="tz-card tz-card--soft">
+      <div class="tz-card__title">{{ t("profile.name") }}</div>
+      <input
+        name="name"
+        value="{{ user.name }}"
+        class="tz-input"
+      >
+    </section>
+
+    <!-- email -->
+    <a href="{{ url_for('auth.email_code') }}" class="tz-account-row">
+      <div class="tz-account-row-left">✉️</div>
       <div class="tz-account-row-center">
         <div class="tz-account-row-title">{{ t("profile.email") }}</div>
         <div class="tz-account-row-sub">
@@ -55,8 +71,9 @@
       <div class="tz-account-row-right">›</div>
     </a>
 
-    <!-- phone (auth flow) -->
+    <!-- phone -->
     <a href="{{ url_for('auth.phone') }}" class="tz-account-row">
+      <div class="tz-account-row-left">📱</div>
       <div class="tz-account-row-center">
         <div class="tz-account-row-title">{{ t("profile.phone") }}</div>
         <div class="tz-account-row-sub">
@@ -67,12 +84,17 @@
     </a>
 
     <!-- birthdate -->
-    <div class="tz-field">
-      <div class="tz-account-row-title">{{ t("profile.birthdate") }}</div>
-      <input type="date" name="birthdate" value="{{ user.birthdate }}" class="tz-input">
-    </div>
+    <section class="tz-card tz-card--soft">
+      <div class="tz-card__title">{{ t("profile.birthdate") }}</div>
+      <input
+        type="date"
+        name="birthdate"
+        value="{{ user.birthdate }}"
+        class="tz-input"
+      >
+    </section>
 
-    <button class="tz-btn tz-btn-primary">
+    <button class="tz-primary-btn">
       {{ t("common.save") }}
     </button>
 

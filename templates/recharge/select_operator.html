@@ -1,0 +1,96 @@
+{# ---------------------------
+   Feature: Select Operator
+--------------------------- #}
+
+{% extends "base.html" %}
+{% block title %}{{ t("recharge.selectOperator.title") }}{% endblock %}
+
+{% block content %}
+
+<div class="tz-page tz-container">
+
+<h1 class="tz-title">
+{{ t("recharge.selectOperator.title") }}
+</h1>
+
+{% if operators and operators|length > 0 %}
+
+<div class="tz-stack">
+
+{% for op in operators %}
+
+<form
+method="post"
+action="{{ url_for('recharge.select_operator_post') }}"
+class="tz-operator-form"
+>
+
+<input type="hidden" name="operator_id" value="{{ op.id }}">
+<input type="hidden" name="operator_name" value="{{ op.name }}">
+<input type="hidden" name="operator_logo" value="{{ op.logo_url }}">
+<input type="hidden" name="country_iso" value="{{ op.country_iso }}">
+
+<button
+type="submit"
+class="tz-card tz-operator-btn"
+aria-label="{{ op.name }}"
+>
+
+<div class="tz-row">
+
+{% if op.logo_url %}
+
+<img
+src="{{ op.logo_url }}"
+class="tz-operator-logo"
+alt="{{ op.name }}"
+loading="lazy"
+/>
+
+{% else %}
+
+<span class="tz-muted" aria-hidden="true">📶</span>
+
+{% endif %}
+
+<div class="tz-grow tz-strong">
+{{ op.name }}
+</div>
+
+<span class="tz-muted">›</span>
+
+</div>
+
+</button>
+
+</form>
+
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="tz-card">
+
+<div class="tz-stack tz-center">
+
+<div style="font-size:42px;">🔍</div>
+
+<div class="tz-strong">
+{{ t("recharge.selectOperator.emptyTitle") }}
+</div>
+
+<div class="tz-muted">
+{{ t("recharge.selectOperator.emptyMessage") }}
+</div>
+
+</div>
+
+</div>
+
+{% endif %}
+
+</div>
+
+{% endblock %}

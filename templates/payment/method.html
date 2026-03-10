@@ -1,0 +1,106 @@
+{# ---------------------------
+   Feature: Payment Method (Flutter-like)
+--------------------------- #}
+{% extends "base.html" %}
+{% block title %}{{ t("payment.method.title") }}{% endblock %}
+
+{% block extra_js %}
+<script defer src="{{ url_for('static', filename='js/tz_toast.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/payment_method.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="tz-page tz-container">
+  <h1 class="tz-title">{{ t("payment.method.title") }}</h1>
+
+  <form method="post" action="{{ url_for('payment.method_post') }}" class="tz-stack" id="paymentMethodForm"
+        data-amount="{{ "%.2f"|format(amount) }}"
+        data-points="{{ "%.2f"|format(points_available) }}"
+        data-toast-key="{{ session.get('payment_toast','') }}">
+
+    {# ---------------------------
+       Points Card
+    --------------------------- #}
+    <section class="tz-card tz-card--green">
+      <div class="tz-row">
+        <div class="tz-check">
+          <span aria-hidden="true">⭐</span>
+          <div>
+            <div class="tz-small tz-muted">{{ t("payment.points.title") }}</div>
+            <div class="tz-strong">{{ t("payment.points.available", {"points": ("%.2f"|format(points_available))}) }}</div>
+          </div>
+        </div>
+
+        {% if not is_forfait_minutes %}
+        <label class="tz-check" style="gap:8px;">
+          <input type="checkbox" id="usePointsToggle" {% if use_points %}checked{% endif %}>
+        </label>
+        {% endif %}
+      </div>
+    </section>
+
+    {# ---------------------------
+       Recap Card
+    --------------------------- #}
+    <section class="tz-card tz-card--soft">
+      <div class="tz-row">
+        {% if not is_forfait_minutes %}
+          <div class="tz-grow tz-strong" style="font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            {{ phone }}
+          </div>
+        {% endif %}
+        <div class="tz-amount-sm" id="finalAmountText">{{ "%.2f"|format(final_amount) }} €</div>
+      </div>
+    </section>
+
+    {# ---------------------------
+       Save Card
+    --------------------------- #}
+    <section class="tz-card">
+      <div class="tz-row">
+        <label class="tz-check">
+          <input type="checkbox" id="saveCardToggle" {% if save_card %}checked{% endif %}>
+          <span>{{ t("payment.saveCard") }}</span>
+        </label>
+      </div>
+    </section>
+
+    {# ---------------------------
+       Methods
+    --------------------------- #}
+    <section class="tz-card">
+      <div class="tz-card__title">{{ t("payment.chooseMethod") }}</div>
+
+      <div class="tz-stack" style="gap:12px;">
+
+        <button type="button"
+                class="tz-card-item tz-method-tile {% if selected_method == 'card' %}tz-card--highlight{% endif %}"
+                data-method="card">
+          <div class="tz-card-item-left">💳</div>
+          <div class="tz-card-item-center">
+            <div class="tz-card-item-title">{{ t("payment.methods.card.title") }}</div>
+            <div class="tz-card-item-sub">{{ t("payment.methods.card.desc") }}</div>
+            {% if selected_method == 'card' %}
+              <div class="tz-small" style="font-weight:800; color:#2196f3; margin-top:6px;">
+                {{ t("payment.methodSelected") }}
+              </div>
+            {% endif %}
+          </div>
+        </button>
+
+      </div>
+    </section>
+
+    <input type="hidden" name="selected_method" id="selectedMethodInput" value="{{ selected_method }}">
+    <input type="hidden" name="save_card" id="saveCardInput" value="{% if save_card %}1{% else %}0{% endif %}">
+    <input type="hidden" name="use_points" id="usePointsInput" value="{% if use_points %}1{% else %}0{% endif %}">
+
+    {# ---------------------------
+       Pay Button
+    --------------------------- #}
+    <button type="submit" class="tz-primary-btn" id="payBtn">
+      {{ t("payment.pay", {"amount": ("%.2f"|format(final_amount))}) }}
+    </button>
+  </form>
+</div>
+{% endblock %}

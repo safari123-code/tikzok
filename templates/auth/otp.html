@@ -1,15 +1,109 @@
 {% extends "base.html" %}
+{% block title %}{{ t("auth.otp_title") }}{% endblock %}
+
 {% block content %}
+<div class="tz-auth-flutter">
 
-<div class="auth-page">
+  <!-- AppBar -->
+  <div class="tz-auth-appbar">
 
-<h2>OTP → {{ phone }}</h2>
+    <button 
+      onclick="location.href='{{ url_for('auth.login') }}'" 
+      class="tz-auth-close"
+      aria-label="Back"
+    >
+      ✕
+    </button>
 
-<form method="post">
-<input class="auth-input" placeholder="code">
-<button class="auth-btn">{{ t("common.continue") }}</button>
-</form>
+    <div class="tz-auth-appbar-title">
+      {{ t("auth.otp_title") }}
+    </div>
+
+  </div>
+
+  <div class="tz-auth-body">
+
+    <div class="tz-auth-subtitle">
+      {{ t("auth.otp_sent_to") }}
+      <span class="tz-strong">{{ masked_phone }}</span>
+    </div>
+
+    <form method="post" data-tz-form>
+
+      <!-- OTP LABEL -->
+      <label class="tz-auth-label">
+        {{ t("auth.otp_label") }}
+      </label>
+
+      <!-- OTP INPUT -->
+      <div class="tz-auth-input-wrapper">
+        <span class="tz-auth-icon">🔐</span>
+
+        <input
+          id="code"
+          name="code"
+          type="text"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          pattern="[0-9]*"
+          maxlength="8"
+          class="tz-auth-input {% if error %}tz-input--error{% endif %}"
+          placeholder="{{ t('auth.otp_placeholder') }}"
+          data-tz-otp
+          required
+        />
+      </div>
+
+      {% if error %}
+        <div class="tz-auth-error">
+          {{ t("auth.otp_invalid") }}
+        </div>
+      {% else %}
+        <div class="tz-auth-help">
+          {{ t("auth.otp_help") }}
+        </div>
+      {% endif %}
+
+      <!-- CONTINUE BUTTON -->
+      <button type="submit" class="tz-auth-btn">
+        <span class="tz-auth-btn-text">
+          {{ t("common.continue") }}
+        </span>
+        <span class="tz-auth-loader"></span>
+      </button>
+
+      <!-- RESEND SECTION -->
+      <div class="tz-auth-resend" data-tz-resend="30">
+
+        <a class="tz-link-btn" href="{{ url_for('auth.phone') }}">
+          {{ t("auth.change_phone") }}
+        </a>
+
+        <span class="tz-badge" data-tz-resend-badge></span>
+
+        <button
+          type="submit"
+          name="intent"
+          value="resend"
+          class="tz-link-btn"
+          data-tz-resend-btn
+        >
+          {{ t("auth.resend") }}
+        </button>
+
+      </div>
+
+      {% if info %}
+        <div class="tz-auth-success">
+          {{ info }}
+        </div>
+      {% endif %}
+
+    </form>
+
+  </div>
 
 </div>
 
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 {% endblock %}

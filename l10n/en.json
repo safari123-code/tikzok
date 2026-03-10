@@ -3,9 +3,19 @@
     "continue": "Continue",
     "remove": "Remove",
     "hello": "Hello",
-    "user": "User",
+    "user": "International mobile top-up",
     "language": "Language",
-    "save": "Save"
+    "goodMorning": "Good morning",
+    "goodEvening": "Good evening",
+    "goodAfternoon": "Good afternoon",
+    "save": "Save",
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "removed": "Removed"
   },
 
   "account": {
@@ -16,18 +26,53 @@
     "about": "About"
   },
 
+"auth": {
+  "name": "Name",
+  "name_placeholder": "Your name or first name",
 
-  "auth": {
-    "login": "Login",
-    "logout": "Logout",
-    "email": "Email",
-    "phone": "Phone",
-    "choose": "Sign in",
-    "email_required": "Email required",
-    "email_invalid": "Invalid email",
-    "phone_required": "Phone number required",
-    "otp_title": "Verification code"
-  },
+  "login": "Login",
+  "logout": "Logout",
+  "choose": "Choose a method",
+  "choose_hint": "Access your account in seconds",
+
+  "email": "Email",
+  "phone": "Phone",
+
+  "email_required": "Email required",
+  "email_invalid": "Invalid email",
+  "phone_required": "Phone number required",
+
+  "security_hint": "One-time code. We never share your information.",
+
+  "email_hint": "We will send you a verification code",
+  "email_label": "Email address",
+  "email_placeholder": "name@gmail.com",
+  "email_help": "Check the spelling. The code arrives quickly.",
+
+  "phone_hint": "We will send you a code by SMS",
+  "phone_label": "Phone number",
+  "phone_placeholder": "Phone number",
+  "phone_help": "Use international format (ex: +33...).",
+
+  "invalid_phone": "Invalid phone number",
+
+  "otp_title": "Verification",
+  "otp_sent_to": "Code sent to",
+  "otp_label": "Code",
+  "otp_placeholder": "Enter the code",
+  "otp_help": "You can paste the code. It is one-time use.",
+  "otp_invalid": "Invalid or expired code",
+
+  "resend": "Resend",
+  "change_email": "Change email",
+  "change_phone": "Change phone number",
+
+  "logout_confirm": "Do you want to log out?",
+
+  "or_continue": "Or continue with",
+
+  "legal_notice": "By continuing, you accept our Terms of Service and Privacy Policy."
+},
 
   "lang": {
     "fr": "French",
@@ -36,24 +81,40 @@
 
   "recharge": {
     "enterNumber": {
-      "title": "Enter number",
+      "title": "Enter the number",
       "beneficiaryNumber": "Recipient number",
       "phoneExample": "+33…",
       "enterValidNumber": "Enter a valid number",
       "searchCountry": "Search…",
       "contacts": "Contacts"
     },
+
+    "selectOperator": {
+      "title": "Choose an operator",
+      "emptyTitle": "No operator found",
+      "emptyMessage": "We couldn't find any operator for this number."
+    },
+
+    "selectForfait": {
+      "title": "Choose a plan",
+      "internet": "Internet",
+      "days": "{days} days"
+    },
+
     "selectAmount": {
       "title": "Choose amount",
       "operatorNotDetected": "Operator not detected",
-      "editOperator": "Change operator",
+      "editOperator": "Edit operator",
       "amountLabel": "Amount",
-      "chooseInternetPlan": "Choose internet plan",
+      "chooseInternetPlan": "Choose an internet plan",
       "creditAndTotal": "Credit & total",
       "amountRow": "Amount",
       "taxesRow": "Taxes",
       "receivedAmountTitle": "They receive",
-      "goToPay": "Pay"
+      "goToPay": "Pay",
+      "pointsEarned": "You earn {points} points",
+      "operatorPickerSoon": "Operator selection coming soon",
+      "choose": "Choose"
     }
   },
 
@@ -63,7 +124,7 @@
       "points": "Points",
       "saveCard": "Save card",
       "chooseMethod": "Choose a method",
-      "cardPayment": "Card payment",
+      "cardPayment": "Credit card",
       "cardPaymentDesc": "Secure payment",
       "applePay": "Apple Pay",
       "applePayDesc": "Coming soon",
@@ -72,9 +133,26 @@
       "paypal": "PayPal",
       "paypalDesc": "Coming soon",
       "wallet": "Wallet",
-      "walletDesc": "Coming soon"
-    },
-    "card": {
+      "walletDesc": "Coming soon",
+      "methodSelected": "Selected method",
+      "methodUnavailable": "Method unavailable",
+      "paypalComingSoon": "Coming soon",
+      "pay": "Pay {amount}",
+      "pointsAvailable": "Available points: {points}",
+
+      "payment.method.title": "Payment method",
+      "payment.points.title": "Points",
+      "payment.points.available": "Available points: {points}",
+      "payment.saveCard": "Save card",
+      "payment.chooseMethod": "Choose a payment method",
+      "payment.methods.card.title": "Credit card",
+      "payment.methods.card.desc": "Pay with your Visa or Mastercard",
+      "payment.methodSelected": "Selected method",
+      "payment.pay": "Pay {amount} €"
+     },
+
+
+     "card": {
       "title": "Card payment",
       "securityNotice": "Your payment information is protected.",
       "invalidForm": "Invalid form.",
@@ -83,8 +161,15 @@
       "number": "Card number",
       "expiry": "MM/YY",
       "cvv": "CVV",
-      "payAmount": "Pay"
+      "payAmount": "Pay {amount}",
+      "scanTooltip": "Scan card",
+      "invalidCardHolderName": "Invalid name",
+      "invalidCardNumber": "Invalid card number",
+      "invalidExpiry": "Invalid expiry date",
+      "invalidCvv": "Invalid CVV",
+      "formError": "Please fix the errors"
     },
+
     "success": {
       "title": "Payment successful",
       "message": "Your payment has been confirmed.",
@@ -92,12 +177,19 @@
       "date": "Date",
       "order": "Order",
       "reference": "Reference",
-      "finish": "Finish"
+      "finish": "Finish",
+      "amountLabel": "Amount",
+      "dateLabel": "Date",
+      "orderLabel": "Order",
+      "referenceLabel": "Reference"
+    },
+
+    "empty": {
+      "title": "No payment method",
+      "desc": "Add a payment method to pay faster.",
+      "cta": "Make a top-up"
     }
-  },    
-
-
-
+  },
 
   "country": {
     "af": "Afghanistan",
@@ -108,23 +200,25 @@
     "es": "Spain"
   },
 
+  "history": {
+    "empty": "No history"
+  },
+
+  "menu": {
+    "history": "History"
+  },
+
   "about": {
-    "description": "Simple and fast mobile top-up application.",
+    "description": "Simple and fast mobile top-up app.",
     "privacy": "Privacy policy",
     "terms": "Terms of use"
   },
- "profile": {
-  "name": "Name",
-  "email": "Email",
-  "phone": "Phone",
-  "birthdate": "Birth date",
-  "not_defined": "Not defined"
-},
-   
-    "expiry": "Expiry",
-    "empty": {
-      "title": "No payment method",
-      "desc": "Add a payment method to pay faster.",
-      "cta": "Send recharge"
-    }
+
+  "profile": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "birthdate": "Date of birth",
+    "not_defined": "Not defined"
   }
+}

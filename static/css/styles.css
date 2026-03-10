@@ -132,7 +132,7 @@ Side menu RIGHT — FINAL
 
 /* Auth item bottom */
 .side-menu-content .auth-item{
-    margin-top:auto;
+    margin-top:0;
 }
 
 /* =========================
@@ -217,8 +217,9 @@ Language buttons — FINAL COMPACT
 
   width: 100%;
   padding: 10px 0px; /* ⬅️ plus petit */
-  .tz-lang-btn {
-  padding-left: 18px; /* ⬅️ décale un peu vers la gauche */
+/* Language button safe fix */
+.tz-lang-btn{
+  padding-left:18px;
 }
   border-radius: 10px; /* ⬅️ moins arrondi */
   border: 1px solid var(--tz-border, rgba(0,0,0,0.12));
@@ -487,4 +488,1145 @@ Payment methods
   align-items:center;
   justify-content:center;
   font-size:40px;
+}
+
+
+/* ---------------------------
+# Auth UI — Pro (Tikzok)
+--------------------------- */
+.tz-auth { max-width:420px; margin:0 auto; padding:24px 16px; }
+.tz-auth__header { text-align:center; margin:10px 0 18px; }
+.tz-auth__title { font-size:20px; font-weight:900; margin:0 0 6px; }
+.tz-auth__subtitle { font-size:13px; color:rgba(0,0,0,.55); margin:0; }
+
+.tz-auth-card { background:#fff; border-radius:18px; padding:16px; box-shadow:0 3px 8px rgba(0,0,0,.08); }
+
+.tz-field { display:grid; gap:8px; margin-bottom:12px; }
+.tz-label { font-weight:800; font-size:13px; }
+
+.tz-input { width:100%; padding:12px; border-radius:14px; border:1px solid rgba(0,0,0,.18); background:#fff;
+  transition:border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
+.tz-input:focus { outline:none; border-color:rgba(33,150,243,.55); box-shadow:0 0 0 4px rgba(33,150,243,.12); }
+.tz-input--error { border-color:rgba(244,67,54,.7); }
+
+.tz-help { margin-top:6px; font-size:12px; }
+.tz-help--muted { color:rgba(0,0,0,.55); }
+.tz-help--error { color:#c62828; font-weight:800; }
+.tz-help--ok { color:#2e7d32; font-weight:800; }
+
+.tz-primary-btn { width:100%; height:52px; border-radius:30px; background:#2196f3; color:#fff; border:0;
+  font-weight:900; display:flex; align-items:center; justify-content:center; text-decoration:none;
+  transition:transform 120ms ease, opacity 120ms ease, filter 120ms ease; }
+.tz-primary-btn:hover { filter:brightness(.98); }
+.tz-primary-btn:active { transform:scale(.99); opacity:.92; }
+.tz-primary-btn[disabled], .tz-primary-btn.is-loading { opacity:.60; cursor:not-allowed; }
+
+.tz-btn-loader { width:18px; height:18px; border-radius:999px; border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff; animation:tzspin .75s linear infinite; margin-right:10px; }
+@keyframes tzspin { to { transform:rotate(360deg); } }
+
+.tz-link-btn { background:transparent; border:0; padding:10px 8px; border-radius:12px; cursor:pointer;
+  color:#2196f3; font-weight:900; text-decoration:none;
+  transition:transform 120ms ease, background 120ms ease, opacity 120ms ease; }
+.tz-link-btn:hover { background:rgba(33,150,243,.06); }
+.tz-link-btn:active { transform:scale(.98); opacity:.7; }
+
+.tz-resend { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; }
+.tz-badge { font-size:12px; font-weight:900; padding:6px 10px; border-radius:999px;
+  background:rgba(0,0,0,.06); color:rgba(0,0,0,.65); }
+
+.tz-otp__input { text-align:center; font-size:18px; font-weight:900; letter-spacing:.12em; }
+
+/* ---------------------------
+# Fix: remove invalid nested CSS for tz-lang-btn
+--------------------------- */
+.tz-auth .tz-stack { display:flex; flex-direction:column; gap:8px; }
+
+.tz-lang-btn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:10px 0; padding-left:18px;
+  border-radius:10px;
+  border:1px solid var(--tz-border, rgba(0,0,0,0.12));
+  background:var(--tz-surface, #fff);
+  text-decoration:none; font-size:13px;
+  transform:translateZ(0);
+  transition:transform 120ms ease, box-shadow 120ms ease, background 120ms ease, opacity 120ms ease;
+  will-change:transform;
+}
+.tz-lang-btn:active{ transform:scale(.97); }
+.tz-lang-btn:hover{ transform:scale(1.01); box-shadow:0 4px 12px rgba(0,0,0,0.06); }
+.tz-lang-btn.is-active{ font-weight:700; border-color:var(--tz-primary, #111); background:var(--tz-primary-soft, rgba(0,0,0,0.05)); }
+
+/* =====================================================
+   FINAL SAFE PATCH — Auth stability
+   ===================================================== */
+
+/* tz-input unified focus */
+.tz-input:focus{
+  outline:none;
+  border-color:rgba(33,150,243,.55);
+  box-shadow:0 0 0 4px rgba(33,150,243,.12);
+}
+
+/* auth stack scoped only */
+.tz-auth .tz-stack{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+/* loading state used by auth.js + future payment */
+.tz-primary-btn.is-loading{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+/* confirm secondary button */
+.tz-btn-secondary{
+  background:#eee;
+  color:#111;
+}
+
+.tz-btn-secondary:hover{
+  background:#e5e5e5;
+}
+/* select pays */
+.tz-country-row.is-selected {
+  background: rgba(33,150,243,.12);
+  font-weight: 700;
+}
+
+/* ---------------------------
+# Auth UI — Light (White/Black) SAFE OVERRIDE
+# (à coller tout en bas du fichier)
+--------------------------- */
+
+/* Page auth: plus aéré, look premium */
+.tz-auth{
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 28px 16px;
+}
+
+.tz-auth__header{
+  text-align: center;
+  margin: 12px 0 22px;
+}
+
+.tz-auth__title{
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  color: #111;
+}
+
+.tz-auth__subtitle{
+  font-size: 14px;
+  margin: 0;
+  color: rgba(0,0,0,.58);
+  line-height: 1.45;
+}
+
+/* Card plus “fintech”, plus douce */
+.tz-auth-card{
+  background: #fff;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 12px 34px rgba(0,0,0,.08);
+  border: 1px solid rgba(0,0,0,.06);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+@media (hover:hover){
+  .tz-auth-card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 18px 44px rgba(0,0,0,.10);
+  }
+}
+
+/* Stack boutons plus clean */
+.tz-auth .tz-stack{
+  display: grid;
+  gap: 12px;
+}
+
+/* Bouton principal en noir (white/black) */
+.tz-auth .tz-primary-btn{
+  background: #111;
+  color: #fff;
+  height: 54px;
+  border-radius: 16px;
+  font-weight: 900;
+  transition: transform 120ms ease, opacity 120ms ease, filter 120ms ease;
+}
+
+@media (hover:hover){
+  .tz-auth .tz-primary-btn:hover{
+    filter: brightness(.96);
+    transform: translateY(-1px);
+  }
+}
+
+.tz-auth .tz-primary-btn:active{
+  transform: scale(.99);
+  opacity: .92;
+}
+
+/* Divider version “ligne + texte” (sans casser ta .tz-divider globale) */
+.tz-auth .tz-divider{
+  height: auto;
+  background: transparent;
+  margin: 18px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tz-auth .tz-divider::before,
+.tz-auth .tz-divider::after{
+  content:"";
+  flex:1;
+  height:1px;
+  background: rgba(0,0,0,.10);
+}
+
+/* Texte muted */
+.tz-auth .tz-help--muted{
+  color: rgba(0,0,0,.52);
+  text-align: center;
+  line-height: 1.45;
+}
+
+
+/* =========================
+AUTH — FLUTTER STYLE
+========================= */
+
+.tz-auth-flutter{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* =========================
+AUTH — Social position fix
+========================= */
+
+.tz-auth-social{
+  margin-top:18px;   /* rapproche du champ */
+  margin-bottom:14px;
+  padding:0;
+  display:flex;
+  justify-content:center;
+  gap:18px;
+}
+
+.tz-auth-appbar{
+  padding:16px;
+  text-align:center;
+  font-weight:600;
+  font-size:18px;
+  border-bottom:1px solid rgba(0,0,0,.05);
+}
+
+.tz-auth-body{
+  flex:1;
+  padding:24px;
+}
+
+.tz-auth-label{
+  font-size:16px;
+  font-weight:600;
+  display:block;
+  margin-bottom:8px;
+}
+
+.tz-auth-input-wrapper{
+  display:flex;
+  align-items:center;
+  border:1px solid rgba(0,0,0,.18);
+  border-radius:14px;
+  padding:0 14px;
+  height:54px;
+  transition:border-color .2s ease, box-shadow .2s ease;
+}
+
+.tz-auth-input-wrapper:focus-within{
+  border-color:#000;
+  box-shadow:0 0 0 3px rgba(0,0,0,.05);
+}
+
+.tz-auth-icon{
+  margin-right:10px;
+  font-size:18px;
+}
+
+.tz-auth-input{
+  border:none;
+  flex:1;
+  outline:none;
+  font-size:15px;
+}
+
+.tz-auth-error{
+  color:#d32f2f;
+  font-size:14px;
+  margin-top:6px;
+}
+
+/* BUTTON */
+
+.tz-auth-btn{
+  margin-top:20px;
+  width:100%;
+  height:54px;
+  border-radius:16px;
+  background:#000;
+  color:#fff;
+  font-weight:bold;
+  font-size:16px;
+  border:none;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+  transition:opacity .2s ease, transform .12s ease;
+}
+
+.tz-auth-btn:active{
+  transform:scale(.98);
+}
+
+.tz-auth-loader{
+  display:none;
+  position:absolute;
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff;
+  animation:tzspin .8s linear infinite;
+}
+
+.tz-auth-btn[data-loading="true"] .tz-auth-btn-text{
+  visibility:hidden;
+}
+
+.tz-auth-btn[data-loading="true"] .tz-auth-loader{
+  display:block;
+}
+
+@keyframes tzspin{
+  to{ transform:rotate(360deg); }
+}
+
+/* SOCIAL */
+
+.tz-auth-social{
+  padding:18px;
+  display:flex;
+  justify-content:center;
+  gap:20px;
+}
+
+.tz-auth-circle{
+  width:58px;
+  height:58px;
+  border-radius:50%;
+  border:1px solid rgba(0,0,0,.08);
+  background:#fff;
+  font-size:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+
+  box-shadow:
+    0 8px 20px rgba(0,0,0,.06),
+    0 2px 6px rgba(0,0,0,.04);
+
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    background .18s ease;
+}
+
+@media (hover:hover){
+  .tz-auth-circle:hover{
+    transform:translateY(-4px);
+    box-shadow:
+      0 14px 28px rgba(0,0,0,.10),
+      0 4px 10px rgba(0,0,0,.06);
+  }
+}
+
+.tz-auth-circle:active{
+  transform:scale(.92);
+}
+
+/* ---------------------------
+# AUTH FLUTTER — loader centered
+--------------------------- */
+.tz-auth-btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.tz-auth-loader{
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+/* =========================
+AUTH — FINAL PREMIUM LAYOUT
+========================= */
+
+.tz-auth-flutter{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+.tz-auth-body{
+  padding:24px;
+}
+
+/* =========================
+AUTH — SOCIAL UNDER BUTTON
+========================= */
+
+.tz-auth-social{
+  margin-top:32px;
+  padding:0 24px 40px;
+  display:flex;
+  justify-content:center;
+  gap:18px;
+}
+
+/* =========================
+AUTH — Social brand polish
+========================= */
+
+.tz-auth-circle svg{
+  display:block;
+}
+
+.tz-auth-circle{
+  background:#fff;
+}
+
+/* Google plus net */
+.tz-auth-circle[aria-label="Google"]{
+  background:#fff;
+}
+
+/* Facebook fond légèrement bleu */
+.tz-auth-circle[aria-label="Facebook"]{
+  background:#f0f4ff;
+}
+
+/* ---------------------------
+# Gmail Overlay Suggestion
+--------------------------- */
+
+.tz-email-container{
+  position:relative;
+  width:100%;
+}
+
+.tz-email-input{
+  background:transparent;
+  position:relative;
+  z-index:2;
+}
+
+.tz-email-overlay{
+  position:absolute;
+  left:0;
+  top:0;
+  height:100%;
+  display:flex;
+  align-items:center;
+  padding-left:2px;
+  font-size:15px;
+  color:rgba(0,0,0,.35);
+  pointer-events:none;
+  z-index:1;
+  white-space:nowrap;
+}
+
+/* ---------------------------
+# Gmail Preview Above Input
+--------------------------- */
+
+.tz-gmail-preview{
+  font-size:14px;
+  font-weight:500;
+  color:#2196f3;
+  margin-bottom:6px;
+  min-height:18px;
+  transition:opacity .15s ease;
+}
+
+/* ---------------------------
+# Gmail Suggest Button
+--------------------------- */
+
+.tz-gmail-suggest-btn{
+  width:100%;
+  text-align:left;
+  padding:10px 14px;
+  margin-bottom:8px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.08);
+  background:#f5f7ff;
+  color:#2196f3;
+  font-weight:600;
+  font-size:14px;
+  cursor:pointer;
+  transition:transform .12s ease, opacity .12s ease, background .15s ease;
+}
+
+.tz-gmail-suggest-btn:hover{
+  background:#e9edff;
+}
+
+.tz-gmail-suggest-btn:active{
+  transform:scale(.98);
+  opacity:.8;
+}
+
+/* =========================
+   Premium Side Menu
+========================= */
+
+.tz-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.tz-menu-item:hover {
+  background: rgba(0,0,0,0.04);
+  transform: translateX(4px);
+}
+
+.tz-menu-left {
+  width: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tz-menu-icon {
+  font-size: 18px;
+  transition: transform 0.25s ease;
+}
+
+.tz-menu-item:hover .tz-menu-icon {
+  transform: scale(1.2);
+}
+
+.tz-menu-center {
+  flex: 1;
+  margin-left: 10px;
+}
+
+.tz-menu-title {
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.tz-menu-arrow {
+  opacity: 0.4;
+  transition: transform 0.2s ease;
+}
+
+.tz-menu-item:hover .tz-menu-arrow {
+  transform: translateX(4px);
+}
+
+/* Badge animé */
+
+.tz-menu-badge {
+  background: #007bff;
+  color: white;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  margin-right: 8px;
+  animation: tzBadgePop 0.4s ease;
+}
+
+@keyframes tzBadgePop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* =========================
+   Unified Side Menu Design
+========================= */
+
+.tz-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.25s ease;
+  margin-bottom: 6px;
+}
+
+.tz-menu-item:hover {
+  background: rgba(0,0,0,0.04);
+  transform: translateX(4px);
+}
+
+.tz-menu-left {
+  width: 36px;
+  font-size: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tz-menu-center {
+  flex: 1;
+  margin-left: 10px;
+}
+
+.tz-menu-title {
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.tz-menu-sub {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.tz-menu-arrow {
+  opacity: 0.4;
+  font-size: 14px;
+}
+
+.tz-menu-badge {
+  background: #007bff;
+  color: white;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  margin-right: 8px;
+  animation: tzBadgePop 0.4s ease;
+}
+
+.tz-login {
+  margin-top: 12px;
+}
+
+.tz-logout {
+  margin-top: 12px;
+  color: #d9534f;
+}
+
+@keyframes tzBadgePop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+/* =========================
+   iOS Style Slide Menu
+========================= */
+
+.side-menu {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 85%;
+  max-width: 380px;
+  height: 100vh;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+  transition: right 0.35s cubic-bezier(.22,.61,.36,1);
+  z-index: 9999;
+}
+
+.side-menu.open {
+  right: 0;
+}
+
+/* Overlay sombre */
+.side-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.25);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 9998;
+  pointer-events: none;
+}
+
+.side-menu-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* =========================
+   History Page
+========================= */
+
+.tz-page-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+.tz-history-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+  margin-bottom: 12px;
+  transition: all 0.25s ease;
+}
+
+.tz-history-card:hover {
+  transform: translateY(-3px);
+}
+
+.tz-history-phone {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.tz-history-date {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 4px;
+}
+
+.tz-history-amount {
+  font-weight: 600;
+  font-size: 15px;
+  color: #28a745;
+}
+
+.tz-empty-card {
+  padding: 24px;
+  border-radius: 16px;
+  background: #f8f9fa;
+  text-align: center;
+  opacity: 0.7;
+}
+/* =========================
+   History Header
+========================= */
+
+.tz-history-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.tz-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.05);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tz-close-btn:hover {
+  background: rgba(0,0,0,0.1);
+  transform: scale(1.05);
+}
+
+.tz-close-btn:active {
+  transform: scale(0.95);
+}
+
+/* =========================
+   Empty state
+========================= */
+
+.tz-empty-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.tz-empty-text {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* =========================
+   Auth AppBar Upgrade
+========================= */
+
+.tz-auth-appbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 16px 20px;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.tz-auth-close {
+  position: absolute;
+  left: 16px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.05);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tz-auth-close:hover {
+  background: rgba(0,0,0,0.1);
+  transform: scale(1.05);
+}
+
+.tz-auth-close:active {
+  transform: scale(0.95);
+}
+
+
+/* Menu pressed animation */
+.tz-menu-item.is-pressed {
+  transform: scale(0.97);
+}
+
+/* Avatar hover interaction  profile*/
+
+.tz-avatar-upload{
+  transition: transform .15s ease;
+}
+
+.tz-avatar-upload:active{
+  transform: scale(.95);
+}
+
+/* Avatar preview animation */
+
+.tz-avatar-img{
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.tz-avatar-img:hover{
+  transform: scale(1.03);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+}
+
+/* ---------------------------
+Menu user header profile
+--------------------------- */
+
+.tz-menu-user{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:18px;
+  border-bottom:1px solid rgba(0,0,0,0.06);
+  text-decoration:none;
+}
+
+.tz-menu-avatar{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  overflow:hidden;
+  background:#eee;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.tz-menu-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.tz-menu-avatar-placeholder{
+  font-size:20px;
+}
+
+.tz-menu-user-info{
+  flex:1;
+}
+
+.tz-menu-user-name{
+  font-weight:600;
+}
+
+.tz-menu-user-sub{
+  font-size:12px;
+  opacity:0.6;
+}
+
+/* ---------------------------
+Auth glass buttons
+--------------------------- */
+
+.tz-menu-auth{
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.tz-glass-btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  padding:12px;
+  border-radius:14px;
+
+  font-weight:600;
+  text-decoration:none;
+
+  backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.15);
+  border:1px solid rgba(255,255,255,0.25);
+
+  transition:all .25s ease;
+}
+
+.tz-glass-btn:hover{
+  transform:translateY(-2px);
+}
+
+.tz-login-btn{
+  color:#1e6bff;
+}
+
+.tz-logout-btn{
+  color:#ff3b3b;
+}
+
+/* ---------------------------
+Forfait card
+--------------------------- */
+
+.tz-forfait-card{
+cursor:pointer;
+transition:all .2s ease;
+}
+
+.tz-forfait-card:hover{
+transform:translateY(-2px);
+box-shadow:0 6px 18px rgba(0,0,0,0.08);
+}
+
+.tz-forfait-icon{
+width:42px;
+height:42px;
+border-radius:50%;
+background:#f3e8ff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:18px;
+}
+
+.tz-forfait-price{
+background:#7c3aed;
+color:white;
+padding:6px 14px;
+border-radius:18px;
+font-weight:600;
+}
+
+/* ---------------------------
+Operator list
+--------------------------- */
+
+.tz-operator-btn{
+cursor:pointer;
+transition:transform .12s ease, box-shadow .12s ease;
+}
+
+.tz-operator-btn:hover{
+box-shadow:0 3px 8px rgba(0,0,0,.06);
+}
+
+.tz-operator-btn:active{
+transform:scale(.96);
+}
+
+.tz-operator-logo{
+width:34px;
+height:34px;
+object-fit:contain;
+}
+
+/* ---------------------------
+   Feature: Auth Name Field
+--------------------------- */
+
+.tz-auth-name {
+  margin-bottom: 14px;
+}
+
+.tz-auth-name .tz-auth-input-wrapper {
+  position: relative;
+}
+
+.tz-auth-name .tz-auth-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: 0.6;
+}
+
+.tz-auth-name .tz-auth-input {
+  padding-left: 40px;
+}
+
+/* ---------------------------
+Navbar greeting (Bonjour John)
+--------------------------- */
+
+.tz-navbar-left{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.tz-navbar-left .tz-strong{
+  font-size:16px;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* animation légère */
+.tz-navbar-left .tz-strong{
+  animation: tzGreetingFade .35s ease;
+}
+
+@keyframes tzGreetingFade{
+  from{
+    opacity:0;
+    transform:translateY(4px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+/* Navbar greeting animation */
+
+.tz-navbar-left .tz-strong{
+  animation: tzGreetingFade .35s ease;
+}
+
+@keyframes tzGreetingFade{
+  from{
+    opacity:0;
+    transform:translateY(4px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+/* =========================
+Card actions menu (⋯)
+========================= */
+
+.tz-card-item-right{
+  position:relative;
+}
+
+/* bouton 3 points */
+.tz-menu-btn{
+  background:none;
+  border:none;
+  font-size:20px;
+  cursor:pointer;
+  padding:4px 8px;
+  border-radius:10px;
+  transition:background .15s ease, transform .12s ease;
+}
+
+.tz-menu-btn:hover{
+  background:rgba(0,0,0,.05);
+}
+
+.tz-menu-btn:active{
+  transform:scale(.92);
+}
+
+/* dropdown */
+.tz-menu-dropdown{
+  display:none;
+  position:absolute;
+  right:0;
+  top:32px;
+  background:#fff;
+  border-radius:14px;
+  box-shadow:0 10px 28px rgba(0,0,0,0.12);
+  min-width:170px;
+  padding:6px;
+  z-index:30;
+}
+
+/* menu visible */
+.tz-menu-dropdown.open{
+  display:block;
+}
+
+/* item */
+.tz-menu-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:10px;
+  text-decoration:none;
+  color:inherit;
+  font-size:14px;
+  transition:background .15s ease, transform .12s ease;
+}
+
+.tz-menu-item:hover{
+  background:rgba(0,0,0,.05);
+}
+
+.tz-menu-item:active{
+  transform:scale(.97);
+}
+
+/* danger */
+.tz-menu-danger{
+  color:#d32f2f;
 }

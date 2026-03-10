@@ -1,0 +1,84 @@
+{# ---------------------------
+   Feature: Select Forfait
+--------------------------- #}
+{% extends "base.html" %}
+{% block title %}{{ t("recharge.selectForfait.title") }}{% endblock %}
+
+{% block content %}
+<div class="tz-page tz-container">
+
+  <h1 class="tz-title">
+    {{ t("recharge.selectForfait.title") }}
+  </h1>
+
+  <div class="tz-stack">
+
+    {% set forfaits = [
+      {"title":"internet","gb":"1 Go","duration":"7","price":"5"},
+      {"title":"internet","gb":"5 Go","duration":"15","price":"10"},
+      {"title":"internet","gb":"10 Go","duration":"30","price":"20"},
+      {"title":"internet","gb":"20 Go","duration":"30","price":"35"}
+    ] %}
+
+    {% for f in forfaits %}
+    <button
+      class="tz-card tz-forfait-card"
+      type="button"
+      data-gb="{{ f.gb }}"
+      data-price="{{ f.price }}"
+      onclick="selectForfait(this)">
+
+      <div class="tz-row">
+
+        <div class="tz-forfait-icon">
+          📶
+        </div>
+
+        <div class="tz-grow">
+          <div class="tz-strong">
+            {{ t("recharge.selectForfait.internet") }} • {{ f.gb }}
+          </div>
+
+          <div class="tz-small tz-muted">
+            {{ t("recharge.selectForfait.days", {"days": f.duration}) }}
+          </div>
+        </div>
+
+        <div class="tz-forfait-price">
+          {{ f.price }} €
+        </div>
+
+      </div>
+
+    </button>
+    {% endfor %}
+
+  </div>
+
+</div>
+
+<script>
+
+function selectForfait(btn){
+
+  const gb = btn.dataset.gb
+  const price = btn.dataset.price
+
+  fetch("{{ url_for('recharge.select_forfait_post') }}",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      gb:gb,
+      price:price
+    })
+  }).then(()=>{
+    window.location.href="{{ url_for('recharge.select_amount_get') }}"
+  })
+
+}
+
+</script>
+
+{% endblock %}

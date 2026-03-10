@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("payment.editCard") }}{% endblock %}
+
+{% block content %}
+
+<div class="tz-page tz-container">
+
+<h1 class="tz-title">
+{{ t("payment.editCard") }}
+</h1>
+
+<form method="post" class="tz-stack">
+
+<div class="tz-card">
+
+<div class="tz-field">
+<label class="tz-label">{{ t("payment.card.holderName") }}</label>
+<input class="tz-input"
+       name="card_name"
+       value="{{ card.name|default('') }}">
+</div>
+
+<div class="tz-field">
+<label class="tz-label">{{ t("payment.card.number") }}</label>
+<input class="tz-input"
+       name="card_number"
+       placeholder="•••• •••• •••• {{ card.last4 }}">
+</div>
+
+<div class="tz-field">
+<label class="tz-label">{{ t("payment.card.expiry") }}</label>
+<input class="tz-input"
+       name="card_expiry"
+       value="{{ card.expiry }}">
+</div>
+
+</div>
+
+<button class="tz-primary-btn">
+{{ t("common.save") }}
+</button>
+
+</form>
+
+</div>
+
+{% endblock %}

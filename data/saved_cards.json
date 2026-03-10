@@ -1,0 +1,82 @@
+[
+  {
+    "id": "1d6d4be16eaa46ef89210e33c6799be9",
+    "token": "tok_d866c0b5b0aa42b5",
+    "last4": "6224",
+    "expiry": "11/25",
+    "brand": "card",
+    "created_at": "2026-03-09T19:51:30.029967"
+  },
+  {
+    "id": "c62740b6c2dc42c3a6088d58503e9603",
+    "token": "tok_d6136b51e1ac442b",
+    "last4": "5152",
+    "expiry": "11/25",
+    "brand": "card",
+    "created_at": "2026-03-09T19:54:49.605362"
+  },
+  {
+    "id": "5800f0bceb1546a89ddbf214feb760a4",
+    "token": "tok_08689a4000ea4f92",
+    "last4": "5161",
+    "expiry": "11/25",
+    "brand": "card",
+    "created_at": "2026-03-09T21:06:06.758126"
+  },
+  {
+    "id": "f12a9e2e999b4fdeb6adc50aaff002de",
+    "token": "tok_450833f7a48746fb",
+    "last4": "5110",
+    "expiry": "11/25",
+    "brand": "card",
+    "created_at": "2026-03-09T21:07:58.175981"
+  },
+  {
+    "id": "d726a954bbd241939e8b8f6659b6c3e6",
+    "token": "tok_d7639f007bcf48d1",
+    "last4": "5313",
+    "expiry": "11/25",
+    "brand": "card",
+    "created_at": "2026-03-09T21:16:02.068715"
+  },
+  {
+    "id": "cacaef4c5ab84edab552940841f26934",
+    "token": "tok_630b5f1792bd42f6",
+    "last4": "4885",
+    "expiry": "11/25",
+    "brand": "card",
+    "created_at": "2026-03-09T21:22:11.742598"
+  },
+  {
+    "id": "86ab9b6d08de424f91bbc76bdb0d2c4e",
+    "token": "tok_908ef85e5f5a4729",
+    "last4": "4515",
+    "expiry": "11/22",
+    "brand": "card",
+    "created_at": "2026-03-09T21:33:13.151847"
+  },
+  {
+    "id": "39eef19fbc6c4f2e8aa267ee35f18344",
+    "token": "tok_11f2d6e26ddf4621",
+    "last4": "3443",
+    "expiry": "11/25",
+    "brand": "card",
+    "created_at": "2026-03-10T19:14:12.752167"
+  },
+  {
+    "id": "80b45a7d37b641f98bf298883cb5ec44",
+    "token": "tok_44cb8e493fc840a2",
+    "last4": "5114",
+    "expiry": "11/23",
+    "brand": "card",
+    "created_at": "2026-03-10T19:20:41.210458"
+  },
+  {
+    "id": "d4232b78185a4757bbf6314e96d69d85",
+    "token": "tok_52245e947e884876",
+    "last4": "1554",
+    "expiry": "11/23",
+    "brand": "card",
+    "created_at": "2026-03-10T19:24:50.683240"
+  }
+]

@@ -141,3 +141,10 @@ def quote_local_amount(operator_id: int, amount: float) -> dict:
         "localCurrency": "EUR",
         "ts": int(time.time()),
     }
+import hashlib
+import time
+
+
+def generate_idempotency(user_id, phone, amount):
+    raw = f"{user_id}:{phone}:{amount}:{int(time.time() // 60)}"
+    return hashlib.sha256(raw.encode()).hexdigest()

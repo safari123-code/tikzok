@@ -1,15 +1,71 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="auth-page">
+<div class="tz-auth">
 
-<h2>Code → {{ email }}</h2>
+  <div class="tz-auth__header">
+    <h1 class="tz-auth__title">
+      {{ t("auth.otp_title") }}
+    </h1>
 
-<form method="post">
-<input class="auth-input" placeholder="code">
-<button class="auth-btn">{{ t("common.continue") }}</button>
-</form>
+    <p class="tz-auth__subtitle">
+      {{ t("auth.otp_sent_to") }}
+      <span class="tz-strong">{{ email }}</span>
+    </p>
+  </div>
+
+  <div class="tz-auth-card">
+
+    <form method="post" data-tz-form>
+
+      <div class="tz-field">
+
+        <label class="tz-label" for="code">
+          {{ t("auth.otp_label") }}
+        </label>
+
+        <input
+          id="code"
+          name="code"
+          class="tz-input tz-otp__input{% if error %} tz-input--error{% endif %}"
+          placeholder="{{ t('auth.otp_placeholder') }}"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          pattern="[0-9]*"
+          maxlength="6"
+          data-tz-otp
+          autofocus
+          required
+        />
+
+        {% if error %}
+        <div class="tz-help tz-help--error">
+          {{ t("auth.otp_invalid") }}
+        </div>
+        {% else %}
+        <div class="tz-help tz-help--muted">
+          {{ t("auth.otp_help") }}
+        </div>
+        {% endif %}
+
+      </div>
+
+      <button type="submit" class="tz-primary-btn" data-tz-submit>
+        {{ t("common.continue") }}
+      </button>
+
+      <div class="tz-resend" style="margin-top:15px;">
+        <a class="tz-link-btn" href="{{ url_for('auth.login') }}">
+          {{ t("auth.change_email") }}
+        </a>
+      </div>
+
+    </form>
+
+  </div>
 
 </div>
+
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 
 {% endblock %}

@@ -2,3 +2,32 @@ function tzCloseAbout(){
   document.body.style.opacity = "0";
   setTimeout(()=> history.back(),150);
 }
+
+// ---------------------------
+// Gmail suggestion button (FINAL)
+// ---------------------------
+document.addEventListener("DOMContentLoaded", function () {
+
+  const input = document.getElementById("emailInput");
+  const btn = document.getElementById("gmailSuggestBtn");
+
+  if (!input || !btn) return;
+
+  input.addEventListener("input", function () {
+    const value = input.value.trim();
+
+    if (value && !value.includes("@")) {
+      btn.textContent = value + "@gmail.com";
+      btn.style.display = "block";
+    } else {
+      btn.style.display = "none";
+    }
+  });
+
+  btn.addEventListener("click", function () {
+    input.value = btn.textContent;
+    btn.style.display = "none";
+    input.focus();
+  });
+
+});

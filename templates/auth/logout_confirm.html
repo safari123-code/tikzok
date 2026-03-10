@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="tz-auth">
+
+  <div class="tz-auth-card tz-stack">
+
+    <div class="tz-auth__header">
+      <div class="tz-auth__title">{{ t("auth.logout") }}</div>
+      <div class="tz-auth__subtitle">
+        {{ t("auth.logout_confirm") }}
+      </div>
+    </div>
+
+<div class="tz-row tz-row--gap">
+
+  <a href="{{ url_for('recharge.enter_number_get') }}" class="tz-primary-btn tz-btn-secondary tz-grow">
+    {{ t("common.no") }}
+  </a>
+
+  <a href="{{ url_for('auth.logout') }}" class="tz-primary-btn tz-grow">
+    {{ t("common.yes") }}
+  </a>
+
+</div>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
