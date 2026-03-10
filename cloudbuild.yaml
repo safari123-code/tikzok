@@ -1,35 +1,44 @@
 # ---------------------------
+
 # Cloud Run auto deploy
+
 # ---------------------------
+
 steps:
-  - name: "gcr.io/cloud-builders/docker"
-    args:
-      [
-        "build",
-        "-t",
-        "europe-west1-docker.pkg.dev/PROJECT_ID/app/tikzok:$COMMIT_SHA",
-        "."
-      ]
 
-  - name: "gcr.io/cloud-builders/docker"
-    args:
-      [
-        "push",
-        "europe-west1-docker.pkg.dev/PROJECT_ID/app/tikzok:$COMMIT_SHA"
-      ]
+* name: "gcr.io/cloud-builders/docker"
+  args:
+  [
+  "build",
+  "-t",
+  "europe-west1-docker.pkg.dev/tikzok-pro/cloud-run-source-deploy/tikzok:$COMMIT_SHA",
+  "."
+  ]
 
-  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-    entrypoint: gcloud
-    args:
-      [
-        "run",
-        "deploy",
-        "tikzok",
-        "--image",
-        "europe-west1-docker.pkg.dev/PROJECT_ID/app/tikzok:$COMMIT_SHA",
-        "--region",
-        "europe-west1",
-        "--platform",
-        "managed",
-        "--quiet"
-      ]
+* name: "gcr.io/cloud-builders/docker"
+  args:
+  [
+  "push",
+  "europe-west1-docker.pkg.dev/tikzok-pro/cloud-run-source-deploy/tikzok:$COMMIT_SHA"
+  ]
+
+* name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+  entrypoint: gcloud
+  args:
+  [
+  "run",
+  "deploy",
+  "tikzok",
+  "--image",
+  "europe-west1-docker.pkg.dev/tikzok-pro/cloud-run-source-deploy/tikzok:$COMMIT_SHA",
+  "--region",
+  "europe-west1",
+  "--platform",
+  "managed",
+  "--allow-unauthenticated",
+  "--quiet"
+  ]
+
+images:
+
+* "europe-west1-docker.pkg.dev/tikzok-pro/cloud-run-source-deploy/tikzok:$COMMIT_SHA"
