@@ -8,12 +8,7 @@ from datetime import datetime
 from flask import Flask, session, request, g, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Optional dotenv (local dev only)
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except Exception:
-    pass
+
 
 import config
 
