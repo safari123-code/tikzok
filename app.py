@@ -7,7 +7,13 @@ from datetime import datetime
 
 from flask import Flask, session, request, g, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
-from dotenv import load_dotenv
+
+# Optional dotenv (local dev only)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
 
 import config
 
@@ -17,9 +23,6 @@ from routes.auth import auth_bp
 from routes.i18n import bp as i18n_bp
 from routes.account import account_bp
 from routes.history import history_bp
-
-
-load_dotenv()
 
 
 # ---------------------------
