@@ -4,14 +4,31 @@
 
 FROM python:3.11-slim
 
+# ---------------------------
+# Workdir
+# ---------------------------
 WORKDIR /app
 
+# ---------------------------
+# Install dependencies
+# ---------------------------
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# ---------------------------
+# Copy project
+# ---------------------------
 COPY . .
 
-ENV PORT=8080
+# ---------------------------
+# Environment
+# ---------------------------
 ENV PYTHONUNBUFFERED=1
 
-CMD ["gunicorn","-b","0.0.0.0:8080","app:app"]
+# Cloud Run fournit automatiquement PORT
+ENV PORT=8080
+
+# ---------------------------
+# Start server
+# ---------------------------
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 app:app
