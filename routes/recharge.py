@@ -18,7 +18,8 @@ from services.recharge_service import (
 
 from services.reloadly_service import (
     get_reloadly_operators_by_country,
-    lookup_phone_number
+    lookup_phone_number,
+    get_reloadly_plans
 )
 
 from services.currency_service import CurrencyService
@@ -34,21 +35,48 @@ recharge_bp = Blueprint("recharge", __name__, url_prefix="/recharge")
 
 @recharge_bp.get("/select-forfait")
 def select_forfait_get():
-    return render_template("recharge/select_forfait.html")
 
+    phone = session.get("recharge_phone")
+
+    if not phone:
+        return redirect(url_for("recharge.enter_number_get"))
+
+    country_iso = detect_country_iso_from_phone(phone)
+
+    operator = get_reloadly_operator_auto_detect(phone, country_iso)
+
+    plans = []
+
+    if operator and operator.get("id"):
+        plans = get_reloadly_plans(operator["id"])
+
+    return render_template(
+        "recharge/select_forfait.html",
+        plans=plans
+    )
+
+# ---------------------------
+# Select Forfait (POST)
+# ---------------------------
 
 @recharge_bp.post("/select-forfait")
 def select_forfait_post():
 
     data = request.get_json(silent=True) or {}
 
+    gb = data.get("gb")
+    price = data.get("price")
+
+    if not gb or not price:
+        return jsonify({"ok": False}), 400
+
+    # stocker forfait choisi
     session["recharge_forfait"] = {
-        "gb": data.get("gb"),
-        "price": data.get("price")
+        "gb": gb,
+        "price": price
     }
 
-    return {"success": True}
-
+    return jsonify({"ok": True})
 
 # ---------------------------
 # Country → City mapping

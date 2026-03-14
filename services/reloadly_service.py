@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 # ---------------------------
 # Config
 # ---------------------------
@@ -18,7 +17,6 @@ RELOADLY_BASE_URL = os.getenv(
     "RELOADLY_BASE_URL",
     "https://topups-sandbox.reloadly.com"
 )
-
 
 # ---------------------------
 # Token cache
@@ -36,7 +34,6 @@ def get_reloadly_token():
 
     global _reloadly_token, _token_expiry
 
-    # token encore valide
     if _reloadly_token and time.time() < _token_expiry:
         return _reloadly_token
 
@@ -55,16 +52,10 @@ def get_reloadly_token():
         "audience": RELOADLY_BASE_URL
     }
 
-    try:
-        res = requests.post(url, json=payload, timeout=10)
-        res.raise_for_status()
-        data = res.json()
+    res = requests.post(url, json=payload, timeout=10)
+    res.raise_for_status()
 
-    except requests.RequestException:
-        raise RuntimeError("Reloadly auth request failed")
-
-    except ValueError:
-        raise RuntimeError("Invalid response from Reloadly auth")
+    data = res.json()
 
     _reloadly_token = data.get("access_token")
 
@@ -100,17 +91,14 @@ def lookup_phone_number(phone: str, country: str):
 
         data = res.json()
 
-    except (requests.RequestException, ValueError):
+    except Exception:
         return None
 
     logos = data.get("logoUrls") or []
 
     logo_url = None
     if logos:
-        if isinstance(logos[0], dict):
-            logo_url = logos[0].get("url")
-        else:
-            logo_url = logos[0]
+        logo_url = logos[0]["url"] if isinstance(logos[0], dict) else logos[0]
 
     return {
         "operatorId": data.get("operatorId"),
@@ -119,6 +107,84 @@ def lookup_phone_number(phone: str, country: str):
         "countryName": (data.get("country") or {}).get("name"),
         "countryCode": (data.get("country") or {}).get("isoName")
     }
+
+
+# ---------------------------
+# Reloadly Plans
+# DATA + BUNDLES fallback
+# ---------------------------
+
+def get_reloadly_plans(operator_id: int):
+
+    token = get_reloadly_token()
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/com.reloadly.topups-v1+json"
+    }
+
+    plans = []
+
+    # ---------------------------
+    # DATA PLANS
+    # ---------------------------
+
+    try:
+
+        url = f"{RELOADLY_BASE_URL}/operators/{operator_id}/data-plans"
+
+        res = requests.get(url, headers=headers, timeout=15)
+
+        if res.status_code == 200:
+
+            data = res.json()
+
+            for p in data:
+
+                plans.append({
+                    "id": p.get("id"),
+                    "name": p.get("name"),
+                    "description": p.get("description"),
+                    "type": p.get("type") or "DATA",
+                    "amount": p.get("amount"),
+                    "currency": p.get("currencyCode"),
+                })
+
+    except Exception:
+        pass
+
+
+    # ---------------------------
+    # BUNDLES fallback
+    # ---------------------------
+
+    if not plans:
+
+        try:
+
+            url = f"{RELOADLY_BASE_URL}/operators/{operator_id}/bundles"
+
+            res = requests.get(url, headers=headers, timeout=15)
+
+            if res.status_code == 200:
+
+                data = res.json()
+
+                for p in data:
+
+                    plans.append({
+                        "id": p.get("id"),
+                        "name": p.get("name"),
+                        "description": p.get("description"),
+                        "type": p.get("type") or "COMBO",
+                        "amount": p.get("amount"),
+                        "currency": p.get("currencyCode"),
+                    })
+
+        except Exception:
+            pass
+
+    return plans
 
 
 # ---------------------------
@@ -145,7 +211,7 @@ def get_reloadly_operators_by_country(country_iso: str):
 
         data = res.json()
 
-    except (requests.RequestException, ValueError):
+    except Exception:
         return []
 
     operators = []
@@ -156,10 +222,7 @@ def get_reloadly_operators_by_country(country_iso: str):
 
         logo_url = None
         if logos:
-            if isinstance(logos[0], dict):
-                logo_url = logos[0].get("url")
-            else:
-                logo_url = logos[0]
+            logo_url = logos[0]["url"] if isinstance(logos[0], dict) else logos[0]
 
         operators.append({
             "id": op.get("operatorId"),

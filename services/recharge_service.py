@@ -15,8 +15,8 @@ import requests
 
 _PHONE_ALLOWED = re.compile(r"[^\d+]")
 
-
 def normalize_phone_e164_light(raw: str) -> str:
+
     if raw is None:
         return ""
 
@@ -30,7 +30,6 @@ def normalize_phone_e164_light(raw: str) -> str:
     if not s.startswith("+"):
         s = "+" + s
 
-    # garder + puis uniquement chiffres
     s = "+" + re.sub(r"[^\d]", "", s[1:])
 
     return s
@@ -40,7 +39,6 @@ def is_phone_length_valid(phone: str) -> bool:
 
     digits = re.sub(r"[^\d]", "", phone or "")
 
-    # E164 max = 15
     return 9 <= len(digits) <= 15
 
 
@@ -86,7 +84,7 @@ def _reloadly_headers() -> dict:
 
     return {
         "Authorization": f"Bearer {token}",
-        "Accept": "application/json",
+        "Accept": "application/com.reloadly.topups-v1+json",
     }
 
 
@@ -95,15 +93,6 @@ def _reloadly_headers() -> dict:
 # ---------------------------
 
 def get_reloadly_operator_auto_detect(phone: str, country_iso: str) -> dict:
-    """
-    Retourne
-    {
-        id,
-        name,
-        country_name,
-        logo_url
-    }
-    """
 
     phone = normalize_phone_e164_light(phone)
 
@@ -133,12 +122,11 @@ def get_reloadly_operator_auto_detect(phone: str, country_iso: str) -> dict:
         logo_urls = op.get("logoUrls") or []
 
         logo = None
-
         if isinstance(logo_urls, list) and len(logo_urls) > 0:
             logo = logo_urls[0]
 
         return {
-            "id": op.get("id"),
+            "id": op.get("operatorId"),
             "name": op.get("name"),
             "country_name": (op.get("country") or {}).get("name"),
             "logo_url": logo,
@@ -146,7 +134,6 @@ def get_reloadly_operator_auto_detect(phone: str, country_iso: str) -> dict:
         }
 
     except Exception:
-
         return {}
 
 
@@ -191,19 +178,20 @@ def get_reloadly_operator_amounts(operator_id: int) -> dict:
         }
 
     except Exception:
-
         return {}
 
 
 # ---------------------------
-# Quote (placeholder)
+# Quote fallback
 # ---------------------------
 
 def quote_local_amount(operator_id: int, amount: float) -> dict:
 
+    # fallback simple si Reloadly quote indisponible
+
     return {
-        "localAmount": round(float(amount), 2),
-        "localCurrency": "EUR",
+        "localAmount": round(float(amount) * 70),  # estimation AFN
+        "localCurrency": "AFN",
         "ts": int(time.time()),
     }
 

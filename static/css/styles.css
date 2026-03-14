@@ -1630,3 +1630,24 @@ Card actions menu (⋯)
 .tz-menu-danger{
   color:#d32f2f;
 }
+/* select forfait */
+.tz-tabs{
+display:flex;
+gap:8px;
+margin-bottom:14px;
+}
+
+.tz-tab{
+flex:1;
+padding:8px;
+border-radius:10px;
+border:1px solid #eee;
+background:white;
+cursor:pointer;
+font-size:14px;
+}
+
+.tz-tab.is-active{
+background:#f5f5ff;
+border-color:#cfcfff;
+}

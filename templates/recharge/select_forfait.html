@@ -11,60 +11,108 @@
     {{ t("recharge.selectForfait.title") }}
   </h1>
 
-  <div class="tz-stack">
+  {# ---------------------------
+     Tabs DATA / MINUTES / SMS
+  --------------------------- #}
+  <div class="tz-tabs" id="planTabs">
 
-    {% set forfaits = [
-      {"title":"internet","gb":"1 Go","duration":"7","price":"5"},
-      {"title":"internet","gb":"5 Go","duration":"15","price":"10"},
-      {"title":"internet","gb":"10 Go","duration":"30","price":"20"},
-      {"title":"internet","gb":"20 Go","duration":"30","price":"35"}
-    ] %}
+    <button class="tz-tab is-active" data-type="DATA">
+      📶 Data
+    </button>
 
-    {% for f in forfaits %}
-    <button
-      class="tz-card tz-forfait-card"
-      type="button"
-      data-gb="{{ f.gb }}"
-      data-price="{{ f.price }}"
-      onclick="selectForfait(this)">
+    <button class="tz-tab" data-type="VOICE">
+      📞 Minutes
+    </button>
 
-      <div class="tz-row">
+    <button class="tz-tab" data-type="SMS">
+      ✉️ SMS
+    </button>
 
-        <div class="tz-forfait-icon">
-          📶
-        </div>
+    <button class="tz-tab" data-type="COMBO">
+      📦 Combo
+    </button>
 
-        <div class="tz-grow">
-          <div class="tz-strong">
-            {{ t("recharge.selectForfait.internet") }} • {{ f.gb }}
+  </div>
+
+  {# ---------------------------
+     Plans list
+  --------------------------- #}
+  <div class="tz-stack" id="plansList">
+
+    {% if plans and plans|length > 0 %}
+
+      {% for f in plans %}
+
+      <button
+        class="tz-card tz-forfait-card"
+        type="button"
+        data-plan-type="{{ f.type }}"
+        data-gb="{{ f.description }}"
+        data-price="{{ f.amount }}"
+        onclick="selectForfait(this)">
+
+        <div class="tz-row">
+
+          <div class="tz-forfait-icon">
+
+            {% if f.type == "DATA" %}
+            📶
+            {% elif f.type == "VOICE" %}
+            📞
+            {% elif f.type == "SMS" %}
+            ✉️
+            {% else %}
+            📦
+            {% endif %}
+
           </div>
 
-          <div class="tz-small tz-muted">
-            {{ t("recharge.selectForfait.days", {"days": f.duration}) }}
+          <div class="tz-grow">
+
+            <div class="tz-strong">
+              {{ f.name }}
+            </div>
+
+            <div class="tz-small tz-muted">
+              {{ f.description }}
+            </div>
+
           </div>
+
+          <div class="tz-forfait-price">
+            {{ f.amount }} {{ f.currency }}
+          </div>
+
         </div>
 
-        <div class="tz-forfait-price">
-          {{ f.price }} €
-        </div>
+      </button>
 
+      {% endfor %}
+
+    {% else %}
+
+      <div class="tz-card tz-card--soft tz-muted">
+        No plans available
       </div>
 
-    </button>
-    {% endfor %}
+    {% endif %}
 
   </div>
 
 </div>
 
+
+{# ---------------------------
+   JS Select forfait
+--------------------------- #}
 <script>
 
-function selectForfait(btn){
+async function selectForfait(btn){
 
   const gb = btn.dataset.gb
   const price = btn.dataset.price
 
-  fetch("{{ url_for('recharge.select_forfait_post') }}",{
+  const res = await fetch("{{ url_for('recharge.select_forfait_post') }}",{
     method:"POST",
     headers:{
       "Content-Type":"application/json"
@@ -73,11 +121,49 @@ function selectForfait(btn){
       gb:gb,
       price:price
     })
-  }).then(()=>{
-    window.location.href="{{ url_for('recharge.select_amount_get') }}"
   })
 
+  const data = await res.json()
+
+  if(data.ok){
+    window.location.href="{{ url_for('recharge.select_amount_get') }}"
+  }
+
 }
+
+</script>
+
+
+{# ---------------------------
+   Tabs filter
+--------------------------- #}
+<script>
+
+const tabs = document.querySelectorAll(".tz-tab")
+const plans = document.querySelectorAll(".tz-forfait-card")
+
+tabs.forEach(tab => {
+
+  tab.addEventListener("click", () => {
+
+    const type = tab.dataset.type
+
+    tabs.forEach(t => t.classList.remove("is-active"))
+    tab.classList.add("is-active")
+
+    plans.forEach(plan => {
+
+      if(plan.dataset.planType === type){
+        plan.style.display = "block"
+      }else{
+        plan.style.display = "none"
+      }
+
+    })
+
+  })
+
+})
 
 </script>
 
