@@ -9,13 +9,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 # ---------------------------
 # Config
 # ---------------------------
 
 RELOADLY_BASE_URL = os.getenv(
     "RELOADLY_BASE_URL",
-    "https://topups-sandbox.reloadly.com"  # sandbox par défaut
+    "https://topups-sandbox.reloadly.com"
 )
 
 
@@ -51,7 +52,7 @@ def get_reloadly_token():
         "client_id": client_id,
         "client_secret": client_secret,
         "grant_type": "client_credentials",
-        "audience": "https://topups.reloadly.com"
+        "audience": RELOADLY_BASE_URL
     }
 
     try:
@@ -70,7 +71,6 @@ def get_reloadly_token():
     if not _reloadly_token:
         raise RuntimeError("Reloadly token missing")
 
-    # token expire dans 3600 sec
     _token_expiry = time.time() + data.get("expires_in", 3600) - 60
 
     return _reloadly_token
