@@ -8,6 +8,16 @@ import requests
 
 
 # ---------------------------
+# Config
+# ---------------------------
+
+RELOADLY_BASE_URL = os.getenv(
+    "RELOADLY_BASE_URL",
+    "https://topups-sandbox.reloadly.com"  # sandbox par défaut
+)
+
+
+# ---------------------------
 # Token cache
 # ---------------------------
 
@@ -72,7 +82,7 @@ def lookup_phone_number(phone: str, country: str):
 
     token = get_reloadly_token()
 
-    url = f"https://topups.reloadly.com/operators/auto-detect/phone/{phone}/countries/{country}"
+    url = f"{RELOADLY_BASE_URL}/operators/auto-detect/phone/{phone}/countries/{country}"
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -117,7 +127,7 @@ def get_reloadly_operators_by_country(country_iso: str):
 
     token = get_reloadly_token()
 
-    url = f"https://topups.reloadly.com/operators/countries/{country_iso.upper()}"
+    url = f"{RELOADLY_BASE_URL}/operators/countries/{country_iso.upper()}"
 
     headers = {
         "Authorization": f"Bearer {token}",
