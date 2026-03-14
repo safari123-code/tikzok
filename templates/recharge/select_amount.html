@@ -59,7 +59,7 @@
 <section class="tz-card tz-card--highlight"
  id="amountCard"
  data-tax-rate="{{ tax_rate }}"
- data-operator-id="{{ operator.id or '' }}"
+ data-operator-id="{{ operator.id or operator.operator_id or '' }}"
  data-points-rate="0.025"
  data-currency="{{ operator.currency_code or 'EUR' }}"
  data-rate="{{ currency_rate or 1 }}">
@@ -68,9 +68,9 @@
 
       <div class="tz-amount" id="amountDisplay">{{ "%.2f"|format(amount) }} €</div>
 
-      {% if fixed_amounts and fixed_amounts|length > 0 %}
+      {% if amounts.fixedAmounts and amounts.fixedAmounts|length > 0 %}
         <div class="tz-wrap" id="fixedAmountWrap">
-          {% for v in fixed_amounts %}
+          {% for v in amounts.fixedAmounts %}
             <button type="button"
                     class="tz-amt-btn {% if v == amount %}is-selected{% endif %}"
                     data-amount="{{ v }}">

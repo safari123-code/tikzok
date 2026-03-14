@@ -40,18 +40,18 @@
         <span class="tz-auth-icon">🔐</span>
 
         <input
-          id="code"
-          name="code"
-          type="text"
-          inputmode="numeric"
-          autocomplete="one-time-code"
-          pattern="[0-9]*"
-          maxlength="8"
-          class="tz-auth-input {% if error %}tz-input--error{% endif %}"
-          placeholder="{{ t('auth.otp_placeholder') }}"
-          data-tz-otp
-          required
-        />
+  id="code"
+  name="code"
+  type="tel"
+  inputmode="numeric"
+  autocomplete="one-time-code"
+  maxlength="6"
+  pattern="[0-9]*"
+  class="tz-auth-input {% if error %}tz-input--error{% endif %}"
+  placeholder="{{ t('auth.otp_placeholder') }}"
+  data-tz-otp
+  required
+/>
       </div>
 
       {% if error %}

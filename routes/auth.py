@@ -164,6 +164,30 @@ def phone():
         if name:
             session["user_name"] = name
 
+        # ---------------------------
+        # Send SMS OTP (Telnyx)
+        # ---------------------------
+        try:
+
+            from services.sms_service import SMSService
+            import random
+
+            code = str(random.randint(1000, 9999))
+
+            SMSService.send_sms(
+                phone_number,
+                f"Your Tikzok verification code is {code}"
+            )
+
+            session["phone_code"] = code
+            session["phone_expires"] = time.time() + OTP_EXPIRATION_SECONDS
+            session["phone_attempts"] = 0
+
+        except Exception as e:
+
+            print("TELNYX ERROR:", e)
+            return render_template("auth/phone_login.html", error=True)
+
         session["pending_phone"] = phone_number
 
         return redirect(url_for("auth.otp"))

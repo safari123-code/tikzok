@@ -13,15 +13,26 @@
     {{ t("recharge.enterNumber.title") }}
   </h1>
 
-  <form method="post"
-        action="{{ url_for('recharge.enter_number_post') }}"
-        class="tz-stack">
+  <form
+    method="post"
+    action="{{ url_for('recharge.enter_number_post') }}"
+    class="tz-stack"
+    id="enterNumberForm"
+  >
 
     <input
       type="hidden"
       name="country_code"
       id="countryCode"
       value="{{ country_dial|default('+33') }}"
+    >
+
+    <!-- utilisé par JS pour envoyer numéro E164 -->
+    <input
+      type="hidden"
+      name="phone_e164"
+      id="phoneE164"
+      value=""
     >
 
     <section class="tz-card tz-card--soft">
@@ -70,15 +81,15 @@
       </div>
 
       <div class="tz-help">
- <span
-  id="phoneHelp"
-  class="tz-help--muted"
-  data-empty="{{ t('recharge.enterNumber.enterNumber') }}"
-  data-valid="{{ t('recharge.enterNumber.validNumber') }}"
-  data-invalid="{{ t('recharge.enterNumber.invalidNumber') }}"
- >
-  {{ t("recharge.enterNumber.enterNumber") }}
- </span>
+        <span
+          id="phoneHelp"
+          class="tz-help--muted"
+          data-empty="{{ t('recharge.enterNumber.enterNumber') }}"
+          data-valid="{{ t('recharge.enterNumber.validNumber') }}"
+          data-invalid="{{ t('recharge.enterNumber.invalidNumber') }}"
+        >
+          {{ t("recharge.enterNumber.enterNumber") }}
+        </span>
       </div>
 
     </section>
@@ -107,41 +118,41 @@
 
   </form>
 
-
-<!-- Country modal -->
-<div class="tz-modal" id="countryModal" style="display:none;">
-
-  <div
-    class="tz-modal__backdrop"
-    onclick="closeModal()"
-  ></div>
-
-  <div class="tz-modal__panel">
-
-    <div class="tz-modal__header">
-
-      <input
-        class="tz-input"
-        id="countrySearch"
-        placeholder="{{ t('recharge.enterNumber.searchCountry') }}"
-        oninput="tzFilterCountries()"
-      >
-
-      <button
-        type="button"
-        class="tz-icon-btn"
-        onclick="closeModal()"
-        aria-label="{{ t('common.close') }}"
-      >
-        ✕
-      </button>
-
-    </div>
+  <!-- Country modal -->
+  <div class="tz-modal" id="countryModal" style="display:none;">
 
     <div
-      class="tz-modal__list"
-      id="countryList"
+      class="tz-modal__backdrop"
+      onclick="closeModal()"
     ></div>
+
+    <div class="tz-modal__panel">
+
+      <div class="tz-modal__header">
+
+        <input
+          class="tz-input"
+          id="countrySearch"
+          placeholder="{{ t('recharge.enterNumber.searchCountry') }}"
+        >
+
+        <button
+          type="button"
+          class="tz-icon-btn"
+          onclick="closeModal()"
+          aria-label="{{ t('common.close') }}"
+        >
+          ✕
+        </button>
+
+      </div>
+
+      <div
+        class="tz-modal__list"
+        id="countryList"
+      ></div>
+
+    </div>
 
   </div>
 

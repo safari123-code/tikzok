@@ -16,9 +16,14 @@ from services.recharge_service import (
     quote_local_amount
 )
 
-from services.reloadly_service import get_reloadly_operators_by_country
+from services.reloadly_service import (
+    get_reloadly_operators_by_country,
+    lookup_phone_number
+)
+
 from services.currency_service import CurrencyService
 from services.fees_service import FeesService
+
 
 recharge_bp = Blueprint("recharge", __name__, url_prefix="/recharge")
 
@@ -35,7 +40,7 @@ def select_forfait_get():
 @recharge_bp.post("/select-forfait")
 def select_forfait_post():
 
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
 
     session["recharge_forfait"] = {
         "gb": data.get("gb"),
@@ -62,6 +67,40 @@ def get_city_for_country(iso):
         return "default"
 
     return data.get((iso or "").upper(), "default")
+
+
+# ---------------------------
+# API Phone Lookup
+# ---------------------------
+
+@recharge_bp.route("/api/lookup-number", methods=["POST"])
+def lookup_number():
+
+    data = request.get_json(silent=True) or {}
+
+    phone = data.get("phone")
+    country = data.get("country")
+
+    result = lookup_phone_number(phone, country)
+
+    if not result:
+        return jsonify({"valid": False})
+
+    # sauvegarder l'opérateur détecté
+    session["recharge_operator"] = {
+        "id": result.get("operatorId"),
+        "name": result.get("name"),
+        "logo_url": result.get("logoUrl"),
+        "country": result.get("countryName")
+    }
+
+    return jsonify({
+        "valid": True,
+        "operatorId": result.get("operatorId"),
+        "operatorName": result.get("name"),
+        "logoUrl": result.get("logoUrl"),
+        "countryCode": result.get("countryCode")
+    })
 
 
 # ---------------------------
@@ -164,10 +203,8 @@ def select_amount_get():
 
     country_iso = detect_country_iso_from_phone(phone) or "FR"
 
-    # operator choisi par utilisateur
     operator = session.get("recharge_operator")
 
-    # fallback auto detect
     if not operator:
         operator = get_reloadly_operator_auto_detect(
             phone=phone,
@@ -230,20 +267,13 @@ def select_amount_post():
 
     amount = max(1.0, min(1000.0, amount))
 
-    # ---------------------------
-    # Secure total calculation
-    # ---------------------------
-
     currency = CurrencyService.currency_from_phone(phone)
     tax_rate = FeesService.get_tax_rate(currency)
 
     tax = round(amount * tax_rate, 2)
     total = round(amount + tax, 2)
 
-    # on garde aussi le montant brut si besoin
     session["recharge_amount"] = str(amount)
-
-    # total réel utilisé pour le paiement
     session["recharge_total_amount"] = str(total)
 
     return redirect(url_for("payment.method_get"))
@@ -301,6 +331,7 @@ def api_store_total():
     session["recharge_total_amount"] = str(total)
 
     return jsonify({"ok": True})
+
 
 # ---------------------------
 # API: Operators list (Reloadly)
