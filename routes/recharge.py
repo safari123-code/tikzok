@@ -193,7 +193,7 @@ def enter_number_post():
     # SAVE SESSION (IMPORTANT)
     # ---------------------------
     session["recharge_phone"] = phone
-    session["country_iso"] = country_iso.lower()  # 🔥 clé admin
+    session["country_iso"] = country_iso.upper() # 🔥 clé admin
 
     return redirect(url_for("recharge.select_amount_get"))
 

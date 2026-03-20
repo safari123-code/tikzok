@@ -12,6 +12,7 @@ from services.order_service import OrderService
 from services.email_service import EmailService
 from services.stripe_service import StripeService
 import services.reloadly_service as ReloadlyService
+
 payment_bp = Blueprint("payment", __name__, url_prefix="/payment")
 
 
@@ -54,6 +55,7 @@ def _build_checkout_metadata(idem_key: str):
         "recharge_amount": f"{ctx['recharge_amount']:.2f}",
         "charged_amount": f"{ctx['final_amount']:.2f}",
         "points_used": f"{ctx['points_used']:.2f}",
+        "country_iso": str(session.get("country_iso") or ""),
         "user_id": str(session.get("user_id") or ""),
         "user_email": str(session.get("user_email") or session.get("pending_email") or ""),
     }
@@ -156,11 +158,6 @@ def card_post():
     metadata = _build_checkout_metadata(idem_key)
 
     try:
-
-        # 🔥 AJOUT ICI
-        import config
-        print("Stripe key used:", config.STRIPE_SECRET_KEY[:10])
-
         intent = StripeService.create_payment_intent(
             amount=ctx["final_amount"],
             currency="eur",
@@ -172,7 +169,6 @@ def card_post():
         })
 
     except Exception as e:
-
         print("Stripe payment intent error:", e)
 
         return jsonify({
@@ -198,6 +194,8 @@ def stripe_webhook_post():
     event_type = event.get("type")
     event_data = (event.get("data") or {}).get("object") or {}
 
+    print("Stripe webhook event type:", event_type)
+
     # ---------------------------
     # Payment succeeded
     # ---------------------------
@@ -206,25 +204,37 @@ def stripe_webhook_post():
         metadata = event_data.get("metadata", {}) or {}
         idem_key = metadata.get("payment_idempotency_key")
 
+        print("Stripe webhook metadata:", metadata)
+
         # Anti double recharge
         if idem_key and IdempotencyService.get_result(idem_key):
             return jsonify({"ok": True, "deduplicated": True}), 200
 
         try:
+            phone = str(metadata.get("recharge_phone") or "").strip()
+            amount = _safe_float(metadata.get("recharge_amount"), 0.0)
+            country_iso = str(metadata.get("country_iso") or "").strip().upper()
 
-            phone = metadata.get("recharge_phone")
-            amount = metadata.get("recharge_amount")
+            if not phone or amount <= 0:
+                print("Stripe webhook invalid data:", {
+                    "phone": phone,
+                    "amount": amount,
+                    "country_iso": country_iso,
+                })
+                return jsonify({"ok": False, "error": "invalid_metadata"}), 400
 
-            # Debug log (utile pour vérifier dans le terminal)
-            print("Recharge envoyée:", phone, amount)
+            print("Recharge envoyée:", phone, amount, country_iso)
 
             # ---------------------------
-            # Reloadly recharge (sandbox)
+            # Reloadly recharge
             # ---------------------------
-            ReloadlyService.send_topup(
+            reloadly_result = ReloadlyService.send_topup(
                 phone=phone,
-                amount=amount
+                amount=amount,
+                country_iso=country_iso,
             )
+
+            print("Reloadly success:", reloadly_result)
 
             # ---------------------------
             # Build success payload
@@ -282,7 +292,6 @@ def success_get():
     if payment_intent_id:
 
         try:
-
             intent = StripeService.retrieve_payment(payment_intent_id)
 
             if intent.status == "succeeded":
@@ -306,6 +315,7 @@ def success_get():
 
     return redirect(url_for("payment.method_get"))
 
+
 # ---------------------------
 # Finish success flow
 # ---------------------------
@@ -318,10 +328,6 @@ def success_finish_post():
         phone = (session.get("recharge_phone") or "").replace(" ", "")
 
         if phone:
-
-            # ---------------------------
-            # Country (IMPORTANT)
-            # ---------------------------
             country = session.get("country_iso") or phone[:3]
 
             HistoryService.add(
