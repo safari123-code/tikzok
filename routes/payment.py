@@ -185,16 +185,19 @@ def stripe_webhook_post():
     payload = request.get_data()
     sig_header = request.headers.get("Stripe-Signature", "")
 
+    # ---------------------------
+    # Stripe signature (SECURE)
+    # ---------------------------
     try:
         event = StripeService.construct_webhook_event(payload, sig_header)
     except Exception as e:
-        print("Stripe webhook signature error:", e)
+        print("❌ Stripe webhook signature error:", e)
         return jsonify({"ok": False}), 400
 
     event_type = event.get("type")
     event_data = (event.get("data") or {}).get("object") or {}
 
-    print("Stripe webhook event type:", event_type)
+    print("✅ Stripe webhook event:", event_type)
 
     # ---------------------------
     # Payment succeeded
@@ -204,37 +207,37 @@ def stripe_webhook_post():
         metadata = event_data.get("metadata", {}) or {}
         idem_key = metadata.get("payment_idempotency_key")
 
-        print("Stripe webhook metadata:", metadata)
+        print("📦 Metadata:", metadata)
 
-        # Anti double recharge
+        # ---------------------------
+        # Idempotency protection
+        # ---------------------------
         if idem_key and IdempotencyService.get_result(idem_key):
+            print("⚠️ Duplicate webhook ignored:", idem_key)
             return jsonify({"ok": True, "deduplicated": True}), 200
 
         try:
+            # ---------------------------
+            # Extract & validate
+            # ---------------------------
             phone = str(metadata.get("recharge_phone") or "").strip()
             amount = _safe_float(metadata.get("recharge_amount"), 0.0)
-            country_iso = str(metadata.get("country_iso") or "").strip().upper()
 
             if not phone or amount <= 0:
-                print("Stripe webhook invalid data:", {
-                    "phone": phone,
-                    "amount": amount,
-                    "country_iso": country_iso,
-                })
-                return jsonify({"ok": False, "error": "invalid_metadata"}), 400
+                print("❌ Invalid webhook data:", phone, amount)
+                return jsonify({"ok": False}), 400
 
-            print("Recharge envoyée:", phone, amount, country_iso)
+            print("🚀 Sending recharge:", phone, amount)
 
             # ---------------------------
-            # Reloadly recharge
+            # Reloadly call (FIX BUG)
             # ---------------------------
             reloadly_result = ReloadlyService.send_topup(
                 phone=phone,
-                amount=amount,
-                country_iso=country_iso,
+                amount=amount
             )
 
-            print("Reloadly success:", reloadly_result)
+            print("✅ Reloadly success:", reloadly_result)
 
             # ---------------------------
             # Build success payload
@@ -259,12 +262,15 @@ def stripe_webhook_post():
                         phone=phone,
                     )
                 except Exception as email_error:
-                    print("Webhook email send error:", email_error)
+                    print("⚠️ Email error:", email_error)
 
         except Exception as process_error:
-            print("Stripe webhook processing error:", process_error)
+            print("❌ Webhook processing error:", process_error)
             return jsonify({"ok": False}), 500
 
+    # ---------------------------
+    # Always return OK to Stripe
+    # ---------------------------
     return jsonify({"ok": True}), 200
 
 
