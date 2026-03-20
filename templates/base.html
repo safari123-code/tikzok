@@ -156,6 +156,9 @@
   <!-- App scripts -->
   <script defer src="{{ url_for('static', filename='js/menu.js') }}"></script>
   <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script>
+window.STRIPE_PUBLIC_KEY = "{{ STRIPE_PUBLIC_KEY }}";
+</script>
 
   {% block extra_js %}{% endblock %}
 

@@ -1,0 +1,83 @@
+{
+  "admin": {
+    "nav": {
+      "title": "Admin",
+      "subtitle": "Pilotage Tikzok",
+      "dashboard": "Dashboard",
+      "users": "Clients",
+      "recharges": "Recharges",
+      "transactions": "Transactions"
+    },
+
+    "search": "Rechercher un client...",
+
+    "dashboard": {
+      "title": "Dashboard admin",
+      "subtitle": "Vue rapide des performances et de l’activité récente.",
+      "recentTitle": "Activité récente",
+      "recentSubtitle": "Dernières recharges enregistrées."
+    },
+
+    "users": {
+      "title": "Clients",
+      "subtitle": "{count} client(s) détecté(s) depuis l’historique.",
+      "lastRecharge": "Dernière recharge",
+      "rechargesCount": "{count} recharge(s)"
+    },
+
+    "userDetail": {
+      "title": "Détail client",
+      "total": "Total",
+      "recharges": "Recharges",
+      "history": "Historique",
+      "countries": "Pays",
+      "cards": "Cartes utilisées"
+    },
+
+    "recharges": {
+      "title": "Recharges",
+      "subtitle": "{count} recharge(s) enregistrée(s)."
+    },
+
+    "transactions": {
+      "title": "Transactions",
+      "subtitle": "{count} transaction(s) disponibles depuis l’historique de succès."
+    },
+
+    "metrics": {
+      "totalRevenue": "Revenus totaux",
+      "totalRevenueHint": "Montant cumulé des recharges réussies.",
+      "totalRecharges": "Recharges",
+      "totalRechargesHint": "Nombre total de recharges confirmées.",
+      "uniqueCustomers": "Clients uniques",
+      "uniqueCustomersHint": "Bénéficiaires distincts détectés.",
+      "averageAmount": "Panier moyen",
+      "averageAmountHint": "Montant moyen par recharge."
+    },
+
+    "status": {
+      "success": "Succès"
+    },
+
+    "labels": {
+      "phone": "Téléphone",
+      "email": "Email",
+      "country": "Pays",
+      "date": "Date",
+      "amount": "Montant"
+    },
+
+    "tiers": {
+      "vip": "VIP",
+      "active": "Actif",
+      "new": "Nouveau"
+    },
+
+    "empty": {
+      "title": "Aucune donnée",
+      "users": "Aucun client n’a encore été détecté.",
+      "recharges": "Aucune recharge disponible pour le moment.",
+      "transactions": "Aucune transaction disponible pour le moment."
+    }
+  }
+}

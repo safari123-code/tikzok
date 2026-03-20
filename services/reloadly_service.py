@@ -15,7 +15,7 @@ load_dotenv()
 
 RELOADLY_BASE_URL = os.getenv(
     "RELOADLY_BASE_URL",
-    "https://topups-sandbox.reloadly.com"
+    "https://topups.reloadly.com"
 )
 
 # ---------------------------
@@ -111,7 +111,6 @@ def lookup_phone_number(phone: str, country: str):
 
 # ---------------------------
 # Reloadly Plans
-# DATA + BUNDLES fallback
 # ---------------------------
 
 def get_reloadly_plans(operator_id: int):
@@ -155,37 +154,35 @@ def get_reloadly_plans(operator_id: int):
 
 
     # ---------------------------
-    # BUNDLES fallback
+    # BUNDLES
     # ---------------------------
 
-    if not plans:
+    try:
 
-        try:
+        url = f"{RELOADLY_BASE_URL}/operators/{operator_id}/bundles"
 
-            url = f"{RELOADLY_BASE_URL}/operators/{operator_id}/bundles"
+        res = requests.get(url, headers=headers, timeout=15)
 
-            res = requests.get(url, headers=headers, timeout=15)
+        if res.status_code == 200:
 
-            if res.status_code == 200:
+            data = res.json()
 
-                data = res.json()
+            for p in data:
 
-                for p in data:
+                plans.append({
+                    "id": p.get("id"),
+                    "name": p.get("name"),
+                    "description": p.get("description"),
+                    "type": p.get("type") or "COMBO",
+                    "amount": p.get("amount"),
+                    "currency": p.get("currencyCode"),
+                })
 
-                    plans.append({
-                        "id": p.get("id"),
-                        "name": p.get("name"),
-                        "description": p.get("description"),
-                        "type": p.get("type") or "COMBO",
-                        "amount": p.get("amount"),
-                        "currency": p.get("currencyCode"),
-                    })
+    except Exception:
+        pass
 
-        except Exception:
-            pass
 
     return plans
-
 
 # ---------------------------
 # Get operators by country
@@ -233,3 +230,53 @@ def get_reloadly_operators_by_country(country_iso: str):
         })
 
     return operators
+
+# ---------------------------
+# Send Topup
+# ---------------------------
+
+def send_topup(phone: str, amount: float):
+
+    token = get_reloadly_token()
+
+    # Detect operator automatically
+    country = phone[:3].replace("+", "")[:2]
+
+    lookup = lookup_phone_number(phone, country)
+
+    if not lookup:
+        raise RuntimeError("Operator detection failed")
+
+    operator_id = lookup["operatorId"]
+    country_code = lookup["countryCode"]
+
+    url = f"{RELOADLY_BASE_URL}/topups"
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Accept": "application/com.reloadly.topups-v1+json"
+    }
+
+    payload = {
+        "operatorId": operator_id,
+        "amount": float(amount),
+        "useLocalAmount": False,
+        "customIdentifier": f"tikzok-{phone}-{int(time.time())}",
+        "recipientPhone": {
+            "countryCode": country_code,
+            "number": phone
+        }
+    }
+
+    res = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        timeout=20
+    )
+
+    if res.status_code not in (200, 201):
+        raise RuntimeError(f"Reloadly topup failed: {res.text}")
+
+    return res.json()

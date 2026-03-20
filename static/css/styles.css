@@ -1651,3 +1651,11 @@ font-size:14px;
 background:#f5f5ff;
 border-color:#cfcfff;
 }
+/* ---------------------------
+Stripe Card Element
+--------------------------- */
+.tz-card:hover{
+transform:translateY(-1px);
+transition:all .15s ease;
+}
+

@@ -12,7 +12,7 @@ class FeesService:
 
     # surcharge possible par devise
     CURRENCY_FEES = {
-        "AFN": 0.41,
+        "AFN": 0.10,
         "MAD": 0.22,
         "XOF": 0.20,
         "NGN": 0.23,

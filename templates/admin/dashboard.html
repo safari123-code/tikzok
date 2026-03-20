@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ t("admin.dashboard.title") }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="tz-page tz-container">
+  <div class="tz-admin-shell">
+
+    <!-- HEADER -->
+    <div class="tz-history-header">
+      <button onclick="window.history.back()" class="tz-close-btn">✕</button>
+      <h2 class="tz-page-title">{{ t("admin.dashboard.title") }}</h2>
+    </div>
+
+    <!-- INTRO -->
+    <section class="tz-card tz-card--soft">
+      <div class="tz-admin-section-title">{{ t("admin.dashboard.title") }}</div>
+      <div class="tz-admin-section-sub">{{ t("admin.dashboard.subtitle") }}</div>
+    </section>
+
+    <!-- NAV -->
+    <nav class="tz-admin-topnav">
+      <a href="{{ url_for('admin.dashboard_get') }}" class="tz-admin-tab is-active">📊 {{ t("admin.nav.dashboard") }}</a>
+      <a href="{{ url_for('admin.users_get') }}" class="tz-admin-tab">👤 {{ t("admin.nav.users") }}</a>
+      <a href="{{ url_for('admin.recharges_get') }}" class="tz-admin-tab">📱 {{ t("admin.nav.recharges") }}</a>
+      <a href="{{ url_for('admin.transactions_get') }}" class="tz-admin-tab">💳 {{ t("admin.nav.transactions") }}</a>
+    </nav>
+
+    <!-- ================= STATS ================= -->
+    <div class="tz-admin-grid">
+
+      <section class="tz-card tz-card--highlight tz-admin-stat">
+        <div class="tz-admin-stat__label">💰 Total revenus</div>
+        <div class="tz-admin-stat__value">
+          {{ "%.2f"|format(stats.total_revenue|default(0)|float) }} €
+        </div>
+      </section>
+
+      <section class="tz-card tz-card--green tz-admin-stat">
+        <div class="tz-admin-stat__label">📱 Recharges</div>
+        <div class="tz-admin-stat__value">
+          {{ stats.total_recharges|default(0) }}
+        </div>
+      </section>
+
+      <section class="tz-card tz-card--purple tz-admin-stat">
+        <div class="tz-admin-stat__label">👤 Utilisateurs</div>
+        <div class="tz-admin-stat__value">
+          {{ stats.total_users|default(0) }}
+        </div>
+      </section>
+
+      <section class="tz-card tz-admin-stat">
+        <div class="tz-admin-stat__label">👑 Top client</div>
+        {% if stats.top_user %}
+          <div class="tz-admin-stat__value">{{ stats.top_user.phone }}</div>
+          <div class="tz-small">{{ stats.top_user.amount }} €</div>
+        {% else %}
+          <div class="tz-muted">—</div>
+        {% endif %}
+      </section>
+
+    </div>
+
+    <!-- ================= RECENT ================= -->
+    <section class="tz-card">
+      <div class="tz-admin-section-title">{{ t("admin.dashboard.recentTitle") }}</div>
+
+      <div class="tz-divider"></div>
+
+      {% if not recent_recharges %}
+        <div class="tz-admin-empty">
+          <div class="tz-admin-empty__icon">📭</div>
+          <div class="tz-admin-empty__title">{{ t("admin.empty.title") }}</div>
+        </div>
+      {% else %}
+        <div class="tz-admin-list">
+          {% for item in recent_recharges %}
+          <div class="tz-admin-list-card">
+            <div class="tz-admin-list-left">
+              <div class="tz-admin-list-title">{{ item.phone }}</div>
+              <div class="tz-admin-list-sub">{{ item.date }}</div>
+            </div>
+
+            <div class="tz-admin-list-right">
+              <div class="tz-admin-amount">
+                + {{ "%.2f"|format(item.amount|float) }} €
+              </div>
+              <span class="tz-admin-badge tz-admin-badge--success">
+                {{ t("admin.status.success") }}
+              </span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+
+  </div>
+</div>
+{% endblock %}

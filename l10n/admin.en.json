@@ -1,0 +1,83 @@
+{
+  "admin": {
+    "nav": {
+      "title": "Admin",
+      "subtitle": "Tikzok control panel",
+      "dashboard": "Dashboard",
+      "users": "Customers",
+      "recharges": "Top-ups",
+      "transactions": "Transactions"
+    },
+
+    "search": "Search customer...",
+
+    "dashboard": {
+      "title": "Admin dashboard",
+      "subtitle": "Quick overview of performance and recent activity.",
+      "recentTitle": "Recent activity",
+      "recentSubtitle": "Latest successful top-ups."
+    },
+
+    "users": {
+      "title": "Customers",
+      "subtitle": "{count} customer(s) detected from history.",
+      "lastRecharge": "Last top-up",
+      "rechargesCount": "{count} top-up(s)"
+    },
+
+    "userDetail": {
+      "title": "Customer details",
+      "total": "Total",
+      "recharges": "Top-ups",
+      "history": "History",
+      "countries": "Countries",
+      "cards": "Payment methods"
+    },
+
+    "recharges": {
+      "title": "Top-ups",
+      "subtitle": "{count} top-up(s) recorded."
+    },
+
+    "transactions": {
+      "title": "Transactions",
+      "subtitle": "{count} transaction(s) available from successful history."
+    },
+
+    "metrics": {
+      "totalRevenue": "Total revenue",
+      "totalRevenueHint": "Total amount of successful top-ups.",
+      "totalRecharges": "Top-ups",
+      "totalRechargesHint": "Total number of confirmed top-ups.",
+      "uniqueCustomers": "Unique customers",
+      "uniqueCustomersHint": "Distinct recipients detected.",
+      "averageAmount": "Average order value",
+      "averageAmountHint": "Average amount per top-up."
+    },
+
+    "status": {
+      "success": "Success"
+    },
+
+    "labels": {
+      "phone": "Phone",
+      "email": "Email",
+      "country": "Country",
+      "date": "Date",
+      "amount": "Amount"
+    },
+
+    "tiers": {
+      "vip": "VIP",
+      "active": "Active",
+      "new": "New"
+    },
+
+    "empty": {
+      "title": "No data",
+      "users": "No customers detected yet.",
+      "recharges": "No top-ups available yet.",
+      "transactions": "No transactions available yet."
+    }
+  }
+}

@@ -1,19 +1,29 @@
 {# ---------------------------
-   Feature: Card Payment (Flutter-like)
+Feature: Card Payment (Stripe Elements - Flutter UI style)
 --------------------------- #}
+
 {% extends "base.html" %}
 {% block title %}{{ t("payment.card.title") }}{% endblock %}
 
 {% block extra_js %}
+
+<script src="https://js.stripe.com/v3/"></script>
+
 <script defer src="{{ url_for('static', filename='js/tz_toast.js') }}"></script>
+
 <script defer src="{{ url_for('static', filename='js/card_payment.js') }}"></script>
+
 {% endblock %}
 
 {% block content %}
+
 <div class="tz-page tz-container">
+
   <h1 class="tz-title">{{ t("payment.card.title") }}</h1>
 
   <div class="tz-stack">
+
+    <!-- ================= SUMMARY ================= -->
 
     <section class="tz-card tz-card--soft">
       <div class="tz-row">
@@ -22,90 +32,132 @@
       </div>
     </section>
 
-    <form method="post" action="{{ url_for('payment.card_post') }}" class="tz-stack" id="cardPaymentForm" novalidate>
+    <!-- ================= FORM ================= -->
+
+    <form class="tz-stack" id="cardPaymentForm" novalidate>
+
       <input type="hidden" name="amount" value="{{ amount }}">
 
+      <!-- ================= SAVE CARD ================= -->
+
       <section class="tz-card">
+
         <div class="tz-row">
           <label class="tz-check">
             <input type="checkbox" id="saveCardToggle" {% if save_card %}checked{% endif %}>
             <span>{{ t("payment.saveCard") }}</span>
           </label>
-          <input type="hidden" name="save_card" id="saveCardInput" value="{% if save_card %}1{% else %}0{% endif %}">
+
+          <input
+            type="hidden"
+            name="save_card"
+            id="saveCardInput"
+            value="{% if save_card %}1{% else %}0{% endif %}"
+          >
         </div>
+
         <div class="tz-help tz-help--muted" style="margin-top:10px;">
           {{ t("payment.card.securityNotice") }}
         </div>
 
-        {% if form_error_keys and form_error_keys|length %}
-          <div class="tz-alert" style="margin-top:12px;">
-            {{ t("payment.card.formError") }}
-          </div>
-        {% endif %}
       </section>
 
+      <!-- ================= CARD FORM ================= -->
+
       <section class="tz-card">
+
         <div class="tz-stack">
 
-          <div class="tz-field">
-            <label class="tz-label">{{ t("payment.card.holderName") }}</label>
-            <input class="tz-input" name="card_name" id="cardName"
-                   value="{{ card_name|default('') }}"
-                   autocomplete="cc-name" required>
-            <div class="tz-help tz-help--error" id="errName" style="display:none;">
-              {{ t("payment.card.invalidCardHolderName") }}
-            </div>
-          </div>
+          <!-- Card Holder -->
 
           <div class="tz-field">
-            <label class="tz-label">{{ t("payment.card.number") }}</label>
-            <div class="tz-row tz-row--gap">
-              <input class="tz-input tz-grow" name="card_number" id="cardNumber"
-                     value="{{ card_number|default('') }}"
-                     inputmode="numeric" autocomplete="cc-number" required>
-              <button type="button" class="tz-icon-btn" id="scanBtn" aria-label="{{ t('payment.card.scanTooltip') }}" disabled>📷</button>
-            </div>
-            <div class="tz-help tz-help--error" id="errNumber" style="display:none;">
-              {{ t("payment.card.invalidCardNumber") }}
-            </div>
+            <label class="tz-label">
+              {{ t("payment.card.holderName") }}
+            </label>
+
+            <input
+              class="tz-input"
+              name="card_name"
+              id="cardName"
+              autocomplete="cc-name"
+              required
+            >
           </div>
+
+          <!-- Card Number -->
+
+          <div class="tz-field">
+
+            <label class="tz-label">
+              {{ t("payment.card.number") }}
+            </label>
+
+            <div id="card-number" class="tz-input"></div>
+
+          </div>
+
+          <!-- Expiry + CVC -->
 
           <div class="tz-row tz-row--gap">
+
             <div class="tz-grow">
+
               <div class="tz-field">
-                <label class="tz-label">{{ t("payment.card.expiry") }}</label>
-                <input class="tz-input" name="card_expiry" id="cardExpiry"
-                       value="{{ card_expiry|default('') }}"
-                       inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" required>
-                <div class="tz-help tz-help--error" id="errExpiry" style="display:none;">
-                  {{ t("payment.card.invalidExpiry") }}
-                </div>
+
+                <label class="tz-label">
+                  {{ t("payment.card.expiry") }}
+                </label>
+
+                <div id="card-expiry" class="tz-input"></div>
+
               </div>
+
             </div>
 
             <div class="tz-grow">
+
               <div class="tz-field">
-                <label class="tz-label">{{ t("payment.card.cvv") }}</label>
-                <input class="tz-input" name="card_cvv" id="cardCvv"
-                       inputmode="numeric" autocomplete="cc-csc" required>
-                <div class="tz-help tz-help--error" id="errCvv" style="display:none;">
-                  {{ t("payment.card.invalidCvv") }}
-                </div>
+
+                <label class="tz-label">
+                  {{ t("payment.card.cvv") }}
+                </label>
+
+                <div id="card-cvc" class="tz-input"></div>
+
               </div>
+
             </div>
+
           </div>
 
         </div>
+
       </section>
 
+      <!-- ================= PAY BUTTON ================= -->
+
       <button type="submit" class="tz-primary-btn" id="payBtn">
-        <span class="tz-btn-loader" id="btnLoader" style="display:none;"></span>
-        <span id="payBtnText">
-         {{ t("payment.card.payAmount", {"amount": ("%.2f"|format((amount|default(0))|float))}) }}
+
+        <span
+          class="tz-btn-loader"
+          id="btnLoader"
+          style="display:none;">
         </span>
+
+        <span id="payBtnText">
+
+          {{ t("payment.card.payAmount",
+              {"amount": ("%.2f"|format((amount|default(0))|float))}
+          ) }}
+
+        </span>
+
       </button>
+
     </form>
 
   </div>
+
 </div>
+
 {% endblock %}

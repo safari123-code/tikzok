@@ -43,7 +43,10 @@ def select_forfait_get():
 
     country_iso = detect_country_iso_from_phone(phone)
 
-    operator = get_reloadly_operator_auto_detect(phone, country_iso)
+    operator = session.get("recharge_operator")
+
+    if not operator:
+        operator = get_reloadly_operator_auto_detect(phone, country_iso)
 
     plans = []
 
@@ -52,9 +55,10 @@ def select_forfait_get():
 
     return render_template(
         "recharge/select_forfait.html",
-        plans=plans
+        plans=plans,
+        operator=operator,
+        phone=phone
     )
-
 # ---------------------------
 # Select Forfait (POST)
 # ---------------------------
@@ -155,17 +159,26 @@ def enter_number_get():
 # ---------------------------
 # Enter number (POST)
 # ---------------------------
-
 @recharge_bp.post("/enter-number")
 def enter_number_post():
 
     raw = request.form.get("phone", "")
-
     phone = normalize_phone_e164_light(raw)
 
+    # ---------------------------
+    # Detect country (IMPORTANT)
+    # ---------------------------
+    country_iso = (
+        request.form.get("country_iso")  # priorité form
+        or detect_country_iso_from_phone(phone)
+        or "AF"
+    )
+
+    # ---------------------------
+    # Validation
+    # ---------------------------
     if not phone or not is_phone_length_valid(phone):
 
-        country_iso = detect_country_iso_from_phone(phone) or "AF"
         city = get_city_for_country(country_iso)
 
         return render_template(
@@ -176,7 +189,11 @@ def enter_number_post():
             phone_error=True,
         ), 400
 
+    # ---------------------------
+    # SAVE SESSION (IMPORTANT)
+    # ---------------------------
     session["recharge_phone"] = phone
+    session["country_iso"] = country_iso.lower()  # 🔥 clé admin
 
     return redirect(url_for("recharge.select_amount_get"))
 
@@ -185,7 +202,7 @@ def enter_number_post():
 # Select Operator
 # ---------------------------
 
-@recharge_bp.get("/select-operator")
+@recharge_bp.route("/select-operator", methods=["GET"])
 def select_operator_get():
 
     phone = session.get("recharge_phone")
@@ -204,15 +221,23 @@ def select_operator_get():
     )
 
 
-@recharge_bp.post("/select-operator")
+@recharge_bp.route("/select-operator", methods=["POST"])
 def select_operator_post():
 
+    operator_id = request.form.get("operator_id")
+    operator_name = request.form.get("operator_name")
+    operator_logo = request.form.get("operator_logo")
+    country_name = request.form.get("country_name")
+
     session["recharge_operator"] = {
-        "id": request.form.get("operator_id"),
-        "name": request.form.get("operator_name"),
-        "logo_url": request.form.get("operator_logo"),
-        "country": request.form.get("country_name")
+        "id": operator_id,
+        "name": operator_name,
+        "logo_url": operator_logo,
+        "country": country_name
     }
+
+    if operator_name and "Data" in operator_name:
+        return redirect(url_for("recharge.select_forfait_get"))
 
     return redirect(url_for("recharge.select_amount_get"))
 

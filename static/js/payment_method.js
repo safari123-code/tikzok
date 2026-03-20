@@ -4,142 +4,112 @@
 (function () {
 
   const form = document.getElementById("paymentMethodForm");
+  if (!form) return;
 
-  if (form) {
+  const amount = parseFloat(form.dataset.amount || "0");
+  const points = parseFloat(form.dataset.points || "0");
 
-    const amount = parseFloat(form.dataset.amount || "0");
-    const points = parseFloat(form.dataset.points || "0");
+  const toastKey = form.dataset.toastKey || "";
 
-    const toastKey = form.dataset.toastKey || "";
-    if (toastKey) {
-      tzToast?.(document.querySelector(`[data-i18n="${toastKey}"]`)?.textContent || "");
-    }
+  const usePointsToggle = document.getElementById("usePointsToggle");
+  const saveCardToggle = document.getElementById("saveCardToggle");
 
-    const usePointsToggle = document.getElementById("usePointsToggle");
-    const saveCardToggle = document.getElementById("saveCardToggle");
+  const usePointsInput = document.getElementById("usePointsInput");
+  const saveCardInput = document.getElementById("saveCardInput");
+  const selectedMethodInput = document.getElementById("selectedMethodInput");
 
-    const usePointsInput = document.getElementById("usePointsInput");
-    const saveCardInput = document.getElementById("saveCardInput");
-    const selectedMethodInput = document.getElementById("selectedMethodInput");
+  const finalAmountText = document.getElementById("finalAmountText");
+  const payBtn = document.getElementById("payBtn");
 
-    const finalAmountText = document.getElementById("finalAmountText");
-    const payBtn = document.getElementById("payBtn");
+  // ---------------------------
+  // Force payment method = card
+  // ---------------------------
 
-    // Force card method
-    if (selectedMethodInput) {
-      selectedMethodInput.value = "card";
-    }
-
-    function fmt2(v){
-      return (Math.round(v * 100) / 100).toFixed(2);
-    }
-
-    function computeFinal(){
-
-      const usePoints = usePointsToggle ? usePointsToggle.checked : false;
-
-      const pointsUsed = usePoints
-        ? Math.min(points, amount)
-        : 0;
-
-      const finalAmount = Math.max(
-        0,
-        amount - pointsUsed
-      );
-
-      if (finalAmountText) {
-        finalAmountText.textContent = `${fmt2(finalAmount)} €`;
-      }
-
-      if (payBtn) {
-        payBtn.textContent =
-          payBtn.textContent.replace(
-            /[0-9]+(\.[0-9]+)?/,
-            fmt2(finalAmount)
-          );
-      }
-
-      if (usePointsInput) {
-        usePointsInput.value = usePoints ? "1" : "0";
-      }
-    }
-
-    usePointsToggle?.addEventListener(
-      "change",
-      computeFinal
-    );
-
-    saveCardToggle?.addEventListener(
-      "change",
-      () => {
-        saveCardInput.value =
-          saveCardToggle.checked ? "1" : "0";
-      }
-    );
-
-    // Prevent double submit
-    let locking = false;
-
-    form.addEventListener("submit", () => {
-
-      if (locking) return false;
-
-      locking = true;
-
-      payBtn?.classList.add("is-loading");
-
-      return true;
-    });
-
-    computeFinal();
+  if (selectedMethodInput) {
+    selectedMethodInput.value = "card";
   }
 
   // ---------------------------
-  // Feature: Card menu (⋯)
+  // Utils
   // ---------------------------
 
-  document
-    .querySelectorAll(".tz-card-menu-btn")
-    .forEach(btn => {
+  function formatAmount(v) {
+    return (Math.round(v * 100) / 100).toFixed(2);
+  }
 
-      btn.addEventListener("click", e => {
+  // ---------------------------
+  // Compute final amount
+  // ---------------------------
 
-        e.stopPropagation();
+  function computeFinal() {
 
-        const menu =
-          btn.nextElementSibling;
+    const usePoints = usePointsToggle ? usePointsToggle.checked : false;
 
-        document
-          .querySelectorAll(".tz-card-menu")
-          .forEach(m => {
+    const pointsUsed = usePoints
+      ? Math.min(points, amount)
+      : 0;
 
-            if (m !== menu) {
-              m.classList.remove("open");
-            }
+    const finalAmount = Math.max(
+      0,
+      amount - pointsUsed
+    );
 
-          });
+    if (finalAmountText) {
+      finalAmountText.textContent = `${formatAmount(finalAmount)} €`;
+    }
 
-        menu?.classList.toggle("open");
+    if (payBtn) {
+      payBtn.textContent = payBtn.textContent.replace(
+        /[0-9]+(\.[0-9]+)?/,
+        formatAmount(finalAmount)
+      );
+    }
 
-      });
+    if (usePointsInput) {
+      usePointsInput.value = usePoints ? "1" : "0";
+    }
+  }
 
-    });
+  // ---------------------------
+  // Points toggle
+  // ---------------------------
 
-  // close menu outside click
+  usePointsToggle?.addEventListener(
+    "change",
+    computeFinal
+  );
 
-  document.addEventListener(
-    "click",
+  // ---------------------------
+  // Save card toggle
+  // ---------------------------
+
+  saveCardToggle?.addEventListener(
+    "change",
     () => {
-
-      document
-        .querySelectorAll(".tz-card-menu")
-        .forEach(menu => {
-
-          menu.classList.remove("open");
-
-        });
-
+      if (saveCardInput) {
+        saveCardInput.value =
+          saveCardToggle.checked ? "1" : "0";
+      }
     }
   );
+
+  // ---------------------------
+  // Prevent double submit
+  // ---------------------------
+
+  let submitting = false;
+
+  form.addEventListener("submit", () => {
+
+    if (submitting) return false;
+
+    submitting = true;
+
+    payBtn?.classList.add("is-loading");
+
+    return true;
+  });
+
+  computeFinal();
 
 })();

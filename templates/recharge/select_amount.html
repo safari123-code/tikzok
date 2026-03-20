@@ -18,40 +18,40 @@
     <input type="hidden" name="min_amount" value="{{ min_amount or 2 }}">
     <input type="hidden" name="max_amount" value="{{ max_amount or 50 }}">
 
-    {# ---------------------------
-       Phone + Operator Card
-    --------------------------- #}
-    <section class="tz-card">
-      <div class="tz-row">
-        <div class="tz-grow">
-          <div class="tz-strong" style="font-size:15px;">
-            {{ phone }}
-            <a class="tz-link" style="margin-left:8px;" href="{{ url_for('recharge.enter_number_get') }}">✎</a>
-          </div>
-          <div class="tz-small tz-muted" style="margin-top:4px;">
-            {% if operator.name %}
-              {{ operator.name }} • {{ operator.country }}
-            {% else %}
-              {{ t("recharge.selectAmount.operatorNotDetected") }}
-            {% endif %}
-          </div>
-        </div>
-
-        {% if operator.logo_url %}
-          <img src="{{ operator.logo_url }}" alt="" style="width:34px;height:34px;object-fit:contain;" />
-        {% else %}
-          <span class="tz-muted" aria-hidden="true">📶</span>
-        {% endif %}
-
-        <a
-  href="{{ url_for('recharge.select_operator_get') }}"
-  class="tz-icon-btn"
-  aria-label="{{ t('recharge.selectAmount.editOperator') }}"
- >
-  📥
-</a>
+{# ---------------------------
+   Phone + Operator Card
+--------------------------- #}
+<section class="tz-card">
+  <div class="tz-row">
+    <div class="tz-grow">
+      <div class="tz-strong" style="font-size:15px;">
+        {{ phone }}
+        <a class="tz-link" style="margin-left:8px;" href="{{ url_for('recharge.enter_number_get') }}">✎</a>
       </div>
-    </section>
+
+      <div class="tz-small tz-muted" style="margin-top:4px;">
+        {% if operator.name %}
+          {{ operator.name }}
+        {% else %}
+          {{ t("recharge.selectAmount.operatorNotDetected") }}
+        {% endif %}
+      </div>
+    </div>
+
+    {% if operator.logo_url %}
+      <a href="{{ url_for('recharge.select_operator_get') }}" style="margin-left:auto;">
+        <img src="{{ operator.logo_url }}"
+             alt=""
+             style="width:34px;height:34px;object-fit:contain;" />
+      </a>
+    {% else %}
+      <a href="{{ url_for('recharge.select_operator_get') }}" style="margin-left:auto;">
+        <span class="tz-muted" aria-hidden="true">📶</span>
+      </a>
+    {% endif %}
+
+  </div>
+</section>
 
 {# ---------------------------
    Feature: Amount Card

@@ -4,6 +4,10 @@
 {% extends "base.html" %}
 {% block title %}{{ t("recharge.selectForfait.title") }}{% endblock %}
 
+{% block extra_js %}
+<script defer src="{{ url_for('static', filename='js/select_forfait.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="tz-page tz-container">
 
@@ -23,7 +27,38 @@
     <button class="tz-tab" data-type="VOICE">
       📞 Minutes
     </button>
+{# ---------------------------
+   Operator Card
+--------------------------- #}
+<section class="tz-card">
+  <div class="tz-row">
 
+    {% if operator and operator.logo_url %}
+    <img
+      src="{{ operator.logo_url }}"
+      class="tz-operator-logo"
+      alt="{{ operator.name }}"
+      style="width:34px;height:34px;object-fit:contain;margin-right:10px;"
+      loading="lazy"
+    />
+    {% else %}
+    <span class="tz-muted">📶</span>
+    {% endif %}
+
+    <div class="tz-grow">
+
+      <div class="tz-strong">
+        {{ operator.name if operator else "" }}
+      </div>
+
+      <div class="tz-small tz-muted">
+        {{ phone }}
+      </div>
+
+    </div>
+
+  </div>
+</section>
     <button class="tz-tab" data-type="SMS">
       ✉️ SMS
     </button>
@@ -34,70 +69,78 @@
 
   </div>
 
-  {# ---------------------------
-     Plans list
-  --------------------------- #}
-  <div class="tz-stack" id="plansList">
+{# ---------------------------
+   Plans list
+--------------------------- #}
+<div class="tz-stack" id="plansList">
 
-    {% if plans and plans|length > 0 %}
+{% if plans and plans|length > 0 %}
 
-      {% for f in plans %}
+{% for f in plans %}
 
-      <button
-        class="tz-card tz-forfait-card"
-        type="button"
-        data-plan-type="{{ f.type }}"
-        data-gb="{{ f.description }}"
-        data-price="{{ f.amount }}"
-        onclick="selectForfait(this)">
+<button
+class="tz-card tz-forfait-card"
+type="button"
+data-plan-type="{{ f.type }}"
+data-gb="{{ f.description }}"
+data-price="{{ f.amount }}"
+onclick="selectForfait(this)">
 
-        <div class="tz-row">
+<div class="tz-row">
 
-          <div class="tz-forfait-icon">
+{% if operator.logo_url %}
+<img
+src="{{ operator.logo_url }}"
+class="tz-operator-logo"
+alt="{{ operator.name }}"
+style="width:34px;height:34px;object-fit:contain;margin-right:10px;"
+loading="lazy"
+/>
+{% endif %}
 
-            {% if f.type == "DATA" %}
-            📶
-            {% elif f.type == "VOICE" %}
-            📞
-            {% elif f.type == "SMS" %}
-            ✉️
-            {% else %}
-            📦
-            {% endif %}
+<div class="tz-forfait-icon">
 
-          </div>
+{% if f.type == "DATA" %}
+📶
+{% elif f.type == "VOICE" %}
+📞
+{% elif f.type == "SMS" %}
+✉️
+{% else %}
+📦
+{% endif %}
 
-          <div class="tz-grow">
+</div>
 
-            <div class="tz-strong">
-              {{ f.name }}
-            </div>
+<div class="tz-grow">
 
-            <div class="tz-small tz-muted">
-              {{ f.description }}
-            </div>
+<div class="tz-strong">
+{{ f.name }}
+</div>
 
-          </div>
+<div class="tz-small tz-muted">
+{{ f.description }}
+</div>
 
-          <div class="tz-forfait-price">
-            {{ f.amount }} {{ f.currency }}
-          </div>
+</div>
 
-        </div>
+<div class="tz-forfait-price">
+{{ f.amount }} {{ f.currency }}
+</div>
 
-      </button>
+</div>
 
-      {% endfor %}
+</button>
 
-    {% else %}
+{% endfor %}
 
-      <div class="tz-card tz-card--soft tz-muted">
-        No plans available
-      </div>
+{% else %}
 
-    {% endif %}
+<div class="tz-card tz-card--soft tz-muted">
+No plans available
+</div>
 
-  </div>
+{% endif %}
 
 </div>
 
@@ -153,17 +196,36 @@ tabs.forEach(tab => {
 
     plans.forEach(plan => {
 
-      if(plan.dataset.planType === type){
-        plan.style.display = "block"
-      }else{
-        plan.style.display = "none"
+      const planType = (plan.dataset.planType || "").toUpperCase()
+
+      let show = false
+
+      if(type === "DATA"){
+        show = planType.includes("DATA")
       }
+
+      if(type === "VOICE"){
+        show = planType.includes("VOICE") || planType.includes("MIN")
+      }
+
+      if(type === "SMS"){
+        show = planType.includes("SMS")
+      }
+
+      if(type === "COMBO"){
+        show = planType.includes("COMBO") || planType.includes("BUNDLE")
+      }
+
+      plan.style.display = show ? "block" : "none"
 
     })
 
   })
 
 })
+
+/* active tab on page load */
+document.querySelector(".tz-tab.is-active")?.click()
 
 </script>
 

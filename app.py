@@ -1,8 +1,10 @@
 # ---------------------------
 # Tikzok - Application Entry
 # ---------------------------
+
 import os
 import json
+from copy import deepcopy
 from datetime import datetime
 
 from flask import Flask, session, request, g, redirect, url_for
@@ -23,6 +25,26 @@ from routes.auth import auth_bp
 from routes.i18n import bp as i18n_bp
 from routes.account import account_bp
 from routes.history import history_bp
+from routes.admin import admin_bp
+
+
+# ---------------------------
+# Helpers
+# ---------------------------
+def _deep_merge_dict(base: dict, extra: dict) -> dict:
+    merged = deepcopy(base)
+
+    for key, value in (extra or {}).items():
+        if (
+            key in merged
+            and isinstance(merged[key], dict)
+            and isinstance(value, dict)
+        ):
+            merged[key] = _deep_merge_dict(merged[key], value)
+        else:
+            merged[key] = value
+
+    return merged
 
 
 # ---------------------------
@@ -47,6 +69,7 @@ def create_app() -> Flask:
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["SESSION_COOKIE_SECURE"] = os.getenv("ENV") == "production"
     app.config["PREFERRED_URL_SCHEME"] = os.getenv("PREFERRED_URL_SCHEME", "https")
+    app.config["MAX_CONTENT_LENGTH"] = config.MAX_CONTENT_LENGTH
 
     # ---------------------------
     # Inject current time
@@ -56,8 +79,36 @@ def create_app() -> Flask:
         return dict(now=datetime.now)
 
     # ---------------------------
-    # I18n (JSON based)
+    # Stripe key for frontend
     # ---------------------------
+    @app.context_processor
+    def inject_stripe_key():
+        return dict(STRIPE_PUBLIC_KEY=config.STRIPE_PUBLIC_KEY)
+
+    # ---------------------------
+    # App meta
+    # ---------------------------
+    @app.context_processor
+    def inject_app_meta():
+        user_email = (session.get("user_email") or "").strip().lower()
+        is_admin_user = bool(session.get("is_admin")) or user_email in config.ADMIN_EMAILS
+
+        return dict(
+            APP_VERSION=config.APP_VERSION,
+            is_admin_user=is_admin_user,
+        )
+
+    # ---------------------------
+    # I18n (JSON based + modular files)
+    # ---------------------------
+    def _load_json_file(path: str) -> dict:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
     def _load_l10n(lang: str) -> dict:
 
         lang = (lang or "fr").lower()
@@ -65,13 +116,15 @@ def create_app() -> Flask:
         if lang not in ("fr", "en"):
             lang = "fr"
 
-        path = os.path.join(os.path.dirname(__file__), "l10n", f"{lang}.json")
+        base_dir = os.path.join(os.path.dirname(__file__), "l10n")
 
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return {}
+        base_path = os.path.join(base_dir, f"{lang}.json")
+        admin_path = os.path.join(base_dir, f"admin.{lang}.json")
+
+        base_data = _load_json_file(base_path)
+        admin_data = _load_json_file(admin_path)
+
+        return _deep_merge_dict(base_data, admin_data)
 
     @app.before_request
     def _set_lang():
@@ -91,6 +144,9 @@ def create_app() -> Flask:
         session["lang"] = lang
         g.lang = lang
         g.l10n = _load_l10n(lang)
+
+        user_email = (session.get("user_email") or "").strip().lower()
+        session["is_admin"] = user_email in config.ADMIN_EMAILS
 
     # ---------------------------
     # Translation helper
@@ -126,6 +182,7 @@ def create_app() -> Flask:
     app.register_blueprint(i18n_bp)
     app.register_blueprint(account_bp)
     app.register_blueprint(history_bp)
+    app.register_blueprint(admin_bp)
 
     return app
 

@@ -34,7 +34,7 @@ class OrderService:
         }
 
     # ---------------------------
-    # Save card (tokenized)
+    # Save card (tokenized mock)
     # ---------------------------
     @staticmethod
     def maybe_store_card_tokenized(save_card: bool, number: str, expiry: str):
@@ -69,18 +69,10 @@ class OrderService:
 
         os.makedirs("data", exist_ok=True)
 
-        cards = []
-
-        if os.path.exists(CARDS_FILE):
-            with open(CARDS_FILE, "r") as f:
-                try:
-                    cards = json.load(f)
-                except Exception:
-                    cards = []
-
+        cards = OrderService.get_saved_cards()
         cards.append(card)
 
-        with open(CARDS_FILE, "w") as f:
+        with open(CARDS_FILE, "w", encoding="utf-8") as f:
             json.dump(cards, f, indent=2)
 
     # ---------------------------
@@ -92,11 +84,11 @@ class OrderService:
         if not os.path.exists(CARDS_FILE):
             return []
 
-        with open(CARDS_FILE, "r") as f:
-            try:
+        try:
+            with open(CARDS_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
-            except Exception:
-                return []
+        except Exception:
+            return []
 
     # ---------------------------
     # Delete saved card
@@ -108,7 +100,7 @@ class OrderService:
 
         cards = [c for c in cards if c["id"] != card_id]
 
-        with open(CARDS_FILE, "w") as f:
+        with open(CARDS_FILE, "w", encoding="utf-8") as f:
             json.dump(cards, f, indent=2)
 
     # ---------------------------
@@ -136,7 +128,7 @@ class OrderService:
         for c in cards:
             c["is_default"] = c["id"] == card_id
 
-        with open(CARDS_FILE, "w") as f:
+        with open(CARDS_FILE, "w", encoding="utf-8") as f:
             json.dump(cards, f, indent=2)
 
     # ---------------------------
@@ -145,14 +137,7 @@ class OrderService:
     @staticmethod
     def update_saved_card(card_id: str, name: str, number: str, expiry: str):
 
-        if not os.path.exists(CARDS_FILE):
-            return
-
-        with open(CARDS_FILE, "r") as f:
-            try:
-                cards = json.load(f)
-            except Exception:
-                cards = []
+        cards = OrderService.get_saved_cards()
 
         digits = re.sub(r"\D", "", number or "")
         last4 = digits[-4:] if len(digits) >= 4 else None
@@ -169,5 +154,5 @@ class OrderService:
                 if expiry:
                     c["expiry"] = expiry
 
-        with open(CARDS_FILE, "w") as f:
+        with open(CARDS_FILE, "w", encoding="utf-8") as f:
             json.dump(cards, f, indent=2)

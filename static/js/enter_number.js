@@ -163,36 +163,42 @@ function formatForDisplay(e164) {
 
 }
 
-  // ---------------------------
-  // Country
-  // ---------------------------
-  function setCountry(iso, opts = {}) {
-    if (!COUNTRIES.length) return;
+// ---------------------------
+// Country
+// ---------------------------
+function setCountry(iso, opts = {}) {
+  if (!COUNTRIES.length) return;
 
-    const c = COUNTRIES.find((x) => x.iso === iso || x.iso2 === iso) || COUNTRIES[0];
-    const isoVal = c.iso || c.iso2;
+  const c = COUNTRIES.find((x) => x.iso === iso || x.iso2 === iso) || COUNTRIES[0];
+  const isoVal = c.iso || c.iso2;
 
-    if (countryBtn) {
-      countryBtn.dataset.countryIso = isoVal;
-    }
-
-    if (countryFlag) {
-      countryFlag.textContent = c.flag;
-    }
-
-    syncCountryCode(c.dial);
-    setCityByIso(isoVal);
-
-    if (opts.setPrefixIfEmpty && phoneInput) {
-      const e164 = c.dial;
-
-      _isProgrammaticUpdate = true;
-      syncHiddenE164(e164);
-      phoneInput.value = formatForDisplay(e164);
-      phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
-      _isProgrammaticUpdate = false;
-    }
+  if (countryBtn) {
+    countryBtn.dataset.countryIso = isoVal;
   }
+
+  // 🔥 FIX ICI
+  const countryIsoInput = document.getElementById("countryIso");
+  if (countryIsoInput) {
+    countryIsoInput.value = isoVal;
+  }
+
+  if (countryFlag) {
+    countryFlag.textContent = c.flag;
+  }
+
+  syncCountryCode(c.dial);
+  setCityByIso(isoVal);
+
+  if (opts.setPrefixIfEmpty && phoneInput) {
+    const e164 = c.dial;
+
+    _isProgrammaticUpdate = true;
+    syncHiddenE164(e164);
+    phoneInput.value = formatForDisplay(e164);
+    phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
+    _isProgrammaticUpdate = false;
+  }
+}
 
   // ---------------------------
   // UI states

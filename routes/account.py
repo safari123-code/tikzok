@@ -1,5 +1,5 @@
 # ---------------------------
-# Account routes — FINAL
+# Account routes — FINAL PRO
 # ---------------------------
 
 import os
@@ -7,6 +7,7 @@ from flask import Blueprint, render_template, session, request, redirect, url_fo
 from werkzeug.utils import secure_filename
 
 from services.order_service import OrderService
+from services.user_service import UserService
 
 account_bp = Blueprint("account", __name__, url_prefix="/account")
 
@@ -32,28 +33,40 @@ def payment_methods():
         cards=cards
     )
 
+
 # ---------------------------
 # Profile page
 # ---------------------------
 @account_bp.route("/profile", methods=["GET", "POST"])
 def profile():
 
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return redirect(url_for("auth.login"))
+
     # =========================
     # SAVE
     # =========================
     if request.method == "POST":
 
-        # ---- TEXT FIELDS ----
         name = (request.form.get("name") or "").strip()
         birthdate = request.form.get("birthdate") or ""
 
+        # ---- UPDATE USER (DB JSON) ----
+        UserService.update(
+            user_id=user_id,
+            name=name
+        )
+
+        # ---- UPDATE SESSION (UI instant) ----
         if name:
             session["user_name"] = name
 
         if birthdate:
             session["user_birthdate"] = birthdate
 
-        # ---- AVATAR UPLOAD ----
+        # ---- AVATAR ----
         file = request.files.get("avatar")
 
         if file and file.filename:
@@ -69,20 +82,26 @@ def profile():
             os.makedirs(upload_folder, exist_ok=True)
 
             path = os.path.join(upload_folder, filename)
-
             file.save(path)
 
-            session["user_avatar"] = f"/static/uploads/avatars/{filename}"
+            avatar_url = f"/static/uploads/avatars/{filename}"
+
+            session["user_avatar"] = avatar_url
+
+            # Optionnel : sauvegarder aussi en user
+            UserService.update_avatar(user_id, avatar_url)
 
         return redirect(url_for("account.profile"))
 
     # =========================
-    # READ
+    # READ (IMPORTANT)
     # =========================
+    user_data = UserService.get_by_id(user_id) or {}
+
     user = {
-        "name": session.get("user_name", "Utilisateur"),
-        "email": session.get("user_email", ""),
-        "phone": session.get("user_phone", ""),
+        "name": user_data.get("name") or session.get("user_name", "Utilisateur"),
+        "email": user_data.get("email") or session.get("user_email", ""),
+        "phone": user_data.get("phone") or session.get("user_phone", ""),
         "birthdate": session.get("user_birthdate", ""),
         "avatar": session.get("user_avatar"),
     }

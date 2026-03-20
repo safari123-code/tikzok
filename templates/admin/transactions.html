@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ t("admin.transactions.title") }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="tz-page tz-container">
+  <div class="tz-admin-shell">
+
+    <div class="tz-history-header">
+      <button
+        onclick="window.history.back()"
+        class="tz-close-btn"
+        aria-label="{{ t('common.back') }}"
+      >
+        ✕
+      </button>
+
+      <h2 class="tz-page-title">
+        {{ t("admin.transactions.title") }}
+      </h2>
+    </div>
+
+    <section class="tz-card tz-card--soft">
+      <div class="tz-admin-section-title">{{ t("admin.transactions.title") }}</div>
+      <div class="tz-admin-section-sub">
+        {{ t("admin.transactions.subtitle", {"count": transactions_count}) }}
+      </div>
+    </section>
+
+    <nav class="tz-admin-topnav">
+      <a href="{{ url_for('admin.dashboard_get') }}" class="tz-admin-tab">📊 {{ t("admin.nav.dashboard") }}</a>
+      <a href="{{ url_for('admin.users_get') }}" class="tz-admin-tab">👤 {{ t("admin.nav.users") }}</a>
+      <a href="{{ url_for('admin.recharges_get') }}" class="tz-admin-tab">📱 {{ t("admin.nav.recharges") }}</a>
+      <a href="{{ url_for('admin.transactions_get') }}" class="tz-admin-tab is-active">💳 {{ t("admin.nav.transactions") }}</a>
+    </nav>
+
+    {% if not transactions %}
+      <section class="tz-card">
+        <div class="tz-admin-empty">
+          <div class="tz-admin-empty__icon">💳</div>
+          <div class="tz-admin-empty__title">{{ t("admin.empty.title") }}</div>
+          <div class="tz-admin-empty__desc">{{ t("admin.empty.transactions") }}</div>
+        </div>
+      </section>
+    {% else %}
+      <div class="tz-admin-list">
+        {% for item in transactions %}
+        <div class="tz-admin-list-card">
+          <div class="tz-admin-list-left">
+            <div class="tz-admin-list-title">{{ item.reference }}</div>
+            <div class="tz-admin-list-sub">
+              {{ item.phone }} • {{ item.date }}
+            </div>
+          </div>
+
+          <div class="tz-admin-list-right">
+            <div class="tz-admin-amount">{{ "%.2f"|format(item.amount|float) }} €</div>
+            <span class="tz-admin-badge tz-admin-badge--success">{{ t("admin.status.success") }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

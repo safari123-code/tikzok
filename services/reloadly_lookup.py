@@ -34,14 +34,14 @@ def lookup_phone_number(phone, country):
 
         logo = None
         if logos:
-            logo = logos[0] if isinstance(logos[0], str) else logos[0].get("url")
+            logo = logos[0]["url"] if isinstance(logos[0], dict) else logos[0]
 
         return {
-            "operatorId": data.get("id"),
+            "id": data.get("operatorId"),
             "name": data.get("name"),
-            "logoUrl": logo,
-            "countryName": (data.get("country") or {}).get("name"),
-            "countryCode": (data.get("country") or {}).get("isoName")
+            "logo_url": logo,
+            "country": (data.get("country") or {}).get("name"),
+            "country_iso": (data.get("country") or {}).get("isoName")
         }
 
     except Exception as e:

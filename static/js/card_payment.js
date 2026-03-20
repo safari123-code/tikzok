@@ -1,162 +1,147 @@
 // ---------------------------
-// Feature: Card Payment UX + Copy/Paste animations
+// Feature: Card Payment UX + Stripe Elements (3 fields)
 // ---------------------------
 (function () {
 
-  const form = document.getElementById("cardPaymentForm");
-  if (!form) return;
+const form = document.getElementById("cardPaymentForm");
+if (!form) return;
 
-  const payBtn = document.getElementById("payBtn");
-  const btnLoader = document.getElementById("btnLoader");
-  const payBtnText = document.getElementById("payBtnText");
+const payBtn = document.getElementById("payBtn");
+const btnLoader = document.getElementById("btnLoader");
+const payBtnText = document.getElementById("payBtnText");
 
-  const saveToggle = document.getElementById("saveCardToggle");
-  const saveInput = document.getElementById("saveCardInput");
+const saveToggle = document.getElementById("saveCardToggle");
+const saveInput = document.getElementById("saveCardInput");
 
-  const nameEl = document.getElementById("cardName");
-  const numEl = document.getElementById("cardNumber");
-  const expEl = document.getElementById("cardExpiry");
-  const cvvEl = document.getElementById("cardCvv");
+const nameEl = document.getElementById("cardName");
 
-  function digitsOnly(s){
-    return (s || "").replace(/\D/g, "");
-  }
+// ---------------------------
+// Stripe init
+// ---------------------------
+const stripe = Stripe(window.STRIPE_PUBLIC_KEY);
 
-  function formatCardNumber(v) {
-    const d = digitsOnly(v).slice(0,19);
-    return d.replace(/(.{4})/g, "$1 ").trim();
-  }
+const elements = stripe.elements();
 
-  function formatExpiry(v) {
-    const d = digitsOnly(v).slice(0,4);
-    if (d.length <= 2) return d;
-    return d.slice(0,2) + "/" + d.slice(2);
-  }
+const style = {
+base: {
+fontSize: "16px",
+color: "#1a1a1a",
+"::placeholder": {
+color: "#aab7c4"
+}
+}
+};
 
-  // ---------------------------
-  // Micro interaction (paste)
-  // ---------------------------
-  function pulse(el){
-    el.style.transform = "scale(1.01)";
-    el.style.boxShadow = "0 0 0 4px rgba(33,150,243,.12)";
-    setTimeout(() => {
-      el.style.transform = "";
-      el.style.boxShadow = "";
-    },220);
-  }
+const cardNumber = elements.create("cardNumber", { style });
+const cardExpiry = elements.create("cardExpiry", { style });
+const cardCvc = elements.create("cardCvc", { style });
 
-  // ---------------------------
-  // Format inputs
-  // ---------------------------
-  numEl?.addEventListener("input", () => {
-    const start = numEl.selectionStart || 0;
-    const before = numEl.value;
+cardNumber.mount("#card-number");
+cardExpiry.mount("#card-expiry");
+cardCvc.mount("#card-cvc");
 
-    numEl.value = formatCardNumber(before);
+// ---------------------------
+// Save card toggle
+// ---------------------------
+saveToggle?.addEventListener("change", () => {
+saveInput.value = saveToggle.checked ? "1" : "0";
+});
 
-    numEl.selectionEnd = numEl.selectionStart =
-      Math.min(numEl.value.length, start);
-  });
+// ---------------------------
+// Helpers
+// ---------------------------
+function resetButton() {
 
-  expEl?.addEventListener("input", () => {
-    expEl.value = formatExpiry(expEl.value);
-  });
+payBtn.classList.remove("is-loading");
 
-  [nameEl, numEl, expEl, cvvEl].forEach(el=>{
-    el?.addEventListener("paste", ()=>pulse(el));
-  });
+if (btnLoader) btnLoader.style.display = "none";
+if (payBtnText) payBtnText.style.opacity = "1";
 
-  // ---------------------------
-  // Save card toggle
-  // ---------------------------
-  saveToggle?.addEventListener("change", ()=>{
-    saveInput.value = saveToggle.checked ? "1" : "0";
-  });
+}
 
-  // ---------------------------
-  // Error display
-  // ---------------------------
-  function showErr(id, show){
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.display = show ? "block" : "none";
-  }
+// ---------------------------
+// Submit
+// ---------------------------
+let lock = false;
 
-  // ---------------------------
-  // Validation
-  // ---------------------------
-  function validate(){
+form.addEventListener("submit", async (e) => {
 
-    let ok = true;
+e.preventDefault();
 
-    const name = (nameEl.value || "")
-      .trim()
-      .replace(/\s+/g," ");
+if (lock) return;
 
-    const parts = name.split(" ").filter(Boolean);
+lock = true;
 
-    if(parts.length < 2 || parts.some(p=>p.length < 2)){
-      ok=false;
-      showErr("errName",true);
-    } else showErr("errName",false);
+payBtn.classList.add("is-loading");
 
+if (btnLoader) btnLoader.style.display = "inline-block";
+if (payBtnText) payBtnText.style.opacity = ".92";
 
-    const digits = digitsOnly(numEl.value);
+try {
 
-    if(digits.length < 15 || digits.length > 19){
-      ok=false;
-      showErr("errNumber",true);
-    } else showErr("errNumber",false);
-
-
-    const exp = (expEl.value || "").trim();
-
-    if(!/^(0[1-9]|1[0-2])\/\d{2}$/.test(exp)){
-      ok=false;
-      showErr("errExpiry",true);
-    } else showErr("errExpiry",false);
-
-
-    const cvv = (cvvEl.value || "").trim();
-
-    if(!/^\d{3,4}$/.test(cvv)){
-      ok=false;
-      showErr("errCvv",true);
-    } else showErr("errCvv",false);
-
-    return ok;
-  }
-
-  // ---------------------------
-  // Submit
-  // ---------------------------
-  let lock=false;
-
-  form.addEventListener("submit",(e)=>{
-
-    if(lock){
-      e.preventDefault();
-      return;
+  const res = await fetch("/payment/card", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
     }
-
-    if(!validate()){
-      e.preventDefault();
-      tzToast?.("");
-      return;
-    }
-
-    // IMPORTANT
-    // send clean digits to Flask
-    numEl.value = digitsOnly(numEl.value);
-
-    lock=true;
-
-    payBtn.classList.add("is-loading");
-
-    if(btnLoader) btnLoader.style.display="inline-block";
-
-    if(payBtnText) payBtnText.style.opacity=".92";
-
   });
+
+  if (!res.ok) {
+    throw new Error("Server error");
+  }
+
+  const data = await res.json();
+
+  if (!data.client_secret) {
+
+    tzToast?.("Payment error");
+
+    lock = false;
+    resetButton();
+    return;
+
+  }
+
+  const result = await stripe.confirmCardPayment(
+    data.client_secret,
+    {
+      payment_method: {
+        card: cardNumber,
+        billing_details: {
+          name: nameEl?.value || ""
+        }
+      }
+    }
+  );
+
+  if (result.error) {
+
+    tzToast?.(result.error.message);
+
+    lock = false;
+    resetButton();
+
+    return;
+
+  }
+
+  if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
+
+    window.location.href = "/payment/success?payment_intent=" + result.paymentIntent.id;
+
+  }
+
+} catch (err) {
+
+  console.error("Stripe error:", err);
+
+  tzToast?.("Payment failed");
+
+  lock = false;
+  resetButton();
+
+}
+
+});
 
 })();

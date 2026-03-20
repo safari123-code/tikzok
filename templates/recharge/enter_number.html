@@ -19,14 +19,15 @@
     class="tz-stack"
     id="enterNumberForm"
   >
-
+    <input type="hidden" name="country_iso" id="countryIso">
+    
     <input
       type="hidden"
       name="country_code"
       id="countryCode"
       value="{{ country_dial|default('+33') }}"
     >
-
+  
     <!-- utilisé par JS pour envoyer numéro E164 -->
     <input
       type="hidden"
