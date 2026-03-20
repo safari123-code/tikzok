@@ -157,6 +157,10 @@ def card_post():
 
     try:
 
+        # 🔥 AJOUT ICI
+        import config
+        print("Stripe key used:", config.STRIPE_SECRET_KEY[:10])
+
         intent = StripeService.create_payment_intent(
             amount=ctx["final_amount"],
             currency="eur",
