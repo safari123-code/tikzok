@@ -71,7 +71,11 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
 # Optional: Stripe mode detection
 STRIPE_MODE = "live" if STRIPE_SECRET_KEY.startswith("sk_live") else "test"
-
+# ---------------------------
+# Stripe validation
+# ---------------------------
+if not STRIPE_WEBHOOK_SECRET:
+    print("⚠️ WARNING: STRIPE_WEBHOOK_SECRET is missing")
 # ---------------------------
 # Payment settings
 # ---------------------------
