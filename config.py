@@ -95,7 +95,7 @@ ADMIN_EMAILS = {
 
 ADMIN_EMAILS = [
     "info@tikzok.com",       # super admin (toi)
-    "admin2@email.com",
+    "safarigulahmad616@gmail.com",
     "admin3@email.com"
 ]
 
