@@ -4,8 +4,11 @@
 // Flutter parity + production safe
 // ---------------------------
 (function () {
+  "use strict";
+
   const phoneInput = document.getElementById("phoneInput");
   const phoneE164 = document.getElementById("phoneE164");
+  const countryIsoInput = document.getElementById("countryIso");
   const countryCodeInput = document.getElementById("countryCode");
   const continueBtn = document.getElementById("continueBtn");
   const help = document.getElementById("phoneHelp");
@@ -13,35 +16,84 @@
 
   const countryBtn = document.getElementById("countryBtn");
   const countryFlag = document.getElementById("countryFlag");
-  const modal = document.getElementById("countryModal");
-  const list = document.getElementById("countryList");
-  const search = document.getElementById("countrySearch");
   const contactBtn = document.getElementById("contactBtn");
+
+  const form = document.getElementById("enterNumberForm");
 
   let COUNTRIES = [];
   let DIAL_INDEX = new Map();
   let MAX_DIAL_LEN = 4;
-  let _isProgrammaticUpdate = false;
 
+  let _isProgrammaticUpdate = false;
   let lookupTimer = null;
   let lookupRequestId = 0;
   let lastLookupKey = "";
   let lastLookupValid = false;
 
   // ---------------------------
-  // Load countries
+  // Countries shared loader
   // ---------------------------
-  async function loadCountries() {
-    try {
-      const res = await fetch("/static/data/countries.json", { cache: "force-cache" });
-      COUNTRIES = await res.json();
-
-      buildDialIndex();
-      setCountry(countryBtn?.dataset?.countryIso || "AF", { setPrefixIfEmpty: true });
-      validateAndSync();
-    } catch (e) {
-      console.error("countries load error", e);
+  function getCountriesPromise() {
+    if (!window.__tzCountriesPromise) {
+      window.__tzCountriesPromise = fetch("/static/data/countries.json", {
+        cache: "force-cache"
+      }).then((res) => {
+        if (!res.ok) {
+          throw new Error("countries.json not found");
+        }
+        return res.json();
+      });
     }
+
+    return window.__tzCountriesPromise;
+  }
+
+  // ---------------------------
+  // Helpers
+  // ---------------------------
+  function digitsOnly(value) {
+    return String(value || "").replace(/[^\d]/g, "");
+  }
+
+  function sanitizeIso(value) {
+    const iso = String(value || "").trim().toLowerCase();
+    return /^[a-z]{2}$/.test(iso) ? iso : "fr";
+  }
+
+  function sanitizeToPhoneInput(value) {
+    let v = String(value || "").replace(/[^\d+]/g, "");
+
+    if (!v) {
+      return "";
+    }
+
+    if (!v.startsWith("+")) {
+      v = "+" + v.replace(/\+/g, "");
+    } else {
+      v = "+" + v.slice(1).replace(/\+/g, "");
+    }
+
+    const digits = digitsOnly(v);
+    if (digits.length > 15) {
+      v = "+" + digits.slice(0, 15);
+    }
+
+    return v;
+  }
+
+  function sanitizeToE164(value) {
+    const cleaned = sanitizeToPhoneInput(value);
+
+    if (!cleaned || !/^\+\d+$/.test(cleaned)) {
+      return null;
+    }
+
+    const digits = digitsOnly(cleaned);
+    if (digits.length > 15) {
+      return null;
+    }
+
+    return cleaned;
   }
 
   function buildDialIndex() {
@@ -49,162 +101,225 @@
     MAX_DIAL_LEN = 1;
 
     for (const c of COUNTRIES) {
-      const digits = (c.dial || "").replace(/[^\d]/g, "");
+      const dialDigits = digitsOnly(c.dial || "");
 
-      if (!digits) continue;
-
-      if (!DIAL_INDEX.has(digits)) {
-        DIAL_INDEX.set(digits, c);
+      if (!dialDigits) {
+        continue;
       }
 
-      if (digits.length > MAX_DIAL_LEN) {
-        MAX_DIAL_LEN = digits.length;
+      if (!DIAL_INDEX.has(dialDigits)) {
+        DIAL_INDEX.set(dialDigits, c);
       }
+
+      MAX_DIAL_LEN = Math.max(MAX_DIAL_LEN, dialDigits.length);
     }
 
     MAX_DIAL_LEN = Math.min(MAX_DIAL_LEN, 6);
   }
 
-  // ---------------------------
-  // Helpers
-  // ---------------------------
-  function digitsOnly(value) {
-    return (value || "").replace(/[^\d]/g, "");
+  function findCountryByIso(iso) {
+    const normalizedIso = sanitizeIso(iso);
+    return COUNTRIES.find((c) => {
+      return sanitizeIso(c.iso || c.iso2) === normalizedIso;
+    }) || null;
   }
 
-  function sanitizeToE164(value) {
-    let v = (value || "").trim();
-
-    if (!v) return null;
-
-    if (!v.startsWith("+")) {
-      v = "+" + v;
+  function findCountryByDialPrefix(phoneValue) {
+    const digits = digitsOnly(phoneValue);
+    if (!digits) {
+      return null;
     }
 
-    v = "+" + v.slice(1).replace(/[^\d]/g, "");
+    const maxLen = Math.min(MAX_DIAL_LEN, digits.length);
 
-    if (!/^\+\d+$/.test(v)) return null;
+    for (let len = maxLen; len >= 1; len--) {
+      const candidate = digits.slice(0, len);
+      const country = DIAL_INDEX.get(candidate);
+      if (country) {
+        return country;
+      }
+    }
 
-    const digits = digitsOnly(v);
-
-    if (digits.length > 15) return null;
-
-    return v;
+    return null;
   }
 
-  function normalizeLeadingZero(phone) {
-    const digits = digitsOnly(phone);
+  function getSelectedIso() {
+    return sanitizeIso(
+      countryBtn?.dataset?.countryIso ||
+      countryIsoInput?.value ||
+      "fr"
+    );
+  }
+
+  function getSelectedCountry() {
+    return findCountryByIso(getSelectedIso());
+  }
+
+  function syncHiddenE164(e164) {
+    if (phoneE164) {
+      phoneE164.value = e164 || "";
+    }
+  }
+
+  function syncCountryCode(dial) {
+    if (countryCodeInput) {
+      countryCodeInput.value = dial || "";
+    }
+  }
+
+  function syncCountryIso(iso) {
+    const normalizedIso = sanitizeIso(iso);
+
+    if (countryBtn) {
+      countryBtn.dataset.countryIso = normalizedIso;
+    }
+
+    if (countryIsoInput) {
+      countryIsoInput.value = normalizedIso;
+    }
+  }
+
+  function setCityByIso(iso) {
+    if (!cityImage) {
+      return;
+    }
+
+    const normalizedIso = sanitizeIso(iso);
+    const defaultSrc = cityImage.dataset.defaultSrc || "/static/images/cities/default.jpg";
+
+    cityImage.onerror = function () {
+      this.onerror = null;
+      this.src = defaultSrc;
+    };
+
+    cityImage.src = `/static/images/cities/${normalizedIso}.jpg`;
+  }
+
+  function formatForDisplay(e164) {
+    return e164 ? e164.replace(/\s+/g, "") : "";
+  }
+
+  function setPhoneValue(text) {
+    if (!phoneInput) {
+      return;
+    }
+
+    _isProgrammaticUpdate = true;
+    phoneInput.value = text;
+    try {
+      phoneInput.setSelectionRange(text.length, text.length);
+    } catch (e) {
+      // no-op
+    }
+    _isProgrammaticUpdate = false;
+  }
+
+  function normalizeInternationalNumber(phone) {
+    const cleaned = sanitizeToPhoneInput(phone);
+
+    if (!cleaned.startsWith("+")) {
+      return cleaned;
+    }
+
+    const digits = cleaned.slice(1);
     const maxLen = Math.min(MAX_DIAL_LEN, digits.length);
 
     for (let len = maxLen; len >= 1; len--) {
       const code = digits.slice(0, len);
       const country = DIAL_INDEX.get(code);
 
-      if (!country) continue;
-
-      const rest = digits.slice(len);
-
-      if (rest.startsWith("0")) {
-        return "+" + code + rest.slice(1);
+      if (!country) {
+        continue;
       }
 
-      return phone;
+      const rest = digits.slice(len);
+      if (rest.startsWith("0")) {
+        return `+${code}${rest.slice(1)}`;
+      }
+
+      return cleaned;
     }
 
-    return phone;
+    return cleaned;
   }
 
-  function syncHiddenE164(e164) {
-    if (!phoneE164) return;
-    phoneE164.value = e164 || "";
-  }
+  function normalizeInternationalNumberWithCountry(phone) {
+    const cleaned = sanitizeToPhoneInput(phone);
+    if (!cleaned.startsWith("+")) {
+      return cleaned;
+    }
 
-  function syncCountryCode(dial) {
-    if (!countryCodeInput) return;
-    countryCodeInput.value = dial || "";
-  }
-
-  function getSelectedCountry() {
-    const iso = countryBtn?.dataset?.countryIso || "AF";
-    return COUNTRIES.find((x) => x.iso === iso || x.iso2 === iso) || null;
-  }
-
-  function getSelectedCountryDialDigits() {
     const country = getSelectedCountry();
-    return digitsOnly(country?.dial || countryCodeInput?.value || "");
+    if (!country) {
+      return cleaned;
+    }
+
+    const code = digitsOnly(country.dial || "");
+    const digits = cleaned.slice(1);
+
+    if (!digits.startsWith(code)) {
+      return cleaned;
+    }
+
+    const rest = digits.slice(code.length);
+    if (rest.startsWith("0")) {
+      return `+${code}${rest.slice(1)}`;
+    }
+
+    return cleaned;
   }
 
   // ---------------------------
-  // City image auto
+  // Country state
   // ---------------------------
-  function setCityByIso(iso) {
-    if (!cityImage) return;
+  function applyCountry(country, options = {}) {
+    if (!country) {
+      return;
+    }
 
-    const country = COUNTRIES.find((x) => (x.iso || x.iso2) === iso);
-    const query = country ? country.name : "city";
+    const iso = sanitizeIso(country.iso || country.iso2);
+    const dial = country.dial || "";
+    const shouldSetPrefix = !!options.setPrefixIfEmpty;
 
-    cityImage.src =
-      "https://source.unsplash.com/1200x600/?city," +
-      encodeURIComponent(query) +
-      "&t=" + Date.now();
+    syncCountryIso(iso);
+    syncCountryCode(dial);
+
+    if (countryFlag) {
+      countryFlag.textContent = country.flag || "";
+    }
+
+    setCityByIso(iso);
+
+    if (shouldSetPrefix && phoneInput) {
+      const nextValue = formatForDisplay(dial);
+      setPhoneValue(nextValue);
+      syncHiddenE164(dial);
+    }
   }
 
-// ---------------------------
-// Display format
-// ---------------------------
-function formatForDisplay(e164) {
+  function syncCountryFromPhone(value) {
+    const country = findCountryByDialPrefix(value);
 
-  if (!e164) {
-    return "";
+    if (!country) {
+      return;
+    }
+
+    const currentIso = getSelectedIso();
+    const nextIso = sanitizeIso(country.iso || country.iso2);
+
+    if (currentIso !== nextIso) {
+      applyCountry(country, { setPrefixIfEmpty: false });
+    }
   }
-
-  // supprimer les espaces
-  return e164.replace(/\s+/g, "");
-
-}
-
-// ---------------------------
-// Country
-// ---------------------------
-function setCountry(iso, opts = {}) {
-  if (!COUNTRIES.length) return;
-
-  const c = COUNTRIES.find((x) => x.iso === iso || x.iso2 === iso) || COUNTRIES[0];
-  const isoVal = c.iso || c.iso2;
-
-  if (countryBtn) {
-    countryBtn.dataset.countryIso = isoVal;
-  }
-
-  // 🔥 FIX ICI
-  const countryIsoInput = document.getElementById("countryIso");
-  if (countryIsoInput) {
-    countryIsoInput.value = isoVal;
-  }
-
-  if (countryFlag) {
-    countryFlag.textContent = c.flag;
-  }
-
-  syncCountryCode(c.dial);
-  setCityByIso(isoVal);
-
-  if (opts.setPrefixIfEmpty && phoneInput) {
-    const e164 = c.dial;
-
-    _isProgrammaticUpdate = true;
-    syncHiddenE164(e164);
-    phoneInput.value = formatForDisplay(e164);
-    phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
-    _isProgrammaticUpdate = false;
-  }
-}
 
   // ---------------------------
   // UI states
   // ---------------------------
   function setContinueDisabled(disabled) {
-    if (!continueBtn) return;
+    if (!continueBtn) {
+      return;
+    }
+
     continueBtn.disabled = !!disabled;
     continueBtn.setAttribute("aria-disabled", disabled ? "true" : "false");
   }
@@ -227,12 +342,7 @@ function setCountry(iso, opts = {}) {
     if (help) {
       help.classList.remove("tz-help--error", "tz-help--muted");
       help.classList.add("tz-help--ok");
-
-      if (operatorName) {
-        help.textContent = "✓ " + operatorName;
-      } else {
-        help.textContent = help.dataset.valid || "";
-      }
+      help.textContent = operatorName || help.dataset.valid || "";
     }
 
     phoneInput?.classList.remove("tz-input--error");
@@ -263,30 +373,29 @@ function setCountry(iso, opts = {}) {
   }
 
   // ---------------------------
-  // Reloadly phone detection
+  // Lookup
   // ---------------------------
-async function tzLookupNumber() {
+  async function tzLookupNumber() {
+    if (!phoneInput) {
+      return;
+    }
 
-  if (!phoneInput) return;
+    const phone = phoneE164?.value || "";
+    const country = getSelectedIso();
 
-  const phone = phoneE164?.value || "";
+    if (!phone || !country) {
+      lastLookupValid = false;
+      setContinueDisabled(true);
+      return;
+    }
 
-  // utiliser ISO pays (AF, FR, etc.)
-  const country = countryBtn?.dataset?.countryIso || "AF";
+    const digits = digitsOnly(phone);
 
-  if (!phone || !country) {
-    lastLookupValid = false;
-    setContinueDisabled(true);
-    return;
-  }
-
-  const digits = digitsOnly(phone);
-
-  if (digits.length < 7) {
-    lastLookupValid = false;
-    setContinueDisabled(true);
-    return;
-  }
+    if (digits.length < 9 || digits.length > 15) {
+      lastLookupValid = false;
+      setContinueDisabled(true);
+      return;
+    }
 
     const lookupKey = `${phone}|${country}`;
 
@@ -306,7 +415,7 @@ async function tzLookupNumber() {
         },
         body: JSON.stringify({
           phone: phone,
-          country: country
+          country: country.toUpperCase()
         })
       });
 
@@ -343,151 +452,79 @@ async function tzLookupNumber() {
 
   function scheduleLookup() {
     clearTimeout(lookupTimer);
-
     lookupTimer = setTimeout(() => {
       tzLookupNumber();
     }, 350);
   }
 
-// ---------------------------
-// Validation
-// ---------------------------
-function validateAndSync() {
-
-  if (!phoneInput) return;
-
-  const rawValue = phoneInput.value.trim();
-
-  // champ vide
-  if (!rawValue) {
-    lastLookupValid = false;
-    showEmpty();
-    return;
-  }
-
-  const rawE164 = sanitizeToE164(rawValue);
-
-  // numéro impossible
-  if (rawE164 === null) {
-    lastLookupValid = false;
-    showInvalid();
-    return;
-  }
-
-  const e164 = normalizeLeadingZero(rawE164);
-
-  // synchroniser le champ caché
-  syncHiddenE164(e164);
-
-  const display = formatForDisplay(e164);
-
-  if (phoneInput.value !== display) {
-    _isProgrammaticUpdate = true;
-    phoneInput.value = display;
-    _isProgrammaticUpdate = false;
-  }
-
-  const digits = digitsOnly(e164);
-
-// ---------------------------
-// longueur valide internationale
-// ---------------------------
-const validLength = digits.length >= 9 && digits.length <= 15;
-
-if (!validLength) {
-  lastLookupValid = false;
-  showInvalid();
-  return;
-}
-
-// lancer la détection opérateur
-scheduleLookup();
-
-} // ← fermer validateAndSync ici
-
-
-// ---------------------------
-// Modal
-// ---------------------------
-function openModal() {
-    if (!modal) return;
-
-    modal.style.display = "block";
-    renderList("");
-
-    setTimeout(() => {
-      search?.focus();
-    }, 50);
-  }
-
-  function closeModal() {
-    if (!modal) return;
-    modal.style.display = "none";
-  }
-
-  function renderList(q) {
-    if (!COUNTRIES.length || !list) return;
-
-    const query = (q || "").toLowerCase();
-    list.innerHTML = "";
-
-    const filtered = COUNTRIES.filter((c) => {
-      return c.name.toLowerCase().includes(query) || c.dial.includes(query);
-    });
-
-    for (const c of filtered) {
-      const row = document.createElement("button");
-
-      row.type = "button";
-      row.className = "tz-country-row";
-      row.innerHTML = `
-        <span class="tz-flag">${c.flag}</span>
-        <span class="tz-grow">${c.name}</span>
-        <span class="tz-muted">${c.dial}</span>
-      `;
-
-      row.onclick = () => {
-        setCountry(c.iso || c.iso2, { setPrefixIfEmpty: true });
-        closeModal();
-        lastLookupKey = "";
-        lastLookupValid = false;
-        validateAndSync();
-      };
-
-      list.appendChild(row);
+  // ---------------------------
+  // Validation / Flutter parity
+  // ---------------------------
+  function validateAndSync() {
+    if (!phoneInput) {
+      return;
     }
+
+    let text = phoneInput.value || "";
+
+    if (!text.trim()) {
+      syncHiddenE164("");
+      lastLookupValid = false;
+      showEmpty();
+      return;
+    }
+
+    text = sanitizeToPhoneInput(text);
+
+    if (!text.startsWith("+")) {
+      text = "+" + digitsOnly(text);
+    }
+
+    const digitsBeforeNormalize = digitsOnly(text);
+    if (digitsBeforeNormalize.length > 15) {
+      text = "+" + digitsBeforeNormalize.slice(0, 15);
+    }
+
+    syncCountryFromPhone(text);
+
+    text = normalizeInternationalNumberWithCountry(text);
+    text = normalizeInternationalNumber(text);
+
+    const e164 = sanitizeToE164(text);
+
+    if (!e164) {
+      syncHiddenE164("");
+      lastLookupValid = false;
+      showInvalid();
+      return;
+    }
+
+    syncCountryFromPhone(e164);
+    syncHiddenE164(e164);
+
+    const display = formatForDisplay(e164);
+    if (phoneInput.value !== display) {
+      setPhoneValue(display);
+    }
+
+    const digits = digitsOnly(e164);
+    const validLength = digits.length >= 9 && digits.length <= 15;
+
+    if (!validLength) {
+      lastLookupValid = false;
+      showInvalid();
+      return;
+    }
+
+    scheduleLookup();
   }
 
   // ---------------------------
-  // Events
+  // Contact picker
   // ---------------------------
-  phoneInput?.addEventListener("input", () => {
-    if (_isProgrammaticUpdate) return;
-
-    lastLookupKey = "";
-    lastLookupValid = false;
-    validateAndSync();
-  });
-
-  phoneInput?.addEventListener("blur", () => {
-    tzLookupNumber();
-  });
-
-  countryBtn?.addEventListener("click", openModal);
-
-  search?.addEventListener("input", (e) => {
-    renderList(e.target.value);
-  });
-
-  modal?.addEventListener("click", (e) => {
-    if (e.target.classList.contains("tz-modal__backdrop")) {
-      closeModal();
-    }
-  });
-
-  contactBtn?.addEventListener("click", async () => {
-    if (!("contacts" in navigator && "select" in navigator.contacts)) {
-      const message = contactBtn.dataset.unavailableMessage || "";
+  async function pickContact() {
+    if (!("contacts" in navigator) || !("select" in navigator.contacts)) {
+      const message = contactBtn?.dataset?.unavailableMessage || "";
       if (message) {
         alert(message);
       }
@@ -497,31 +534,85 @@ function openModal() {
     try {
       const contacts = await navigator.contacts.select(["tel"], { multiple: false });
 
-      if (contacts.length && contacts[0].tel?.length) {
-        phoneInput.value = contacts[0].tel[0];
-        lastLookupKey = "";
-        lastLookupValid = false;
-        validateAndSync();
+      if (!contacts.length || !contacts[0].tel?.length) {
+        return;
       }
-    } catch (e) {
-      console.log("contact cancelled");
-    }
-  });
 
-  const form = phoneInput?.closest("form");
+      let raw = String(contacts[0].tel[0] || "").replace(/[^\d+]/g, "");
 
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      if (phoneE164 && !phoneE164.value) {
-        const e164 = sanitizeToE164(phoneInput.value);
-        if (e164) {
-          phoneE164.value = normalizeLeadingZero(e164);
+      if (raw.startsWith("+")) {
+        raw = normalizeInternationalNumber(raw);
+      } else {
+        if (raw.startsWith("0")) {
+          raw = raw.slice(1);
         }
+
+        const country = getSelectedCountry();
+        const dialDigits = digitsOnly(country?.dial || "");
+
+        raw = dialDigits ? `+${dialDigits}${raw}` : `+${raw}`;
       }
 
-      if (!lastLookupValid) {
+      setPhoneValue(formatForDisplay(raw));
+      lastLookupKey = "";
+      lastLookupValid = false;
+      validateAndSync();
+      phoneInput?.focus();
+    } catch (e) {
+      // cancelled
+    }
+  }
+
+  // ---------------------------
+  // Events
+  // ---------------------------
+  function bindEvents() {
+    phoneInput?.addEventListener("input", () => {
+      if (_isProgrammaticUpdate) {
+        return;
+      }
+
+      lastLookupKey = "";
+      lastLookupValid = false;
+      validateAndSync();
+    });
+
+    phoneInput?.addEventListener("blur", () => {
+      tzLookupNumber();
+    });
+
+    contactBtn?.addEventListener("click", pickContact);
+
+    document.addEventListener("tz:country-selected", (event) => {
+      const country = event.detail?.country;
+      if (!country) {
+        return;
+      }
+
+      applyCountry(country, { setPrefixIfEmpty: true });
+      lastLookupKey = "";
+      lastLookupValid = false;
+      validateAndSync();
+      phoneInput?.focus();
+    });
+
+    form?.addEventListener("submit", async (e) => {
+      validateAndSync();
+
+      if (!phoneE164?.value) {
         e.preventDefault();
-        tzLookupNumber();
+        return;
+      }
+
+      if (lastLookupValid) {
+        return;
+      }
+
+      e.preventDefault();
+      await tzLookupNumber();
+
+      if (lastLookupValid) {
+        form.submit();
       }
     });
   }
@@ -529,9 +620,51 @@ function openModal() {
   // ---------------------------
   // Init
   // ---------------------------
-  loadCountries();
+  async function init() {
+    if (!phoneInput || !countryBtn) {
+      return;
+    }
 
-  // expose modal functions to HTML
-  window.openModal = openModal;
-  window.closeModal = closeModal;
+    try {
+      COUNTRIES = await getCountriesPromise();
+      if (!Array.isArray(COUNTRIES)) {
+        COUNTRIES = [];
+      }
+    } catch (e) {
+      COUNTRIES = [];
+    }
+
+    buildDialIndex();
+
+    const initialIso = getSelectedIso();
+    const initialCountry = findCountryByIso(initialIso) || COUNTRIES[0] || null;
+
+    if (initialCountry) {
+      applyCountry(initialCountry, {
+        setPrefixIfEmpty: !String(phoneInput.value || "").trim()
+      });
+    } else {
+      setCityByIso(initialIso);
+    }
+
+    const initialValue = String(phoneInput.value || "").trim();
+    if (!initialValue && initialCountry?.dial) {
+      setPhoneValue(formatForDisplay(initialCountry.dial));
+      syncHiddenE164(initialCountry.dial);
+    }
+
+    validateAndSync();
+    bindEvents();
+
+    requestAnimationFrame(() => {
+      phoneInput.focus();
+      try {
+        phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
+      } catch (e) {
+        // no-op
+      }
+    });
+  }
+
+  init();
 })();

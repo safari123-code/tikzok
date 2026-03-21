@@ -224,20 +224,27 @@ def stripe_webhook_post():
             amount = _safe_float(metadata.get("recharge_amount"), 0.0)
 
             if not phone or amount <= 0:
-                print("❌ Invalid webhook data:", phone, amount)
-                return jsonify({"ok": False}), 400
+                print("❌ Invalid webhook data:", {
+                    "phone": phone,
+                    "amount": amount,
+                })
+                return jsonify({"ok": False, "error": "invalid_metadata"}), 400
 
             print("🚀 Sending recharge:", phone, amount)
 
             # ---------------------------
-            # Reloadly call (FIX BUG)
+            # Reloadly call
             # ---------------------------
-            reloadly_result = ReloadlyService.send_topup(
-                phone=phone,
-                amount=amount
-            )
+            try:
+                reloadly_result = ReloadlyService.send_topup(
+                    phone=phone,
+                    amount=amount
+                )
+                print("✅ Reloadly success:", reloadly_result)
 
-            print("✅ Reloadly success:", reloadly_result)
+            except Exception as reloadly_error:
+                print("❌ Reloadly error:", reloadly_error)
+                return jsonify({"ok": False, "error": "reloadly_failed"}), 500
 
             # ---------------------------
             # Build success payload
@@ -343,6 +350,19 @@ def success_finish_post():
             )
 
         PointsService.refresh()
+
+# ---------------------------
+# Payment status (AJAX polling)
+# ---------------------------
+@payment_bp.get("/status")
+def payment_status():
+
+    payload = session.get("payment_success_payload")
+
+    if payload:
+        return jsonify({"status": "recharged"})
+
+    return jsonify({"status": "pending"})
 
     # ---------------------------
     # Clean session

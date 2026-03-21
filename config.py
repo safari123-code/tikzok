@@ -43,7 +43,9 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 RELOADLY_CLIENT_ID = os.getenv("RELOADLY_CLIENT_ID", "")
 RELOADLY_CLIENT_SECRET = os.getenv("RELOADLY_CLIENT_SECRET", "")
-RELOADLY_ENV = os.getenv("RELOADLY_ENV", "sandbox")
+
+# 🔥 FIX IMPORTANT
+RELOADLY_ENV = os.getenv("RELOADLY_ENV", "SANDBOX").upper()
 
 # ---------------------------
 # Telnyx SMS OTP
@@ -69,13 +71,11 @@ STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY", "")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
-# Optional: Stripe mode detection
 STRIPE_MODE = "live" if STRIPE_SECRET_KEY.startswith("sk_live") else "test"
-# ---------------------------
-# Stripe validation
-# ---------------------------
+
 if not STRIPE_WEBHOOK_SECRET:
     print("⚠️ WARNING: STRIPE_WEBHOOK_SECRET is missing")
+
 # ---------------------------
 # Payment settings
 # ---------------------------
@@ -83,27 +83,28 @@ if not STRIPE_WEBHOOK_SECRET:
 CURRENCY = os.getenv("CURRENCY", "eur")
 
 # ---------------------------
-# Admin
+# Admin (FINAL CLEAN)
 # ---------------------------
 
-ADMIN_EMAILS_RAW = os.getenv("ADMIN_EMAILS", "")
-ADMIN_EMAILS = {
+ADMIN_EMAILS_ENV = {
     email.strip().lower()
-    for email in ADMIN_EMAILS_RAW.split(",")
+    for email in os.getenv("ADMIN_EMAILS", "").split(",")
     if email.strip()
 }
 
-# ---------------------------
-# Admin
-# ---------------------------
-
-ADMIN_EMAILS = [
-    "info@tikzok.com",       # super admin (toi)
+ADMIN_EMAILS_STATIC = {
+    "info@tikzok.com",
     "safarigulahmad616@gmail.com",
     "admin3@email.com"
-]
+}
+
+ADMIN_EMAILS = ADMIN_EMAILS_ENV.union(ADMIN_EMAILS_STATIC)
 
 SUPER_ADMIN_EMAIL = "info@tikzok.com"
+
+# ---------------------------
+# App
+# ---------------------------
 
 APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
 
@@ -111,4 +112,12 @@ APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
 # Security
 # ---------------------------
 
-MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2MB request limit
+MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2MB
+
+# ---------------------------
+# Debug (temp)
+# ---------------------------
+
+print("ENV:", ENV)
+print("RELOADLY ENV:", RELOADLY_ENV)
+print("STRIPE MODE:", STRIPE_MODE)

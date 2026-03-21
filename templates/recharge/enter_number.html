@@ -19,16 +19,20 @@
     class="tz-stack"
     id="enterNumberForm"
   >
-    <input type="hidden" name="country_iso" id="countryIso">
-    
+    <input
+      type="hidden"
+      name="country_iso"
+      id="countryIso"
+      value="{{ country_iso|default('fr') }}"
+    >
+
     <input
       type="hidden"
       name="country_code"
       id="countryCode"
       value="{{ country_dial|default('+33') }}"
     >
-  
-    <!-- utilisé par JS pour envoyer numéro E164 -->
+
     <input
       type="hidden"
       name="phone_e164"
@@ -48,7 +52,7 @@
           type="button"
           class="tz-flag-btn"
           id="countryBtn"
-          onclick="openModal()"
+          onclick="tzOpenCountryModal()"
           data-country-iso="{{ country_iso|default('fr') }}"
           aria-label="{{ t('recharge.enterNumber.selectCountry') }}"
         >
@@ -74,6 +78,7 @@
           type="button"
           class="tz-icon-btn"
           id="contactBtn"
+          data-unavailable-message="{{ t('recharge.enterNumber.contacts') }}"
           aria-label="{{ t('recharge.enterNumber.contacts') }}"
         >
           👤
@@ -100,9 +105,10 @@
       <img
         id="cityImage"
         class="tz-city-card__img"
-        src="https://source.unsplash.com/1200x600/?city"
-        onerror="this.src='https://images.unsplash.com/photo-1507525428034-b723cf961d3e'"
+        src="{{ url_for('static', filename='images/cities/' ~ (country_iso|default('fr')|lower) ~ '.jpg') }}"
+        data-default-src="{{ url_for('static', filename='images/cities/default.jpg') }}"
         alt=""
+        loading="lazy"
       >
 
     </section>
@@ -119,12 +125,16 @@
 
   </form>
 
-  <!-- Country modal -->
-  <div class="tz-modal" id="countryModal" style="display:none;">
+  <div
+    class="tz-modal"
+    id="countryModal"
+    style="display:none;"
+    aria-hidden="true"
+  >
 
     <div
       class="tz-modal__backdrop"
-      onclick="closeModal()"
+      onclick="tzCloseCountryModal()"
     ></div>
 
     <div class="tz-modal__panel">
@@ -140,7 +150,7 @@
         <button
           type="button"
           class="tz-icon-btn"
-          onclick="closeModal()"
+          onclick="tzCloseCountryModal()"
           aria-label="{{ t('common.close') }}"
         >
           ✕

@@ -1,5 +1,5 @@
 {# ---------------------------
-Feature: Card Payment (Stripe Elements - Flutter UI style)
+Feature: Card Payment (FINAL SAFE - SAME DESIGN)
 --------------------------- #}
 
 {% extends "base.html" %}
@@ -11,7 +11,156 @@ Feature: Card Payment (Stripe Elements - Flutter UI style)
 
 <script defer src="{{ url_for('static', filename='js/tz_toast.js') }}"></script>
 
-<script defer src="{{ url_for('static', filename='js/card_payment.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const form = document.getElementById("cardPaymentForm");
+  const payBtn = document.getElementById("payBtn");
+  const loader = document.getElementById("btnLoader");
+  const text = document.getElementById("payBtnText");
+
+  const saveToggle = document.getElementById("saveCardToggle");
+  const saveInput = document.getElementById("saveCardInput");
+
+  const nameEl = document.getElementById("cardName");
+
+  if (!form) return;
+
+  // ---------------------------
+  // Stripe init
+  // ---------------------------
+  const stripe = Stripe(window.STRIPE_PUBLIC_KEY);
+  const elements = stripe.elements();
+
+  const style = {
+    base: {
+      fontSize: "16px",
+      color: "#1a1a1a",
+      "::placeholder": { color: "#aab7c4" }
+    }
+  };
+
+  const cardNumber = elements.create("cardNumber", { style });
+  const cardExpiry = elements.create("cardExpiry", { style });
+  const cardCvc = elements.create("cardCvc", { style });
+
+  cardNumber.mount("#card-number");
+  cardExpiry.mount("#card-expiry");
+  cardCvc.mount("#card-cvc");
+
+  // ---------------------------
+  // Save card sync
+  // ---------------------------
+  saveToggle?.addEventListener("change", () => {
+    saveInput.value = saveToggle.checked ? "1" : "0";
+  });
+
+  // ---------------------------
+  // UX helpers
+  // ---------------------------
+  function setLoading(state) {
+
+    if (state) {
+      payBtn.classList.add("is-loading");
+      payBtn.disabled = true;
+      loader.style.display = "inline-block";
+      text.style.opacity = "0.6";
+    } else {
+      payBtn.classList.remove("is-loading");
+      payBtn.disabled = false;
+      loader.style.display = "none";
+      text.style.opacity = "1";
+    }
+
+  }
+
+  // ---------------------------
+  // Submit
+  // ---------------------------
+  let lock = false;
+
+  form.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    if (lock) return;
+
+    lock = true;
+    setLoading(true);
+
+    try {
+
+      // ---------------------------
+      // Create PaymentIntent
+      // ---------------------------
+      const res = await fetch("/payment/card", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error("server_error");
+      }
+
+      const data = await res.json();
+
+      if (!data.client_secret) {
+        throw new Error("no_client_secret");
+      }
+
+      // ---------------------------
+      // Confirm payment
+      // ---------------------------
+      const result = await stripe.confirmCardPayment(
+        data.client_secret,
+        {
+          payment_method: {
+            card: cardNumber,
+            billing_details: {
+              name: nameEl?.value || ""
+            }
+          }
+        }
+      );
+
+      if (result.error) {
+
+        tzToast?.(result.error.message);
+
+        lock = false;
+        setLoading(false);
+
+        return;
+      }
+
+      // ---------------------------
+      // Success → redirect
+      // ---------------------------
+      if (result.paymentIntent?.status === "succeeded") {
+
+        window.location.href =
+          "/payment/success?payment_intent=" +
+          result.paymentIntent.id;
+
+      }
+
+    } catch (err) {
+
+      console.error("Payment error:", err);
+
+      tzToast?.("Payment failed");
+
+      lock = false;
+      setLoading(false);
+
+    }
+
+  });
+
+});
+</script>
 
 {% endblock %}
 
@@ -28,7 +177,9 @@ Feature: Card Payment (Stripe Elements - Flutter UI style)
     <section class="tz-card tz-card--soft">
       <div class="tz-row">
         <div class="tz-strong">{{ phone }}</div>
-        <div class="tz-strong" style="color:#2196f3;">{{ amount }} €</div>
+        <div class="tz-strong" style="color:#2196f3;">
+          {{ amount }} €
+        </div>
       </div>
     </section>
 
@@ -68,8 +219,6 @@ Feature: Card Payment (Stripe Elements - Flutter UI style)
 
         <div class="tz-stack">
 
-          <!-- Card Holder -->
-
           <div class="tz-field">
             <label class="tz-label">
               {{ t("payment.card.holderName") }}
@@ -77,55 +226,37 @@ Feature: Card Payment (Stripe Elements - Flutter UI style)
 
             <input
               class="tz-input"
-              name="card_name"
               id="cardName"
               autocomplete="cc-name"
               required
             >
           </div>
 
-          <!-- Card Number -->
-
           <div class="tz-field">
-
             <label class="tz-label">
               {{ t("payment.card.number") }}
             </label>
-
             <div id="card-number" class="tz-input"></div>
-
           </div>
-
-          <!-- Expiry + CVC -->
 
           <div class="tz-row tz-row--gap">
 
             <div class="tz-grow">
-
               <div class="tz-field">
-
                 <label class="tz-label">
                   {{ t("payment.card.expiry") }}
                 </label>
-
                 <div id="card-expiry" class="tz-input"></div>
-
               </div>
-
             </div>
 
             <div class="tz-grow">
-
               <div class="tz-field">
-
                 <label class="tz-label">
                   {{ t("payment.card.cvv") }}
                 </label>
-
                 <div id="card-cvc" class="tz-input"></div>
-
               </div>
-
             </div>
 
           </div>
@@ -138,18 +269,12 @@ Feature: Card Payment (Stripe Elements - Flutter UI style)
 
       <button type="submit" class="tz-primary-btn" id="payBtn">
 
-        <span
-          class="tz-btn-loader"
-          id="btnLoader"
-          style="display:none;">
-        </span>
+        <span class="tz-btn-loader" id="btnLoader" style="display:none;"></span>
 
         <span id="payBtnText">
-
           {{ t("payment.card.payAmount",
               {"amount": ("%.2f"|format((amount|default(0))|float))}
           ) }}
-
         </span>
 
       </button>
