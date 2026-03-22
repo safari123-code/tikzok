@@ -1,5 +1,5 @@
 # ---------------------------
-# Reloadly Service
+# Reloadly Service (Production Ready)
 # ---------------------------
 
 import os
@@ -46,7 +46,33 @@ def _extract_local_number(phone: str) -> str:
 
 
 # ---------------------------
-# Get Reloadly token
+# Safe request (retry)
+# ---------------------------
+def _safe_request(method, url, headers=None, json=None, timeout=15, retries=2):
+
+    for attempt in range(retries + 1):
+        try:
+            res = requests.request(
+                method,
+                url,
+                headers=headers,
+                json=json,
+                timeout=timeout
+            )
+
+            if res.status_code < 500:
+                return res
+
+        except Exception as e:
+            print("Reloadly request error:", e)
+
+        time.sleep(1.2 * (attempt + 1))
+
+    raise RuntimeError("Reloadly request failed after retries")
+
+
+# ---------------------------
+# Get token
 # ---------------------------
 def get_reloadly_token():
 
@@ -68,8 +94,7 @@ def get_reloadly_token():
         "audience": RELOADLY_BASE_URL
     }
 
-    res = requests.post(RELOADLY_AUTH_URL, json=payload, timeout=10)
-    res.raise_for_status()
+    res = _safe_request("POST", RELOADLY_AUTH_URL, json=payload)
 
     data = res.json()
 
@@ -84,7 +109,7 @@ def get_reloadly_token():
 
 
 # ---------------------------
-# Phone operator lookup
+# Lookup operator
 # ---------------------------
 def lookup_phone_number(phone: str, country: str):
 
@@ -93,10 +118,7 @@ def lookup_phone_number(phone: str, country: str):
     normalized_phone = _extract_local_number(phone)
     normalized_country = _normalize_country_iso(country)
 
-    if not normalized_phone:
-        return None
-
-    if not normalized_country:
+    if not normalized_phone or not normalized_country:
         return None
 
     url = f"{RELOADLY_BASE_URL}/operators/auto-detect/phone/{normalized_phone}/countries/{normalized_country}"
@@ -107,10 +129,10 @@ def lookup_phone_number(phone: str, country: str):
     }
 
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = _safe_request("GET", url, headers=headers)
 
         if res.status_code != 200:
-            print("Reloadly lookup failed:", res.status_code, res.text)
+            print("Reloadly lookup failed:", res.text)
             return None
 
         data = res.json()
@@ -135,73 +157,70 @@ def lookup_phone_number(phone: str, country: str):
 
 
 # ---------------------------
-# Reloadly Plans
+# Send Topup (FINAL)
 # ---------------------------
-def get_reloadly_plans(operator_id: int):
+def send_topup(phone: str, amount: float, country_iso: str | None = None):
 
     token = get_reloadly_token()
 
+    normalized_phone = _normalize_phone(phone)
+    normalized_country = _normalize_country_iso(country_iso)
+
+    if not normalized_phone:
+        raise RuntimeError("Reloadly phone missing")
+
+    if not normalized_country:
+        raise RuntimeError("Reloadly country ISO missing")
+
+    # ---------------------------
+    # Operator detection
+    # ---------------------------
+    lookup = lookup_phone_number(normalized_phone, normalized_country)
+
+    if not lookup:
+        raise RuntimeError("Operator detection failed")
+
+    operator_id = lookup["operatorId"]
+    country_code = lookup["countryCode"]
+
+    if not operator_id or not country_code:
+        raise RuntimeError("Invalid operator data")
+
+    # ---------------------------
+    # Idempotency (CRITICAL)
+    # ---------------------------
+    unique_id = f"tikzok-{normalized_phone}-{int(time.time())}"
+
+    url = f"{RELOADLY_BASE_URL}/topups"
+
     headers = {
         "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
         "Accept": "application/com.reloadly.topups-v1+json"
     }
 
-    plans = []
+    payload = {
+        "operatorId": int(operator_id),
+        "amount": float(amount),
+        "useLocalAmount": False,
+        "customIdentifier": unique_id,
+        "recipientPhone": {
+            "countryCode": country_code,
+            "number": _extract_local_number(normalized_phone)
+        }
+    }
 
-    # ---------------------------
-    # DATA PLANS
-    # ---------------------------
-    try:
-        url = f"{RELOADLY_BASE_URL}/operators/{operator_id}/data-plans"
+    print("🚀 Reloadly topup:", payload)
 
-        res = requests.get(url, headers=headers, timeout=15)
+    res = _safe_request("POST", url, headers=headers, json=payload, timeout=20)
 
-        if res.status_code == 200:
-            data = res.json()
+    print("📡 Reloadly response:", res.status_code, res.text)
 
-            for p in data:
-                plans.append({
-                    "id": p.get("id"),
-                    "name": p.get("name"),
-                    "description": p.get("description"),
-                    "type": p.get("type") or "DATA",
-                    "amount": p.get("amount"),
-                    "currency": p.get("currencyCode"),
-                })
+    if res.status_code not in (200, 201):
+        raise RuntimeError(f"Reloadly topup failed: {res.text}")
 
-    except Exception as e:
-        print("Reloadly data plans error:", e)
+    return res.json()
 
-    # ---------------------------
-    # BUNDLES
-    # ---------------------------
-    try:
-        url = f"{RELOADLY_BASE_URL}/operators/{operator_id}/bundles"
-
-        res = requests.get(url, headers=headers, timeout=15)
-
-        if res.status_code == 200:
-            data = res.json()
-
-            for p in data:
-                plans.append({
-                    "id": p.get("id"),
-                    "name": p.get("name"),
-                    "description": p.get("description"),
-                    "type": p.get("type") or "COMBO",
-                    "amount": p.get("amount"),
-                    "currency": p.get("currencyCode"),
-                })
-
-    except Exception as e:
-        print("Reloadly bundles error:", e)
-
-    return plans
-
-
-# ---------------------------
-# Get operators by country
-# ---------------------------
 def get_reloadly_operators_by_country(country_iso: str):
 
     token = get_reloadly_token()
@@ -218,16 +237,16 @@ def get_reloadly_operators_by_country(country_iso: str):
     }
 
     try:
-        res = requests.get(url, headers=headers, timeout=15)
+        res = _safe_request("GET", url, headers=headers)
 
         if res.status_code != 200:
-            print("Reloadly operators by country failed:", res.status_code, res.text)
+            print("Reloadly operators failed:", res.text)
             return []
 
         data = res.json()
 
     except Exception as e:
-        print("Reloadly operators by country exception:", e)
+        print("Reloadly operators error:", e)
         return []
 
     operators = []
@@ -249,67 +268,33 @@ def get_reloadly_operators_by_country(country_iso: str):
 
     return operators
 
-
-# ---------------------------
-# Send Topup
-# ---------------------------
-def send_topup(phone: str, amount: float, country_iso: str | None = None):
+def get_reloadly_plans(operator_id: int):
 
     token = get_reloadly_token()
 
-    normalized_phone = _normalize_phone(phone)
-    normalized_country = _normalize_country_iso(country_iso)
-
-    if not normalized_phone:
-        raise RuntimeError("Reloadly phone missing")
-
-    if not normalized_country:
-        raise RuntimeError("Reloadly country ISO missing")
-
-    lookup = lookup_phone_number(normalized_phone, normalized_country)
-
-    if not lookup:
-        raise RuntimeError(
-            f"Operator detection failed for phone={normalized_phone}, country={normalized_country}"
-        )
-
-    operator_id = lookup["operatorId"]
-    country_code = lookup["countryCode"]
-
-    if not operator_id or not country_code:
-        raise RuntimeError("Reloadly operator lookup returned incomplete data")
-
-    url = f"{RELOADLY_BASE_URL}/topups"
-
     headers = {
         "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
         "Accept": "application/com.reloadly.topups-v1+json"
     }
 
-    payload = {
-        "operatorId": int(operator_id),
-        "amount": float(amount),
-        "useLocalAmount": False,
-        "customIdentifier": f"tikzok-{normalized_phone}-{int(time.time())}",
-        "recipientPhone": {
-            "countryCode": country_code,
-            "number": _extract_local_number(normalized_phone)
-        }
-    }
+    plans = []
 
-    print("Reloadly topup payload:", payload)
+    try:
+        url = f"{RELOADLY_BASE_URL}/operators/{operator_id}/data-plans"
 
-    res = requests.post(
-        url,
-        headers=headers,
-        json=payload,
-        timeout=20
-    )
+        res = _safe_request("GET", url, headers=headers)
 
-    print("Reloadly topup response:", res.status_code, res.text)
+        if res.status_code == 200:
+            for p in res.json():
+                plans.append({
+                    "id": p.get("id"),
+                    "name": p.get("name"),
+                    "amount": p.get("amount"),
+                    "currency": p.get("currencyCode"),
+                    "type": "DATA"
+                })
 
-    if res.status_code not in (200, 201):
-        raise RuntimeError(f"Reloadly topup failed: {res.text}")
+    except Exception as e:
+        print("Reloadly plans error:", e)
 
-    return res.json()
+    return plans
