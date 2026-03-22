@@ -1,15 +1,8 @@
 # ---------------------------
-# Currency Service (FINAL PRO)
+# Currency Service (FINAL CLEAN)
 # ---------------------------
 
-from services.fees_service import FeesService
-
-
 class CurrencyService:
-    """
-    Gère la devise et l'estimation du montant reçu.
-    Compatible business (fees + payout réel).
-    """
 
     # ---------------------------
     # Préfixe téléphone → devise
@@ -26,17 +19,17 @@ class CurrencyService:
     }
 
     # ---------------------------
-    # Taux fallback approximatifs
+    # Taux manuel
     # ---------------------------
-    _fallback_rates = {
+    _manual_rates = {
         "EUR": 1,
-        "USD": 1,
-        "GBP": 1,
-        "AFN": 80.33,
-        "MAD": 10,
-        "XOF": 650,
-        "XAF": 650,
-        "NGN": 1400,
+        "USD": 1.1,
+        "GBP": 0.85,
+        "AFN": 65.10,
+        "MAD": 10.4,
+        "XOF": 655,
+        "XAF": 655,
+        "NGN": 1500,
     }
 
     # ---------------------------
@@ -55,64 +48,34 @@ class CurrencyService:
         return "EUR"
 
     # ---------------------------
-    # Taux fallback sécurisé
+    # Taux
     # ---------------------------
     @staticmethod
     def rate_from_currency(currency: str) -> float:
-        return CurrencyService._fallback_rates.get(currency, 1)
+        return CurrencyService._manual_rates.get(currency, 1)
 
     # ---------------------------
-    # Calcul estimation locale (NET)
+    # 🔥 ESTIMATION (SANS FEES)
     # ---------------------------
     @staticmethod
-    def estimate_local_amount(phone: str, amount: float) -> tuple[int, str]:
+    def estimate_local_amount(phone: str, amount: float):
 
         currency = CurrencyService.currency_from_phone(phone)
         rate = CurrencyService.rate_from_currency(currency)
 
-        # 🔥 appliquer payout réel (après frais)
-        payout_data = FeesService.compute_payout(amount, currency)
-        payout = payout_data["payout"]
+        local = amount * rate
 
-        local = round(payout * rate)
-
-        return local, currency
+        return int(round(local)), currency
 
     # ---------------------------
-    # Affichage "Ils reçoivent"
+    # Affichage final
     # ---------------------------
     @staticmethod
-    def received_display_value(
-        phone: str,
-        amount: float,
-        selected_forfait: dict | None,
-        quote: dict | None,
-    ) -> str:
+    def received_display_value(phone, amount, selected_forfait, quote):
 
-        # ---------------------------
-        # DATA forfait prioritaire
-        # ---------------------------
         if selected_forfait and selected_forfait.get("gb"):
             return str(selected_forfait["gb"])
 
-        currency = CurrencyService.currency_from_phone(phone)
-
-        # ---------------------------
-        # Reloadly quote (corrigé fees)
-        # ---------------------------
-        if quote and quote.get("localAmount") and quote.get("localCurrency"):
-
-            payout_data = FeesService.compute_payout(amount, currency)
-
-            ratio = payout_data["payout"] / amount if amount else 1
-
-            local_amount = int(float(quote["localAmount"]) * ratio)
-
-            return f"{local_amount} {quote['localCurrency']}"
-
-        # ---------------------------
-        # Fallback estimation
-        # ---------------------------
         local, currency = CurrencyService.estimate_local_amount(phone, amount)
 
         return f"{local} {currency}"

@@ -7,24 +7,18 @@ import time
 import uuid
 import requests
 from dotenv import load_dotenv
+from config import RELOADLY_BASE_URL, RELOADLY_AUTH_URL
 
-load_dotenv() 
+load_dotenv()
 
-RELOADLY_BASE_URL = "https://topups.reloadly.com"
-RELOADLY_V1_URL = "https://topups.reloadly.com/v1"
 # ---------------------------
-# Config
+# Config (FINAL CLEAN)
 # ---------------------------
-RELOADLY_BASE_URL = os.getenv(
-    "RELOADLY_BASE_URL",
-    "https://topups.reloadly.com/v1"  # 🔥 FIX ICI
-)
 
-RELOADLY_AUTH_URL = os.getenv(
-    "RELOADLY_AUTH_URL",
-    "https://auth.reloadly.com/oauth/token"
-)
+# 🔥 Base URL vient du config.py (ne pas écraser)
+# 🔥 On dérive uniquement le V1
 
+RELOADLY_V1_URL = f"{RELOADLY_BASE_URL}/v1"
 # ---------------------------
 # Token cache
 # ---------------------------
@@ -125,9 +119,9 @@ def lookup_phone_number(phone: str, country: str):
         return None
 
     url = (
-        f"{RELOADLY_BASE_URL}/operators/auto-detect/"
-        f"phone/{normalized_phone}/countries/{normalized_country}"
-    )
+    f"https://topups.reloadly.com/operators/auto-detect/"
+    f"phone/{normalized_phone}/countries/{normalized_country}"
+ )
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -198,7 +192,7 @@ def send_topup(phone: str, amount: float, country_iso: str | None = None):
     # ---------------------------
     unique_id = f"tk_{uuid.uuid4().hex}"
 
-    url = f"{RELOADLY_BASE_URL}/topups-async"
+    url = f"{RELOADLY_V1_URL}/topups-async"
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -247,7 +241,7 @@ def get_reloadly_operators_by_country(country_iso: str):
         return []
 
     # 🔥 ENDPOINT PROPRE
-    url = f"{RELOADLY_BASE_URL}/operators/countries/{normalized_country}?includeBundles=true&includeData=true"
+    url = f"{RELOADLY_V1_URL}/operators/countries/{normalized_country}?includeBundles=true&includeData=true"
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -296,7 +290,7 @@ def get_topup_status(transaction_id: int):
 
     token = get_reloadly_token()
 
-    url = f"{RELOADLY_BASE_URL}/topups/{transaction_id}/status"
+    url = f"{RELOADLY_V1_URL}/topups/{transaction_id}/status"
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -343,7 +337,7 @@ def get_reloadly_plans(operator_id: int):
     plans = []
 
     try:
-        url = f"{RELOADLY_BASE_URL}/operators/{operator_id}/data-plans"
+        url = f"{RELOADLY_V1_URL}/operators/{operator_id}/data-plans"
 
         res = _safe_request("GET", url, headers=headers)
 
@@ -370,14 +364,14 @@ def get_reloadly_plans(operator_id: int):
 
 
 # ---------------------------
-# Get Reloadly Quote (REAL VALUE) ✅ FIXED
+# Get Reloadly Quote (FINAL FIXED)
 # ---------------------------
 def get_reloadly_quote(operator_id: int, amount: float):
 
     token = get_reloadly_token()
 
-    # 🔥 IMPORTANT
-    url = "https://topups.reloadly.com/v1/topups/quote" 
+    # ✅ IMPORTANT : PAS de /v1 ici
+    url = f"{RELOADLY_BASE_URL}/topups/quote"
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -394,16 +388,22 @@ def get_reloadly_quote(operator_id: int, amount: float):
     try:
         res = _safe_request("POST", url, headers=headers, json=payload)
 
-        print("QUOTE STATUS:", res.status_code)
-        print("QUOTE RESPONSE:", res.text)
+        print("📡 QUOTE STATUS:", res.status_code)
+        print("📡 QUOTE RESPONSE:", res.text)
 
         if res.status_code != 200:
             return None
 
-        return res.json()
+        data = res.json()
+
+        if not data.get("localAmount") or not data.get("localCurrency"):
+            print("⚠️ Invalid quote data")
+            return None
+
+        return data
 
     except Exception as e:
-        print("Reloadly quote error:", e)
+        print("❌ Reloadly quote error:", e)
         return None
 
 # ---------------------------
@@ -436,7 +436,7 @@ def send_data_topup(phone: str, plan_id: int, country_iso: str):
     if not operator_id or not country_code:
         raise RuntimeError("Invalid operator data")
 
-    url = f"{RELOADLY_BASE_URL}/topups-async"
+    url = f"{RELOADLY_V1_URL}/topups-async"
 
     headers = {
         "Authorization": f"Bearer {token}",

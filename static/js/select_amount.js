@@ -1,5 +1,5 @@
 // ---------------------------
-// Feature: Forfait behavior (FINAL CLEAN)
+// Feature: Forfait behavior (FINAL PRODUCTION)
 // ---------------------------
 
 (function () {
@@ -31,7 +31,6 @@
   const forfaitPrice = document.getElementById("forfaitPrice");
 
   const taxRate = parseFloat(amountCard?.dataset?.taxRate || "0.10");
-  const operatorId = amountCard?.dataset?.operatorId || "";
   const pointsRate = parseFloat(amountCard?.dataset?.pointsRate || "0.025");
 
   const userCurrency = "€";
@@ -122,33 +121,32 @@
   }
 
   // ---------------------------
-  // Reloadly Quote (API ONLY)
+  // 🔥 BACKEND ONLY (CurrencyService)
   // ---------------------------
 
   async function fetchQuote(amount) {
 
     const gb = forfaitGb?.value;
 
-    // Forfait priorité
+    // forfait priorité
     if (gb && rowReceived) {
       rowReceived.textContent = gb;
       return;
     }
 
-    if (!operatorId) return;
+    if (rowReceived) {
+      rowReceived.style.opacity = "0.6";
+    }
 
     try {
 
       const res = await fetch("/recharge/api/quote", {
-
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-
         body: JSON.stringify({
-          operatorId: operatorId,
-          amount: amount // ✅ backend gère fees
+          amount: amount // 🔥 PAS DE CALCUL JS
         })
       });
 
@@ -158,16 +156,27 @@
 
       if (!data?.ok) return;
 
-      if (data.localAmount && data.localCurrency && rowReceived) {
+      if (data.received && rowReceived) {
 
-        rowReceived.textContent =
-          `${Math.round(Number(data.localAmount))} ${data.localCurrency}`;
+        rowReceived.textContent = data.received;
+
+        rowReceived.style.transition = "all .25s ease";
+        rowReceived.style.transform = "scale(1.05)";
+        rowReceived.style.opacity = "1";
+
+        setTimeout(() => {
+          rowReceived.style.transform = "scale(1)";
+        }, 140);
       }
 
     } catch (e) {
       console.error("quote error", e);
     }
   }
+
+  // ---------------------------
+  // Debounce
+  // ---------------------------
 
   function scheduleQuote(amount) {
 
@@ -177,6 +186,10 @@
     debounceT =
       window.setTimeout(() => fetchQuote(amount), 250);
   }
+
+  // ---------------------------
+  // Forfait logic
+  // ---------------------------
 
   function applyForfaitStateFromInputs() {
 
@@ -207,7 +220,6 @@
   // ---------------------------
 
   moneyBtn?.addEventListener("click", () => {
-
     const isOpen = moneyPanel.style.display !== "none";
     setMoneyOpen(!isOpen);
   });
@@ -239,15 +251,6 @@
     scrollToDetails();
   });
 
-  forfaitCard?.addEventListener("click", (e) => {
-
-    if (e.target && e.target.closest("#removeForfaitBtn")) return;
-
-    const url = forfaitCard.dataset.forfaitUrl;
-
-    if (url) window.location.href = url;
-  });
-
   removeForfaitBtn?.addEventListener("click", (e) => {
 
     e.preventDefault();
@@ -255,10 +258,6 @@
 
     if (forfaitGb) forfaitGb.value = "";
     if (forfaitPrice) forfaitPrice.value = "";
-
-    const fallback = document.documentElement.dataset.tzChooseInternetPlan || "";
-
-    if (forfaitTitle) forfaitTitle.textContent = fallback;
 
     removeForfaitBtn.style.display = "none";
 
@@ -269,15 +268,15 @@
     setAmountLocked(false);
 
     tzToast?.(document.documentElement.dataset.tzRemovedText || "");
-
-    removeForfaitBtn.style.transform = "scale(.98)";
-
-    setTimeout(() => (removeForfaitBtn.style.transform = ""), 120);
   });
 
   // ---------------------------
   // Init
   // ---------------------------
+
+  if (rowReceived) {
+    rowReceived.style.opacity = "0.8";
+  }
 
   const initialAmount =
     parseFloat(amountInput?.value || "0");

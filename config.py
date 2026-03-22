@@ -1,12 +1,8 @@
 # ---------------------------
-# config.py
+# config.py (LIVE ONLY)
 # ---------------------------
 
 import os
-
-# ---------------------------
-# Optional dotenv (local dev)
-# ---------------------------
 
 try:
     from dotenv import load_dotenv
@@ -18,8 +14,8 @@ except Exception:
 # Environment
 # ---------------------------
 
-ENV = os.getenv("ENV", "development")
-IS_PROD = ENV == "production"
+ENV = os.getenv("ENV", "production")
+IS_PROD = True  # 🔥 forcé en production
 
 # ---------------------------
 # Flask
@@ -27,7 +23,7 @@ IS_PROD = ENV == "production"
 
 SECRET_KEY = os.getenv("SECRET_KEY") or os.urandom(32)
 
-SESSION_COOKIE_SECURE = IS_PROD
+SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 
@@ -38,14 +34,16 @@ SESSION_COOKIE_SAMESITE = "Lax"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # ---------------------------
-# Reloadly API
+# Reloadly API (LIVE ONLY)
 # ---------------------------
 
 RELOADLY_CLIENT_ID = os.getenv("RELOADLY_CLIENT_ID", "")
 RELOADLY_CLIENT_SECRET = os.getenv("RELOADLY_CLIENT_SECRET", "")
 
-# 🔥 FIX IMPORTANT
-RELOADLY_ENV = os.getenv("RELOADLY_ENV", "SANDBOX").upper()
+# 🔥 FORCÉ LIVE
+RELOADLY_ENV = "LIVE"
+RELOADLY_BASE_URL = "https://topups.reloadly.com"
+RELOADLY_AUTH_URL = "https://auth.reloadly.com/oauth/token"
 
 # ---------------------------
 # Telnyx SMS OTP
@@ -71,10 +69,7 @@ STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY", "")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
-STRIPE_MODE = "live" if STRIPE_SECRET_KEY.startswith("sk_live") else "test"
-
-if not STRIPE_WEBHOOK_SECRET:
-    print("⚠️ WARNING: STRIPE_WEBHOOK_SECRET is missing")
+STRIPE_MODE = "live"
 
 # ---------------------------
 # Payment settings
@@ -83,7 +78,7 @@ if not STRIPE_WEBHOOK_SECRET:
 CURRENCY = os.getenv("CURRENCY", "eur")
 
 # ---------------------------
-# Admin (FINAL CLEAN)
+# Admin
 # ---------------------------
 
 ADMIN_EMAILS_ENV = {
@@ -112,12 +107,12 @@ APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
 # Security
 # ---------------------------
 
-MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2MB
+MAX_CONTENT_LENGTH = 2 * 1024 * 1024
 
 # ---------------------------
-# Debug (temp)
+# Debug
 # ---------------------------
 
-print("ENV:", ENV)
-print("RELOADLY ENV:", RELOADLY_ENV)
-print("STRIPE MODE:", STRIPE_MODE)
+print("🔥 ENV: LIVE ONLY")
+print("🔗 RELOADLY:", RELOADLY_BASE_URL)
+print("💳 STRIPE MODE: LIVE")
