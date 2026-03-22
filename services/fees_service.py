@@ -17,7 +17,7 @@ class FeesService:
     # Rates par devise
     # ---------------------------
     CURRENCY_FEES = {
-        "AFN": 0.10,
+        "AFN": 0.01,
         "MAD": 0.22,
         "XOF": 0.20,
         "NGN": 0.23,

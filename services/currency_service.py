@@ -1,14 +1,11 @@
 # ---------------------------
-# Currency Service (Production Ready)
+# Currency Service
 # ---------------------------
 
 class CurrencyService:
     """
-    Gère la devise + estimation fallback.
-    Priorité:
-    1. Forfait
-    2. Reloadly quote
-    3. Fallback interne sécurisé
+    Gère la devise et l'estimation du montant reçu.
+    Utilisé si Reloadly quote n'est pas disponible.
     """
 
     # ---------------------------
@@ -26,13 +23,13 @@ class CurrencyService:
     }
 
     # ---------------------------
-    # Taux fallback (safe)
+    # Taux fallback approximatifs
     # ---------------------------
     _fallback_rates = {
         "EUR": 1,
         "USD": 1,
         "GBP": 1,
-        "AFN": 68.10,
+        "AFN": 68.33,
         "MAD": 10,
         "XOF": 650,
         "XAF": 650,
@@ -44,52 +41,45 @@ class CurrencyService:
     # ---------------------------
     @staticmethod
     def currency_from_phone(phone: str) -> str:
+        """
+        Déduit la devise à partir du préfixe du numéro.
+        """
 
         if not phone:
             return "EUR"
 
-        # 🔥 FIX: priorité aux préfixes longs
-        for prefix in sorted(
-            CurrencyService._country_currency_by_prefix.keys(),
-            key=len,
-            reverse=True
-        ):
+        for prefix, currency in CurrencyService._country_currency_by_prefix.items():
             if phone.startswith(prefix):
-                return CurrencyService._country_currency_by_prefix[prefix]
+                return currency
 
         return "EUR"
 
     # ---------------------------
-    # Taux fallback
+    # Taux fallback sécurisé
     # ---------------------------
     @staticmethod
     def rate_from_currency(currency: str) -> float:
+        """
+        Retourne le taux fallback sécurisé.
+        """
 
         return CurrencyService._fallback_rates.get(currency, 1)
 
     # ---------------------------
-    # Estimation locale
+    # Calcul estimation locale
     # ---------------------------
     @staticmethod
-    def estimate_local_amount(phone: str, amount: float) -> tuple[float, str]:
+    def estimate_local_amount(phone: str, amount: float) -> tuple[int, str]:
 
         currency = CurrencyService.currency_from_phone(phone)
         rate = CurrencyService.rate_from_currency(currency)
 
-        # 🔥 FIX: précision money
-        local = round(amount * rate, 2)
+        local = round(amount * rate)
 
         return local, currency
 
     # ---------------------------
-    # Format affichage (UX pro)
-    # ---------------------------
-    @staticmethod
-    def format_amount(value: float) -> str:
-        return f"{value:,.2f}"
-
-    # ---------------------------
-    # Affichage "ils reçoivent"
+    # Affichage "Ils/Elles reçoivent"
     # ---------------------------
     @staticmethod
     def received_display_value(
@@ -100,28 +90,24 @@ class CurrencyService:
     ) -> str:
 
         # ---------------------------
-        # 1. Forfait (priorité)
+        # Forfait prioritaire
         # ---------------------------
         if selected_forfait and selected_forfait.get("gb"):
             return str(selected_forfait["gb"])
 
         # ---------------------------
-        # 2. Reloadly quote (source réelle)
+        # Reloadly quote
         # ---------------------------
         if quote and quote.get("localAmount") and quote.get("localCurrency"):
 
-            try:
-                local_amount = float(quote["localAmount"])
-            except Exception:
-                local_amount = 0
-
+            local_amount = int(float(quote["localAmount"]))
             currency = quote["localCurrency"]
 
-            return f"{CurrencyService.format_amount(local_amount)} {currency}"
+            return f"{local_amount} {currency}"
 
         # ---------------------------
-        # 3. Fallback estimation
+        # Fallback estimation
         # ---------------------------
         local, currency = CurrencyService.estimate_local_amount(phone, amount)
 
-        return f"{CurrencyService.format_amount(local)} {currency}"
+        return f"{local} {currency}"
