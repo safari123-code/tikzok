@@ -17,12 +17,17 @@ class FeesService:
     # Rates par devise
     # ---------------------------
     CURRENCY_FEES = {
-        "AFN": 0.01,
+        "AFN": 0.20,
         "MAD": 0.22,
         "XOF": 0.20,
         "NGN": 0.23,
         "EUR": 0.18,
     }
+
+    # ---------------------------
+    # Minimum fee (PRO)
+    # ---------------------------
+    MIN_FEE = 0.20
 
     # ---------------------------
     # Get tax rate
@@ -64,13 +69,10 @@ class FeesService:
         return round(total, 2)
 
     # ---------------------------
-    # Full breakdown (PRO)
+    # Full breakdown (UI)
     # ---------------------------
     @classmethod
     def breakdown(cls, amount: float, currency: str) -> dict:
-        """
-        Retourne un breakdown complet pour UI / API.
-        """
 
         rate = cls.get_tax_rate(currency)
 
@@ -82,4 +84,46 @@ class FeesService:
             "tax_rate": rate,
             "tax": tax,
             "total": total
+        }
+
+    # ---------------------------
+    # Compute payout (BUSINESS CORE)
+    # ---------------------------
+    @classmethod
+    def compute_payout(cls, amount: float, currency: str) -> dict:
+        """
+        Calcule:
+        - ce que paie le client
+        - la commission Tikzok
+        - ce qui est envoyé à Reloadly
+        """
+
+        try:
+            amount = float(amount)
+        except Exception:
+            return {
+                "paid": 0.0,
+                "fee": 0.0,
+                "payout": 0.0
+            }
+
+        rate = cls.get_tax_rate(currency)
+
+        # commission
+        fee = round(amount * rate, 2)
+
+        # 🔥 minimum garanti
+        fee = max(fee, cls.MIN_FEE)
+
+        payout = round(amount - fee, 2)
+
+        # 🔥 sécurité business
+        if payout < 1:
+            payout = 1.0
+
+        return {
+            "paid": round(amount, 2),
+            "fee": fee,
+            "payout": payout,
+            "rate": rate
         }

@@ -173,6 +173,7 @@ def create_app() -> Flask:
 
     app.jinja_env.globals["t"] = t
 
+
     # ---------------------------
     # Blueprints
     # ---------------------------

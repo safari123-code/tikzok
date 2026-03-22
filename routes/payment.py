@@ -12,6 +12,7 @@ from services.order_service import OrderService
 from services.email_service import EmailService
 from services.stripe_service import StripeService
 import services.reloadly_service as ReloadlyService
+from services.fees_service import FeesService
 
 payment_bp = Blueprint("payment", __name__, url_prefix="/payment")
 
@@ -28,17 +29,26 @@ def _safe_float(value, default=0.0):
 
 def _get_payment_context():
     phone = session.get("recharge_phone", "")
-    recharge_amount = _safe_float(session.get("recharge_total_amount"), 0.0)
+
+    # ---------------------------
+    # Amounts
+    # ---------------------------
+    # montant de recharge choisi par le client (sans frais)
+    base_amount = _safe_float(session.get("recharge_amount"), 0.0)
+
+    # total à payer avant points (avec frais)
+    recharge_total_amount = _safe_float(session.get("recharge_total_amount"), 0.0)
 
     points_available = _safe_float(PointsService.get_points(), 0.0)
     use_points = bool(session.get("payment_use_points", False))
 
-    points_used = min(points_available, recharge_amount) if use_points else 0.0
-    final_amount = max(0.0, recharge_amount - points_used)
+    points_used = min(points_available, recharge_total_amount) if use_points else 0.0
+    final_amount = max(0.0, recharge_total_amount - points_used)
 
     return {
         "phone": phone,
-        "recharge_amount": recharge_amount,
+        "base_amount": base_amount,
+        "recharge_amount": recharge_total_amount,
         "points_available": points_available,
         "use_points": use_points,
         "points_used": points_used,
@@ -52,12 +62,14 @@ def _build_checkout_metadata(idem_key: str):
     return {
         "payment_idempotency_key": idem_key,
         "recharge_phone": str(ctx["phone"] or ""),
+        "base_amount": f"{ctx['base_amount']:.2f}",
         "recharge_amount": f"{ctx['recharge_amount']:.2f}",
         "charged_amount": f"{ctx['final_amount']:.2f}",
         "points_used": f"{ctx['points_used']:.2f}",
         "country_iso": str(session.get("country_iso") or ""),
         "user_id": str(session.get("user_id") or ""),
         "user_email": str(session.get("user_email") or session.get("pending_email") or ""),
+        "forfait_id": str(session.get("recharge_forfait", {}).get("id") or "")
     }
 
 
@@ -177,7 +189,7 @@ def card_post():
 
 
 # ---------------------------
-# Stripe webhook
+# Stripe webhook (FINAL PRO)
 # ---------------------------
 @payment_bp.post("/webhook")
 def stripe_webhook_post():
@@ -221,25 +233,54 @@ def stripe_webhook_post():
             # Extract & validate
             # ---------------------------
             phone = str(metadata.get("recharge_phone") or "").strip()
-            amount = _safe_float(metadata.get("recharge_amount"), 0.0)
+            base_amount = _safe_float(metadata.get("base_amount"), 0.0)
+            country_iso = str(metadata.get("country_iso") or "").strip()
+            forfait_id = metadata.get("forfait_id")
 
-            if not phone or amount <= 0:
+            if not phone or base_amount <= 0:
                 print("❌ Invalid webhook data:", {
                     "phone": phone,
-                    "amount": amount,
+                    "base_amount": base_amount,
                 })
                 return jsonify({"ok": False, "error": "invalid_metadata"}), 400
 
-            print("🚀 Sending recharge:", phone, amount)
-
             # ---------------------------
-            # Reloadly call
+            # BUSINESS: compute payout
             # ---------------------------
             try:
-                reloadly_result = ReloadlyService.send_topup(
-                    phone=phone,
-                    amount=amount
-                )
+                from services.currency_service import CurrencyService
+                currency = CurrencyService.currency_from_phone(phone)
+            except Exception:
+                currency = "EUR"
+
+            fees = FeesService.compute_payout(base_amount, currency)
+            payout_amount = fees["payout"]
+
+            print(
+                f"💰 Client base: {base_amount} | "
+                f"Fee: {fees['fee']} | "
+                f"Sent: {payout_amount} {currency}"
+            )
+
+            print("🚀 Sending recharge:", phone)
+
+            # ---------------------------
+            # Reloadly call (AUTO FLOW)
+            # ---------------------------
+            try:
+                if forfait_id:
+                    reloadly_result = ReloadlyService.send_data_topup(
+                        phone=phone,
+                        plan_id=int(forfait_id),
+                        country_iso=country_iso
+                    )
+                else:
+                    reloadly_result = ReloadlyService.send_topup(
+                        phone=phone,
+                        amount=payout_amount,
+                        country_iso=country_iso
+                    )
+
                 print("✅ Reloadly success:", reloadly_result)
 
             except Exception as reloadly_error:
@@ -250,8 +291,10 @@ def stripe_webhook_post():
             # Build success payload
             # ---------------------------
             payload_obj = OrderService.build_success_payload(
-                amount=amount
+                amount=base_amount
             )
+
+            payload_obj["transaction_id"] = reloadly_result.get("transaction_id")
 
             if idem_key:
                 IdempotencyService.store_result(idem_key, payload_obj)
@@ -303,14 +346,14 @@ def success_get():
     payment_intent_id = request.args.get("payment_intent")
 
     if payment_intent_id:
-
         try:
             intent = StripeService.retrieve_payment(payment_intent_id)
 
             if intent.status == "succeeded":
+                base_amount = intent.metadata.get("base_amount") or intent.metadata.get("recharge_amount")
 
                 payload = OrderService.build_success_payload(
-                    amount=intent.metadata.get("recharge_amount")
+                    amount=base_amount
                 )
 
                 session["payment_success_payload"] = payload
@@ -351,30 +394,36 @@ def success_finish_post():
 
         PointsService.refresh()
 
+    return jsonify({"ok": True})
+
+
 # ---------------------------
-# Payment status (AJAX polling)
+# Payment status
 # ---------------------------
 @payment_bp.get("/status")
 def payment_status():
 
     payload = session.get("payment_success_payload")
 
-    if payload:
-        return jsonify({"status": "recharged"})
+    if not payload:
+        return jsonify({"status": "pending"})
 
-    return jsonify({"status": "pending"})
+    transaction_id = payload.get("transaction_id")
 
-    # ---------------------------
-    # Clean session
-    # ---------------------------
-    for k in [
-        "payment_selected_method",
-        "payment_use_points",
-        "payment_save_card",
-        "payment_success_payload",
-        "payment_idempotency_key",
-        "payment_toast",
-    ]:
-        session.pop(k, None)
+    if transaction_id:
+        try:
+            result = ReloadlyService.get_topup_status(transaction_id)
+            status = result.get("status")
 
-    return redirect(url_for("recharge.enter_number_get"))
+            if status == "SUCCESSFUL":
+                return jsonify({"status": "success"})
+            if status == "FAILED":
+                return jsonify({"status": "failed"})
+
+            return jsonify({"status": "processing"})
+
+        except Exception as e:
+            print("Status check error:", e)
+            return jsonify({"status": "processing"})
+
+    return jsonify({"status": "processing"})

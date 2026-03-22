@@ -24,7 +24,7 @@ from services.reloadly_service import (
 
 from services.currency_service import CurrencyService
 from services.fees_service import FeesService
-
+from services.reloadly_service import get_reloadly_quote
 
 recharge_bp = Blueprint("recharge", __name__, url_prefix="/recharge")
 
@@ -70,12 +70,13 @@ def select_forfait_post():
 
     gb = data.get("gb")
     price = data.get("price")
+    plan_id = data.get("id")  # 🔥 AJOUT CRITIQUE
 
-    if not gb or not price:
+    if not gb or not price or not plan_id:
         return jsonify({"ok": False}), 400
 
-    # stocker forfait choisi
     session["recharge_forfait"] = {
+        "id": plan_id,   # 🔥 IMPORTANT
         "gb": gb,
         "price": price
     }
@@ -197,12 +198,10 @@ def enter_number_post():
 
     return redirect(url_for("recharge.select_amount_get"))
 
-
 # ---------------------------
-# Select Operator
+# Select Operator (GET)
 # ---------------------------
-
-@recharge_bp.route("/select-operator", methods=["GET"])
+@recharge_bp.get("/select-operator")
 def select_operator_get():
 
     phone = session.get("recharge_phone")
@@ -219,8 +218,9 @@ def select_operator_get():
         operators=operators,
         phone=phone
     )
-
-
+# ---------------------------
+# Select Operator (POST)
+# ---------------------------
 @recharge_bp.route("/select-operator", methods=["POST"])
 def select_operator_post():
 
@@ -229,21 +229,28 @@ def select_operator_post():
     operator_logo = request.form.get("operator_logo")
     country_name = request.form.get("country_name")
 
+    supports_data = str(request.form.get("supports_data")).lower() == "true"
+
+    if not operator_id:
+        return redirect(url_for("recharge.select_operator_get"))
+
     session["recharge_operator"] = {
         "id": operator_id,
         "name": operator_name,
         "logo_url": operator_logo,
-        "country": country_name
+        "country": country_name,
+        "supports_data": supports_data
     }
 
-    if operator_name and "Data" in operator_name:
+    # 🔥 LOGIQUE PRODUIT
+    if supports_data:
         return redirect(url_for("recharge.select_forfait_get"))
 
     return redirect(url_for("recharge.select_amount_get"))
 
 
 # ---------------------------
-# Select amount (GET)
+# Select amount (GET) - FINAL
 # ---------------------------
 
 @recharge_bp.get("/select-amount")
@@ -271,18 +278,53 @@ def select_amount_get():
             operator_id=operator["id"]
         ) or {}
 
+    # ---------------------------
+    # Currency + fees
+    # ---------------------------
     currency = CurrencyService.currency_from_phone(phone)
-
     rate = CurrencyService.rate_from_currency(currency)
-
     tax_rate = FeesService.get_tax_rate(currency)
 
     operator["currency_code"] = currency
 
-    amount = float(session.get("recharge_total_amount", 5.00))
+    amount = float(session.get("recharge_amount", 5.00))
 
     tax = round(amount * tax_rate, 2)
     total = round(amount + tax, 2)
+
+    # ---------------------------
+    # 🔥 BUSINESS: compute payout
+    # ---------------------------
+    fees = FeesService.compute_payout(amount, currency)
+    payout_amount = fees["payout"]
+
+    print("💰 Payout:", payout_amount)
+
+    # ---------------------------
+    # 🔥 Reloadly quote
+    # ---------------------------
+    quote = None
+
+    if operator.get("id"):
+        try:
+            quote = get_reloadly_quote(
+                operator_id=operator["id"],
+                amount=payout_amount
+            )
+            print("📡 Reloadly quote:", quote)
+        except Exception as e:
+            print("❌ Quote error:", e)
+            quote = None
+
+    # ---------------------------
+    # 🔥 FINAL DISPLAY (STRICT)
+    # ---------------------------
+    if quote and quote.get("localAmount") and quote.get("localCurrency"):
+        received_display = f"{int(float(quote['localAmount']))} {quote['localCurrency']}"
+    else:
+        # fallback uniquement si API KO
+        local, cur = CurrencyService.estimate_local_amount(phone, payout_amount)
+        received_display = f"{local} {cur}"
 
     return render_template(
         "recharge/select_amount.html",
@@ -295,9 +337,9 @@ def select_amount_get():
         tax=tax,
         total=total,
         currency_code=currency,
-        currency_rate=rate
+        currency_rate=rate,
+        received_display=received_display
     )
-
 
 # ---------------------------
 # Select amount (POST)
@@ -385,6 +427,100 @@ def api_store_total():
 
     return jsonify({"ok": True})
 
+# ---------------------------
+# Execute Topup (POST)
+# ---------------------------
+from services.reloadly_service import send_topup, send_data_topup
+
+
+@recharge_bp.post("/execute")
+def execute_recharge():
+
+    phone = session.get("recharge_phone")
+    amount = session.get("recharge_amount")
+    country_iso = session.get("country_iso")
+    forfait = session.get("recharge_forfait")  # 🔥 IMPORTANT
+
+    if not phone:
+        return jsonify({"ok": False, "error": "missing phone"}), 400
+
+    try:
+        # ---------------------------
+        # DATA FLOW
+        # ---------------------------
+        if forfait:
+            plan_id = forfait.get("id")  # ⚠️ il faut stocker ça côté frontend
+
+            if not plan_id:
+                return jsonify({"ok": False, "error": "missing plan"}), 400
+
+            result = send_data_topup(
+                phone=phone,
+                plan_id=int(plan_id),
+                country_iso=country_iso
+            )
+
+        # ---------------------------
+        # AIRTIME FLOW
+        # ---------------------------
+        else:
+            if not amount:
+                return jsonify({"ok": False, "error": "missing amount"}), 400
+
+            amount = float(amount)
+
+            result = send_topup(
+                phone=phone,
+                amount=amount,
+                country_iso=country_iso
+            )
+
+        # ---------------------------
+        # Save transaction
+        # ---------------------------
+        session["last_transaction_id"] = result["transaction_id"]
+
+        return jsonify({
+            "ok": True,
+            "transaction_id": result["transaction_id"]
+        })
+
+    except Exception as e:
+        print("Topup error:", e)
+
+        return jsonify({
+            "ok": False,
+            "error": "topup_failed"
+        }), 500
+    
+# ---------------------------
+# Check Topup Status
+# ---------------------------
+from services.reloadly_service import get_topup_status
+
+
+@recharge_bp.get("/status")
+def recharge_status():
+
+    transaction_id = session.get("last_transaction_id")
+
+    if not transaction_id:
+        return jsonify({"ok": False}), 400
+
+    try:
+        result = get_topup_status(transaction_id)
+
+        return jsonify({
+            "ok": True,
+            "status": result["status"]
+        })
+
+    except Exception as e:
+        print("Status error:", e)
+
+        return jsonify({
+            "ok": False
+        }), 500
 
 # ---------------------------
 # API: Operators list (Reloadly)

@@ -1,5 +1,5 @@
 // ---------------------------
-// Feature: Forfait behavior (Flutter parity)
+// Feature: Forfait behavior (FINAL CLEAN)
 // ---------------------------
 
 (function () {
@@ -20,7 +20,6 @@
   const moneyBtn = document.getElementById("moneyAccordionBtn");
   const moneyPanel = document.getElementById("moneyPanel");
   const chevron = document.getElementById("moneyChevron");
-  const quoteLoader = document.getElementById("quoteLoader");
 
   const fixedWrap = document.getElementById("fixedAmountWrap");
   const range = document.getElementById("amountRange");
@@ -35,10 +34,6 @@
   const operatorId = amountCard?.dataset?.operatorId || "";
   const pointsRate = parseFloat(amountCard?.dataset?.pointsRate || "0.025");
 
-  const currency = amountCard?.dataset?.currency || "EUR";
-  const rate = parseFloat(amountCard?.dataset?.rate || "1");
-
-  // devise utilisateur (paiement)
   const userCurrency = "€";
 
   let debounceT = null;
@@ -56,7 +51,6 @@
   }
 
   function setMoneyOpen(open) {
-
     if (!moneyBtn || !moneyPanel) return;
 
     moneyPanel.style.display = open ? "block" : "none";
@@ -67,14 +61,11 @@
   }
 
   function scrollToDetails() {
-
     window.setTimeout(() => {
-
       moneyPanel?.scrollIntoView({
         behavior: "smooth",
         block: "start"
       });
-
     }, 200);
   }
 
@@ -92,7 +83,7 @@
   }
 
   // ---------------------------
-  // Update UI
+  // UI update
   // ---------------------------
 
   function updateUI(amount) {
@@ -131,46 +122,33 @@
   }
 
   // ---------------------------
-  // Reloadly Quote
+  // Reloadly Quote (API ONLY)
   // ---------------------------
 
   async function fetchQuote(amount) {
 
     const gb = forfaitGb?.value;
 
+    // Forfait priorité
     if (gb && rowReceived) {
-
       rowReceived.textContent = gb;
       return;
     }
 
-    if (!operatorId) {
-
-      if (rowReceived) {
-
-        const converted = Math.round(amount * rate);
-        rowReceived.textContent = `${converted} ${currency}`;
-      }
-
-      return;
-    }
-
-    if (quoteLoader)
-      quoteLoader.style.display = "block";
+    if (!operatorId) return;
 
     try {
 
       const res = await fetch("/recharge/api/quote", {
 
         method: "POST",
-
         headers: {
           "Content-Type": "application/json"
         },
 
         body: JSON.stringify({
           operatorId: operatorId,
-          amount: amount
+          amount: amount // ✅ backend gère fees
         })
       });
 
@@ -180,23 +158,14 @@
 
       if (!data?.ok) return;
 
-      if (data.localAmount != null && data.localCurrency && rowReceived) {
+      if (data.localAmount && data.localCurrency && rowReceived) {
 
         rowReceived.textContent =
           `${Math.round(Number(data.localAmount))} ${data.localCurrency}`;
-
-      } else {
-
-        const converted = Math.round(amount * rate);
-
-        if (rowReceived)
-          rowReceived.textContent = `${converted} ${currency}`;
       }
 
-    } finally {
-
-      if (quoteLoader)
-        quoteLoader.style.display = "none";
+    } catch (e) {
+      console.error("quote error", e);
     }
   }
 
@@ -258,7 +227,6 @@
   });
 
   range?.addEventListener("input", () => {
-
     updateUI(parseFloat(range.value));
   });
 
@@ -304,7 +272,7 @@
 
     removeForfaitBtn.style.transform = "scale(.98)";
 
-    window.setTimeout(() => (removeForfaitBtn.style.transform = ""), 120);
+    setTimeout(() => (removeForfaitBtn.style.transform = ""), 120);
   });
 
   // ---------------------------
@@ -315,13 +283,9 @@
     parseFloat(amountInput?.value || "0");
 
   updateUI(initialAmount);
-
   setMoneyOpen(true);
-
   scheduleQuote(initialAmount);
-
   scrollToDetails();
-
   applyForfaitStateFromInputs();
 
 })();

@@ -1,11 +1,26 @@
 // ---------------------------
-// Select forfait
+// Select forfait (UX + SAFE + DATA FIX)
 // ---------------------------
 
 async function selectForfait(btn){
 
+  if(!btn) return
+
   const gb = btn.dataset.gb
   const price = btn.dataset.price
+  const planId = btn.dataset.id   // 🔥 CRITIQUE
+
+  if(!gb || !price) return
+
+  const cards = document.querySelectorAll(".tz-forfait-card")
+
+  // 🔥 UX: disable all + reset
+  cards.forEach(b=>{
+    b.classList.remove("is-selected")
+    b.disabled = true
+  })
+
+  btn.classList.add("is-selected")
 
   try{
 
@@ -15,26 +30,40 @@ async function selectForfait(btn){
         "Content-Type":"application/json"
       },
       body:JSON.stringify({
-        gb:gb,
-        price:price
+        id: planId,   // 🔥 AJOUT
+        gb,
+        price
       })
     })
+
+    if(!res.ok){
+      throw new Error("Network error")
+    }
 
     const data = await res.json()
 
     if(data.ok){
-      window.location.href="/recharge/select-amount"
+      window.location.href = "/recharge/select-amount"
+      return
     }
 
-  }catch(e){
-    console.error("forfait selection error", e)
-  }
+    throw new Error("API error")
 
+  } catch(e){
+
+    console.error("forfait selection error", e)
+
+    // 🔁 rollback UX
+    cards.forEach(b=>{
+      b.disabled = false
+      b.classList.remove("is-selected")
+    })
+  }
 }
 
 
 // ---------------------------
-// Tabs filter
+// Tabs filter (SAFE + CLEAN)
 // ---------------------------
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -42,11 +71,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabs = document.querySelectorAll(".tz-tab")
   const plans = document.querySelectorAll(".tz-forfait-card")
 
+  if(!tabs.length || !plans.length) return
+
+  const matchPlan = (type, planType) => {
+
+    if(type === "DATA") return planType.includes("DATA")
+
+    if(type === "VOICE") {
+      return planType.includes("VOICE") || planType.includes("MIN")
+    }
+
+    if(type === "SMS") return planType.includes("SMS")
+
+    if(type === "COMBO") {
+      return planType.includes("COMBO") || planType.includes("BUNDLE")
+    }
+
+    return true
+  }
+
   tabs.forEach(tab => {
 
     tab.addEventListener("click", () => {
 
-      const type = tab.dataset.type
+      const type = (tab.dataset.type || "").toUpperCase()
 
       tabs.forEach(t => t.classList.remove("is-active"))
       tab.classList.add("is-active")
@@ -55,32 +103,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const planType = (plan.dataset.planType || "").toUpperCase()
 
-        let show = false
-
-        if(type === "DATA"){
-          show = planType.includes("DATA")
-        }
-
-        if(type === "VOICE"){
-          show = planType.includes("VOICE") || planType.includes("MIN")
-        }
-
-        if(type === "SMS"){
-          show = planType.includes("SMS")
-        }
-
-        if(type === "COMBO"){
-          show = planType.includes("COMBO") || planType.includes("BUNDLE")
-        }
+        const show = matchPlan(type, planType)
 
         plan.style.display = show ? "block" : "none"
-
       })
-
     })
-
   })
 
+  // auto trigger first tab
   document.querySelector(".tz-tab.is-active")?.click()
-
 })

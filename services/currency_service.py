@@ -1,11 +1,14 @@
 # ---------------------------
-# Currency Service
+# Currency Service (FINAL PRO)
 # ---------------------------
+
+from services.fees_service import FeesService
+
 
 class CurrencyService:
     """
     Gère la devise et l'estimation du montant reçu.
-    Utilisé si Reloadly quote n'est pas disponible.
+    Compatible business (fees + payout réel).
     """
 
     # ---------------------------
@@ -29,7 +32,7 @@ class CurrencyService:
         "EUR": 1,
         "USD": 1,
         "GBP": 1,
-        "AFN": 68.33,
+        "AFN": 80.33,
         "MAD": 10,
         "XOF": 650,
         "XAF": 650,
@@ -41,9 +44,6 @@ class CurrencyService:
     # ---------------------------
     @staticmethod
     def currency_from_phone(phone: str) -> str:
-        """
-        Déduit la devise à partir du préfixe du numéro.
-        """
 
         if not phone:
             return "EUR"
@@ -59,14 +59,10 @@ class CurrencyService:
     # ---------------------------
     @staticmethod
     def rate_from_currency(currency: str) -> float:
-        """
-        Retourne le taux fallback sécurisé.
-        """
-
         return CurrencyService._fallback_rates.get(currency, 1)
 
     # ---------------------------
-    # Calcul estimation locale
+    # Calcul estimation locale (NET)
     # ---------------------------
     @staticmethod
     def estimate_local_amount(phone: str, amount: float) -> tuple[int, str]:
@@ -74,12 +70,16 @@ class CurrencyService:
         currency = CurrencyService.currency_from_phone(phone)
         rate = CurrencyService.rate_from_currency(currency)
 
-        local = round(amount * rate)
+        # 🔥 appliquer payout réel (après frais)
+        payout_data = FeesService.compute_payout(amount, currency)
+        payout = payout_data["payout"]
+
+        local = round(payout * rate)
 
         return local, currency
 
     # ---------------------------
-    # Affichage "Ils/Elles reçoivent"
+    # Affichage "Ils reçoivent"
     # ---------------------------
     @staticmethod
     def received_display_value(
@@ -90,20 +90,25 @@ class CurrencyService:
     ) -> str:
 
         # ---------------------------
-        # Forfait prioritaire
+        # DATA forfait prioritaire
         # ---------------------------
         if selected_forfait and selected_forfait.get("gb"):
             return str(selected_forfait["gb"])
 
+        currency = CurrencyService.currency_from_phone(phone)
+
         # ---------------------------
-        # Reloadly quote
+        # Reloadly quote (corrigé fees)
         # ---------------------------
         if quote and quote.get("localAmount") and quote.get("localCurrency"):
 
-            local_amount = int(float(quote["localAmount"]))
-            currency = quote["localCurrency"]
+            payout_data = FeesService.compute_payout(amount, currency)
 
-            return f"{local_amount} {currency}"
+            ratio = payout_data["payout"] / amount if amount else 1
+
+            local_amount = int(float(quote["localAmount"]) * ratio)
+
+            return f"{local_amount} {quote['localCurrency']}"
 
         # ---------------------------
         # Fallback estimation
