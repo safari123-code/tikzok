@@ -215,61 +215,79 @@
     }
   }
 
-  // ---------------------------
-  // Events
-  // ---------------------------
+ // ---------------------------
+// Events (FINAL PRODUCTION)
+// ---------------------------
 
-  moneyBtn?.addEventListener("click", () => {
-    const isOpen = moneyPanel.style.display !== "none";
-    setMoneyOpen(!isOpen);
-  });
+// Accordion
+moneyBtn?.addEventListener("click", () => {
+  const isOpen = moneyPanel.style.display !== "none";
+  setMoneyOpen(!isOpen);
+});
 
-  fixedWrap?.addEventListener("click", (e) => {
+// Fixed amounts
+fixedWrap?.addEventListener("click", (e) => {
 
-    const btn = e.target.closest(".tz-amt-btn");
-    if (!btn) return;
+  const btn = e.target.closest(".tz-amt-btn");
+  if (!btn) return;
 
-    const v = parseFloat(btn.dataset.amount);
+  const v = parseFloat(btn.dataset.amount);
 
-    setSelectedButton(v);
-    updateUI(v);
-    setMoneyOpen(true);
-    scheduleQuote(v);
-    scrollToDetails();
-  });
+  setSelectedButton(v);
+  updateUI(v);
+  setMoneyOpen(true);
+  scheduleQuote(v);
+  scrollToDetails();
+});
 
-  range?.addEventListener("input", () => {
-    updateUI(parseFloat(range.value));
-  });
+// Range slider (live)
+range?.addEventListener("input", () => {
+  updateUI(parseFloat(range.value));
+});
 
-  range?.addEventListener("change", () => {
+// Range slider (final)
+range?.addEventListener("change", () => {
 
-    const v = parseFloat(range.value);
+  const v = parseFloat(range.value);
 
-    setMoneyOpen(true);
-    scheduleQuote(v);
-    scrollToDetails();
-  });
+  setMoneyOpen(true);
+  scheduleQuote(v);
+  scrollToDetails();
+});
 
-  removeForfaitBtn?.addEventListener("click", (e) => {
+// Remove forfait
+removeForfaitBtn?.addEventListener("click", (e) => {
 
-    e.preventDefault();
-    e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 
-    if (forfaitGb) forfaitGb.value = "";
-    if (forfaitPrice) forfaitPrice.value = "";
+  if (forfaitGb) forfaitGb.value = "";
+  if (forfaitPrice) forfaitPrice.value = "";
 
-    removeForfaitBtn.style.display = "none";
+  removeForfaitBtn.style.display = "none";
 
-    const amount = parseFloat(amountInput?.value || "0");
+  const amount = parseFloat(amountInput?.value || "0");
 
-    scheduleQuote(amount);
+  scheduleQuote(amount);
+  setAmountLocked(false);
 
-    setAmountLocked(false);
+  tzToast?.(document.documentElement.dataset.tzRemovedText || "");
+});
 
-    tzToast?.(document.documentElement.dataset.tzRemovedText || "");
-  });
+// ---------------------------
+// 🔥 Forfait card click → redirect
+// ---------------------------
+forfaitCard?.addEventListener("click", (e) => {
 
+  // ignore clic sur bouton remove
+  if (e.target.closest("#removeForfaitBtn")) return;
+
+  const url = forfaitCard.dataset.forfaitUrl;
+
+  if (url) {
+    window.location.href = url;
+  }
+});
   // ---------------------------
   // Init
   // ---------------------------

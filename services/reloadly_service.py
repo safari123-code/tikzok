@@ -241,7 +241,7 @@ def get_reloadly_operators_by_country(country_iso: str):
         return []
 
     # 🔥 ENDPOINT PROPRE
-    url = f"{RELOADLY_V1_URL}/operators/countries/{normalized_country}?includeBundles=true&includeData=true"
+    url = f"{RELOADLY_BASE_URL}/operators/countries/{normalized_country}?includeBundles=true&includeData=true"
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -371,7 +371,7 @@ def get_reloadly_quote(operator_id: int, amount: float):
     token = get_reloadly_token()
 
     # ✅ IMPORTANT : PAS de /v1 ici
-    url = f"{RELOADLY_BASE_URL}/topups/quote"
+    url = f"{RELOADLY_BASE_URL}/v1/topups/quote"
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -472,3 +472,63 @@ def send_data_topup(phone: str, plan_id: int, country_iso: str):
         "custom_id": custom_id,
         "status": "PENDING"
     }
+
+
+# ---------------------------
+# Get Operator Amounts (FINAL FIX)
+# ---------------------------
+def get_reloadly_operator_amounts(operator_id: int):
+
+    if not operator_id:
+        return {}
+
+    token = get_reloadly_token()
+
+    url = f"{RELOADLY_BASE_URL}/operators/{operator_id}"
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/com.reloadly.topups-v1+json"
+    }
+
+    try:
+        res = _safe_request("GET", url, headers=headers)
+
+        if res.status_code != 200:
+            print("❌ Operator details failed:", res.text)
+            return {}
+
+        data = res.json()
+
+        # ---------------------------
+        # 🔥 SAFE EXTRACTION
+        # ---------------------------
+        fixed = data.get("fixedAmounts") or []
+
+        min_amount = data.get("minAmount") or data.get("minLocalAmount")
+        max_amount = data.get("maxAmount") or data.get("maxLocalAmount")
+
+        # ---------------------------
+        # 🔥 FALLBACK SI VIDE
+        # ---------------------------
+        if not fixed and not min_amount:
+            print("⚠️ No amounts from Reloadly → fallback")
+
+            return {
+                "fixedAmounts": [5, 10, 20, 50],
+                "minAmount": 5,
+                "maxAmount": 100,
+                "localCurrency": data.get("localCurrency") or "EUR"
+            }
+
+        return {
+            "denominationType": data.get("denominationType"),
+            "fixedAmounts": fixed,
+            "minAmount": min_amount,
+            "maxAmount": max_amount,
+            "localCurrency": data.get("localCurrency"),
+        }
+
+    except Exception as e:
+        print("❌ Operator amounts error:", e)
+        return {}

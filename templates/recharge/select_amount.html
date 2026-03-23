@@ -68,7 +68,7 @@
 
       <div class="tz-amount" id="amountDisplay">{{ "%.2f"|format(amount) }} €</div>
 
-      {% if amounts.fixedAmounts and amounts.fixedAmounts|length > 0 %}
+      {% if amounts and amounts.fixedAmounts and amounts.fixedAmounts|length > 0 %}
         <div class="tz-wrap" id="fixedAmountWrap">
           {% for v in amounts.fixedAmounts %}
             <button type="button"
@@ -81,7 +81,8 @@
       {% else %}
         <div style="padding:6px 4px;">
           <input id="amountRange" type="range"
-                 min="{{ min_amount or 2 }}" max="{{ max_amount or 50 }}"
+                 min="{{ amounts.minAmount or 2 }}"
+                 max="{{ amounts.maxAmount or 50 }}"
                  step="1" value="{{ amount }}"
                  style="width:100%;">
         </div>
@@ -100,7 +101,10 @@
 {# ---------------------------
    Feature: Forfait Card (Flutter parity)
 --------------------------- #}
-<section class="tz-card tz-card--purple" id="forfaitCard" data-forfait-url="{{ url_for('recharge.select_forfait_get') }}">
+<section class="tz-card tz-card--purple clickable"
+        id="forfaitCard"
+        data-forfait-url="{{ url_for('recharge.select_forfait_get') }}"
+        onclick="goToForfait(this)">
   <div class="tz-row">
     <div class="tz-check">
       <span aria-hidden="true">📶</span>
@@ -187,4 +191,4 @@
   </form>
 
 </div>
-{% endblock %}
+{% endblock %} 

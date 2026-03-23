@@ -1,5 +1,5 @@
 {# ---------------------------
-   Feature: Payment Success (FINAL SAFE - SAME DESIGN)
+   Feature: Payment Success (FINAL SAFE - FIXED)
 --------------------------- #}
 {% extends "base.html" %}
 {% block title %}{{ t("payment.success.title") }}{% endblock %}
@@ -16,22 +16,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const successContent = document.getElementById("successContent");
 
   let tries = 0;
+  let rechargeInterval = null;
 
   async function checkStatus() {
-
     try {
       const res = await fetch("/payment/status");
       const data = await res.json();
 
       if (data.status === "recharged") {
 
-        // switch UI
         loaderIcon.style.display = "none";
         successIcon.style.display = "block";
 
         statusText.innerText = "{{ t('payment.success.message') }}";
 
         successContent.style.display = "block";
+
+        startRechargeTracking();
 
         return;
       }
@@ -43,15 +44,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (tries < 15) {
       setTimeout(checkStatus, 1500);
     } else {
-      statusText.innerText = "{{ t('payment.success.pending') }}";
+      statusText.innerText = "{{ t('payment.success.processing') }}";
     }
   }
 
-  checkStatus();
+  function startRechargeTracking() {
+    rechargeInterval = setInterval(async () => {
+      try {
+        const res = await fetch("/recharge/status");
+        const data = await res.json();
 
+        if (data.status === "SUCCESSFUL") {
+          statusText.innerText = "{{ t('payment.success.done') }}";
+
+          clearInterval(rechargeInterval);
+        }
+      } catch (e) {}
+    }, 2000);
+  }
+
+  checkStatus();
 });
 </script>
-
 {% endblock %}
 
 {% block content %}
@@ -61,7 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
        style="min-height:70vh; display:flex; flex-direction:column; justify-content:center;">
 
     <!-- ICON -->
-
     <div style="width:130px;height:130px;border-radius:999px;margin:0 auto;
                 display:flex; align-items:center; justify-content:center;
                 background: radial-gradient(circle at 30% 30%, rgba(76,175,80,.18), rgba(255,255,255,1));">
@@ -75,14 +88,12 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
 
     <!-- TITLE -->
-
     <h1 class="tz-title"
         style="text-align:center; margin-top:18px; font-size:26px;">
       {{ t("payment.success.title") }}
     </h1>
 
     <!-- STATUS TEXT -->
-
     <div id="statusText"
          class="tz-muted"
          style="text-align:center; margin-top:8px;">
@@ -90,27 +101,26 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
 
     <!-- SUCCESS CONTENT -->
-
     <div id="successContent" style="display:none;">
 
       <div class="tz-card tz-card--soft" style="margin-top:26px;">
 
         <div class="tz-row">
-          <div class="tz-muted">{{ t("payment.amountLabel") }}</div>
+          <div class="tz-muted">{{ t("payment.success.amountLabel") }}</div>
           <div class="tz-strong">{{ amount }} €</div>
         </div>
 
         <div class="tz-divider"></div>
 
         <div class="tz-row">
-          <div class="tz-muted">{{ t("payment.dateLabel") }}</div>
+          <div class="tz-muted">{{ t("payment.success.dateLabel") }}</div>
           <div class="tz-strong">{{ date }}</div>
         </div>
 
         <div class="tz-divider"></div>
 
         <div class="tz-row">
-          <div class="tz-muted">{{ t("payment.orderLabel") }}</div>
+          <div class="tz-muted">{{ t("payment.success.orderLabel") }}</div>
           <div class="tz-row tz-row--gap" style="justify-content:flex-end;">
 
             <div class="tz-strong"
@@ -132,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="tz-divider"></div>
 
         <div class="tz-row">
-          <div class="tz-muted">{{ t("payment.referenceLabel") }}</div>
+          <div class="tz-muted">{{ t("payment.success.referenceLabel") }}</div>
 
           <div class="tz-row tz-row--gap" style="justify-content:flex-end;">
 
@@ -155,13 +165,12 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
 
       <!-- FINISH BUTTON -->
-
       <form method="post"
             action="{{ url_for('payment.success_finish_post') }}"
             style="margin-top:22px;">
 
         <button type="submit" class="tz-primary-btn">
-          {{ t("payment.finish") }}
+          {{ t("payment.success.finish") }}
         </button>
 
       </form>

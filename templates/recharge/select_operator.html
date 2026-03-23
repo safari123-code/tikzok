@@ -31,6 +31,7 @@
       <input type="hidden" name="country_iso" value="{{ op.country_iso }}">
 
       {# 🔥 DATA support (CRITICAL) #}
+      <input type="hidden" name="country_name" value="{{ op.country }}">
       <input type="hidden" name="supports_data" value="{{ 'true' if op.supports_data else 'false' }}">
 
       <button

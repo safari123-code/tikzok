@@ -1,12 +1,10 @@
 # ---------------------------
-# services/recharge_service.py
+# services/recharge_service.py (FINAL CLEAN)
 # ---------------------------
 
-import os
 import re
 import time
 import hashlib
-import requests
 
 
 # ---------------------------
@@ -75,122 +73,17 @@ def detect_country_iso_from_phone(phone: str) -> str | None:
 
 
 # ---------------------------
-# Reloadly headers
-# ---------------------------
-
-def _reloadly_headers() -> dict:
-
-    token = os.getenv("RELOADLY_ACCESS_TOKEN", "")
-
-    return {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/com.reloadly.topups-v1+json",
-    }
-
-
-# ---------------------------
-# Reloadly auto operator detect
-# ---------------------------
-
-def get_reloadly_operator_auto_detect(phone: str, country_iso: str) -> dict:
-
-    phone = normalize_phone_e164_light(phone)
-
-    if not phone or not country_iso:
-        return {}
-
-    token = os.getenv("RELOADLY_ACCESS_TOKEN", "")
-
-    if not token:
-        return {}
-
-    url = f"https://topups.reloadly.com/operators/auto-detect/phone/{phone}/countries/{country_iso}"
-
-    try:
-
-        res = requests.get(
-            url,
-            headers=_reloadly_headers(),
-            timeout=10
-        )
-
-        if res.status_code != 200:
-            return {}
-
-        op = res.json()
-
-        logo_urls = op.get("logoUrls") or []
-
-        logo = None
-        if isinstance(logo_urls, list) and len(logo_urls) > 0:
-            logo = logo_urls[0]
-
-        return {
-            "id": op.get("operatorId"),
-            "name": op.get("name"),
-            "country_name": (op.get("country") or {}).get("name"),
-            "logo_url": logo,
-            "country_iso": country_iso,
-        }
-
-    except Exception:
-        return {}
-
-
-# ---------------------------
-# Reloadly operator amounts
-# ---------------------------
-
-def get_reloadly_operator_amounts(operator_id: int) -> dict:
-
-    token = os.getenv("RELOADLY_ACCESS_TOKEN", "")
-
-    if not token:
-        return {}
-
-    try:
-
-        res = requests.get(
-            f"https://topups.reloadly.com/operators/{operator_id}/amounts",
-            headers=_reloadly_headers(),
-            timeout=10
-        )
-
-        if res.status_code != 200:
-            return {}
-
-        amt = res.json()
-
-        fixed = amt.get("fixedAmounts") or []
-
-        fixed_amounts = []
-
-        for v in fixed:
-            try:
-                fixed_amounts.append(float(v))
-            except Exception:
-                pass
-
-        return {
-            "fixedAmounts": fixed_amounts,
-            "minAmount": float(amt.get("minAmount")) if amt.get("minAmount") else None,
-            "maxAmount": float(amt.get("maxAmount")) if amt.get("maxAmount") else None,
-        }
-
-    except Exception:
-        return {}
-
-
-# ---------------------------
-# Quote fallback
+# Quote fallback (NO Reloadly)
 # ---------------------------
 
 def quote_local_amount(operator_id: int, amount: float) -> dict:
-
-    # fallback simple si Reloadly quote indisponible
+    """
+    Fallback estimation (production safe)
+    Reloadly quote non fiable en LIVE → on ignore
+    """
 
     return {
-        "localAmount": round(float(amount) * 70),  # estimation AFN
+        "localAmount": round(float(amount) * 70),  # ex: AFN
         "localCurrency": "AFN",
         "ts": int(time.time()),
     }

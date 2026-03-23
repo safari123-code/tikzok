@@ -26,192 +26,196 @@
     "about": "À propos"
   },
 
-"auth": {
-  "name": "Nom",
-  "name_placeholder": "Votre nom ou prénom",
+  "auth": {
+    "name": "Nom",
+    "name_placeholder": "Votre nom ou prénom",
 
-  "login": "Connexion",
-  "logout": "Déconnexion",
-  "choose": "Choisir une méthode",
-  "choose_hint": "Accédez à votre compte en quelques secondes",
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "choose": "Choisir une méthode",
+    "choose_hint": "Accédez à votre compte en quelques secondes",
 
-  "email": "Email",
-  "phone": "Téléphone",
+    "email": "Email",
+    "phone": "Téléphone",
 
-  "email_required": "Email requis",
-  "email_invalid": "Email invalide",
-  "phone_required": "Numéro requis",
+    "email_required": "Email requis",
+    "email_invalid": "Email invalide",
+    "phone_required": "Numéro requis",
 
-  "security_hint": "Code à usage unique. Nous ne partageons jamais tes informations.",
+    "security_hint": "Code à usage unique. Nous ne partageons jamais vos informations.",
 
-  "email_hint": "Nous t’enverrons un code de vérification",
-  "email_label": "Adresse email",
-  "email_placeholder": "nom@gmail.com",
-  "email_help": "Vérifie l’orthographe. Le code arrive rapidement.",
+    "email_hint": "Nous vous enverrons un code de vérification",
+    "email_label": "Adresse email",
+    "email_placeholder": "nom@gmail.com",
+    "email_help": "Vérifiez l’orthographe. Le code arrive rapidement.",
 
-  "phone_hint": "Nous t’enverrons un code par SMS",
-  "phone_label": "Numéro de téléphone",
- "phone_placeholder": "Numéro de téléphone",
-  "phone_help": "Utilise le format international (ex: +33...).",
+    "phone_hint": "Nous vous enverrons un code par SMS",
+    "phone_label": "Numéro de téléphone",
+    "phone_placeholder": "Numéro de téléphone",
+    "phone_help": "Utilisez le format international (ex: +33...).",
 
-  "invalid_phone": "Numéro invalide",
+    "invalid_phone": "Numéro invalide",
 
-  "otp_title": "Vérification",
-  "otp_sent_to": "Code envoyé à",
-  "otp_label": "Code",
-  "otp_placeholder": "Saisis le code",
-  "otp_help": "Tu peux coller le code. Il est à usage unique.",
-  "otp_invalid": "Code invalide ou expiré",
+    "otp_title": "Vérification",
+    "otp_sent_to": "Code envoyé à",
+    "otp_label": "Code",
+    "otp_placeholder": "Saisissez le code",
+    "otp_help": "Vous pouvez coller le code. Il est à usage unique.",
+    "otp_invalid": "Code invalide ou expiré",
 
-  "resend": "Renvoyer",
-  "change_email": "Modifier l’email",
-  "change_phone": "Modifier le numéro",
+    "resend": "Renvoyer",
+    "change_email": "Modifier l’email",
+    "change_phone": "Modifier le numéro",
 
-  "logout_confirm": "Voulez-vous vous déconnecter ?",
+    "logout_confirm": "Voulez-vous vous déconnecter ?",
 
-  "or_continue": "Ou continuer avec",
+    "or_continue": "Ou continuer avec",
 
-  "legal_notice": "En poursuivant, vous acceptez nos Conditions d’utilisation et notre Politique de confidentialité."
-},
+    "legal_notice": "En poursuivant, vous acceptez nos Conditions d’utilisation et notre Politique de confidentialité."
+  },
 
   "lang": {
     "fr": "Français",
     "en": "Anglais"
   },
 
- "recharge": {
-  "enterNumber": {
-    "title": "Entrer le numéro",
-    "beneficiaryNumber": "Numéro du bénéficiaire",
-    "phoneExample": "+33…",
+  "recharge": {
+    "enterNumber": {
+      "title": "Entrer le numéro",
+      "beneficiaryNumber": "Numéro du bénéficiaire",
+      "phoneExample": "+33…",
 
-    "enterNumber": "Entrez un numéro",
-    "validNumber": "Numéro valide",
-    "invalidNumber": "Numéro invalide",
+      "enterNumber": "Entrez un numéro",
+      "validNumber": "Numéro valide",
+      "invalidNumber": "Numéro invalide",
 
-    "enterValidNumber": "Entrez un numéro valide",
-    "searchCountry": "Rechercher…",
-    "contacts": "Contacts"
-  },
+      "enterValidNumber": "Entrez un numéro valide",
+      "searchCountry": "Rechercher…",
+      "contacts": "Contacts"
+    },
 
-  "selectOperator": {
-    "title": "Choisir un opérateur",
-    "emptyTitle": "Aucun opérateur trouvé",
-    "emptyMessage": "Nous n'avons trouvé aucun opérateur pour ce numéro."
-  },
+    "selectOperator": {
+      "title": "Choisir un opérateur",
+      "emptyTitle": "Aucun opérateur trouvé",
+      "emptyMessage": "Nous n'avons trouvé aucun opérateur pour ce numéro."
+    },
 
-  "selectForfait": {
-    "title": "Choisir un forfait",
-    "internet": "Internet",
-    "days": "{days} jours"
-  },
+    "selectForfait": {
+      "title": "Choisir un forfait",
+      "internet": "Internet",
+      "days": "{days} jours"
+    },
 
-  "selectAmount": {
-    "title": "Choisir le montant",
-    "operatorNotDetected": "Opérateur non détecté",
-    "editOperator": "Modifier l’opérateur",
-    "amountLabel": "Montant",
-    "chooseInternetPlan": "Choisir un forfait internet",
-    "creditAndTotal": "Crédit & total",
-    "amountRow": "Montant",
-    "taxesRow": "Taxes",
-    "receivedAmountTitle": "Ils/Elles reçoivent",
-    "goToPay": "Payer",
-    "pointsEarned": "Vous gagnez {points} points",
-    "operatorPickerSoon": "Sélection opérateur bientôt disponible",
-    "choose": "Choisir"
-  }
-},
-
-"payment": {
-  "method": {
-    "title": "Méthode de paiement",
-    "points": "Points",
-    "saveCard": "Enregistrer la carte",
-    "chooseMethod": "Choisir une méthode",
-    "cardPayment": "Carte bancaire",
-    "cardPaymentDesc": "Paiement sécurisé",
-    "applePay": "Apple Pay",
-    "applePayDesc": "Bientôt disponible",
-    "googlePay": "Google Pay",
-    "googlePayDesc": "Bientôt disponible",
-    "paypal": "PayPal",
-    "paypalDesc": "Bientôt disponible",
-    "wallet": "Wallet",
-    "walletDesc": "Bientôt disponible",
-    "methodSelected": "Méthode sélectionnée",
-    "methodUnavailable": "Méthode indisponible",
-    "paypalComingSoon": "Bientôt disponible",
-    "pay": "Payer {amount}",
-    "pointsAvailable": "Points disponibles : {points}",
-    "setDefault": "Définir comme moyen de paiement",
-
-    "payment.method.title": "Méthode de paiement",
-    "payment.points.title": "Points",
-    "payment.points.available": "Points disponibles : {points}",
-    "payment.saveCard": "Enregistrer la carte",
-    "payment.chooseMethod": "Choisir une méthode de paiement",
-    "payment.methods.card.title": "Carte bancaire",
-    "payment.methods.card.desc": "Payer avec votre carte Visa ou Mastercard",
-    "payment.methodSelected": "Méthode sélectionnée",
-    "payment.pay": "Payer {amount} €"
-  },
-
-  "points": {
-    "title": "Points",
-    "available": "Points disponibles : {points}"
-  },
-
-  "methods": {
-    "card": {
-      "title": "Carte bancaire",
-      "desc": "Payer avec votre carte Visa ou Mastercard"
+    "selectAmount": {
+      "title": "Choisir le montant",
+      "operatorNotDetected": "Opérateur non détecté",
+      "editOperator": "Modifier l’opérateur",
+      "amountLabel": "Montant",
+      "chooseInternetPlan": "Choisir un forfait internet",
+      "creditAndTotal": "Crédit & total",
+      "amountRow": "Montant",
+      "taxesRow": "Taxes",
+      "receivedAmountTitle": "Ils/Elles reçoivent",
+      "goToPay": "Payer",
+      "pointsEarned": "Vous gagnez {points} points",
+      "operatorPickerSoon": "Sélection opérateur bientôt disponible",
+      "choose": "Choisir"
     }
   },
 
-  "saveCard": "Enregistrer la carte",
-  "chooseMethod": "Choisir une méthode de paiement",
-  "methodSelected": "Méthode sélectionnée",
-  "pay": "Payer {amount} €",
+  "payment": {
+    "method": {
+      "title": "Méthode de paiement",
+      "points": "Points",
+      "saveCard": "Enregistrer la carte",
+      "chooseMethod": "Choisir une méthode",
+      "cardPayment": "Carte bancaire",
+      "cardPaymentDesc": "Paiement sécurisé",
+      "applePay": "Apple Pay",
+      "applePayDesc": "Bientôt disponible",
+      "googlePay": "Google Pay",
+      "googlePayDesc": "Bientôt disponible",
+      "paypal": "PayPal",
+      "paypalDesc": "Bientôt disponible",
+      "wallet": "Wallet",
+      "walletDesc": "Bientôt disponible",
+      "methodSelected": "Méthode sélectionnée",
+      "methodUnavailable": "Méthode indisponible",
+      "paypalComingSoon": "Bientôt disponible",
+      "pay": "Payer {amount}",
+      "pointsAvailable": "Points disponibles : {points}",
+      "setDefault": "Définir comme moyen de paiement",
 
-  "card": {
-    "title": "Paiement carte",
-    "securityNotice": "Vos informations de paiement sont protégées.",
-    "invalidForm": "Formulaire invalide.",
-    "genericError": "Une erreur est survenue.",
-    "holderName": "Nom du titulaire",
-    "number": "Numéro de carte",
-    "expiry": "MM/AA",
-    "cvv": "CVV",
-    "payAmount": "Payer {amount} €",
-    "scanTooltip": "Scanner la carte",
-    "invalidCardHolderName": "Nom invalide",
-    "invalidCardNumber": "Numéro de carte invalide",
-    "invalidExpiry": "Date invalide",
-    "invalidCvv": "CVV invalide",
-    "formError": "Veuillez corriger les erreurs"
+      "payment.method.title": "Méthode de paiement",
+      "payment.points.title": "Points",
+      "payment.points.available": "Points disponibles : {points}",
+      "payment.saveCard": "Enregistrer la carte",
+      "payment.chooseMethod": "Choisir une méthode de paiement",
+      "payment.methods.card.title": "Carte bancaire",
+      "payment.methods.card.desc": "Payer avec votre carte Visa ou Mastercard",
+      "payment.methodSelected": "Méthode sélectionnée",
+      "payment.pay": "Payer {amount} €"
+    },
+
+    "points": {
+      "title": "Points",
+      "available": "Points disponibles : {points}"
+    },
+
+    "methods": {
+      "card": {
+        "title": "Carte bancaire",
+        "desc": "Payer avec votre carte Visa ou Mastercard"
+      }
+    },
+
+    "saveCard": "Enregistrer la carte",
+    "chooseMethod": "Choisir une méthode de paiement",
+    "methodSelected": "Méthode sélectionnée",
+    "pay": "Payer {amount} €",
+
+    "card": {
+      "title": "Paiement carte",
+      "securityNotice": "Vos informations de paiement sont protégées.",
+      "invalidForm": "Formulaire invalide.",
+      "genericError": "Une erreur est survenue.",
+      "holderName": "Nom du titulaire",
+      "number": "Numéro de carte",
+      "expiry": "MM/AA",
+      "cvv": "CVV",
+      "payAmount": "Payer {amount} €",
+      "scanTooltip": "Scanner la carte",
+      "invalidCardHolderName": "Nom invalide",
+      "invalidCardNumber": "Numéro de carte invalide",
+      "invalidExpiry": "Date invalide",
+      "invalidCvv": "CVV invalide",
+      "formError": "Veuillez corriger les erreurs"
+    },
+
+    "success": {
+      "title": "Paiement réussi",
+      "message": "Votre paiement a été validé.",
+      "amount": "Montant",
+      "date": "Date",
+      "order": "Commande",
+      "reference": "Référence",
+      "finish": "Terminer",
+
+      "amountLabel": "Montant",
+      "dateLabel": "Date",
+      "orderLabel": "Commande",
+      "referenceLabel": "Référence",
+
+      "processing": "Recharge en cours... veuillez patienter ⏳",
+      "done": "Recharge envoyée avec succès ✅"
+    },
+
+    "empty": {
+      "title": "Aucun moyen de paiement",
+      "desc": "Ajoutez un moyen de paiement pour payer plus rapidement.",
+      "cta": "Faire une recharge"
+    }
   },
-
-  "success": {
-    "title": "Paiement réussi",
-    "message": "Votre paiement a été validé.",
-    "amount": "Montant",
-    "date": "Date",
-    "order": "Commande",
-    "reference": "Référence",
-    "finish": "Terminer",
-    "amountLabel": "Montant",
-    "dateLabel": "Date",
-    "orderLabel": "Commande",
-    "referenceLabel": "Référence"
-  },
-
-  "empty": {
-    "title": "Aucun moyen de paiement",
-    "desc": "Ajoutez un moyen de paiement pour payer plus rapidement.",
-    "cta": "Faire une recharge"
-  }
-},
 
   "country": {
     "af": "Afghanistan",

@@ -4,16 +4,19 @@
 
 import json
 from pathlib import Path
-
+from services.reloadly_service import get_reloadly_operator_amounts
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify
 
 from services.recharge_service import (
     normalize_phone_e164_light,
     is_phone_length_valid,
     detect_country_iso_from_phone,
-    get_reloadly_operator_auto_detect,
-    get_reloadly_operator_amounts,
     quote_local_amount
+)
+
+from services.reloadly_service import (
+    get_reloadly_operator_amounts,
+    lookup_phone_number as get_reloadly_operator_auto_detect
 )
 
 from services.reloadly_service import (
@@ -25,6 +28,7 @@ from services.reloadly_service import (
 from services.currency_service import CurrencyService
 from services.fees_service import FeesService
 from services.reloadly_service import get_reloadly_quote
+
 
 recharge_bp = Blueprint("recharge", __name__, url_prefix="/recharge")
 
@@ -48,10 +52,17 @@ def select_forfait_get():
     if not operator:
         operator = get_reloadly_operator_auto_detect(phone, country_iso)
 
+    # 🔥 DEBUG
+    print("📡 OPERATOR:", operator)
+
     plans = []
 
     if operator and operator.get("id"):
         plans = get_reloadly_plans(operator["id"])
+
+    # 🔥 DEBUG IMPORTANT
+    print("📡 PLANS RAW:", plans)
+    print("📡 PLANS COUNT:", len(plans) if plans else 0)
 
     return render_template(
         "recharge/select_forfait.html",
@@ -273,7 +284,11 @@ def select_amount_get():
     # ---------------------------
     # Operator amounts (SAFE)
     # ---------------------------
-    operator_amounts = {}
+    operator_amounts = {
+    "fixedAmounts": [],
+    "minAmount": 2,
+    "maxAmount": 50
+}
 
     operator_id = operator.get("id")
     print("📡 OPERATOR ID:", operator_id)
