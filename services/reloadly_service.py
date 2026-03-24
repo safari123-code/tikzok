@@ -41,7 +41,27 @@ def _extract_local_number(phone: str) -> str:
     normalized = _normalize_phone(phone)
     return normalized[1:] if normalized.startswith("+") else normalized
 
+# ---------------------------
+# Feature: Parse plan description
+# ---------------------------
+def _parse_plan_description(desc: str):
 
+    desc = (desc or "").lower()
+
+    gb = ""
+    validity = ""
+
+    import re
+
+    gb_match = re.search(r"(\d+)\s?gb", desc)
+    if gb_match:
+        gb = gb_match.group(1) + "GB"
+
+    days_match = re.search(r"(\d+)\s?(day|days|jours)", desc)
+    if days_match:
+        validity = days_match.group(1) + " jours"
+
+    return gb, validity
 # ---------------------------
 # Safe request (retry)
 # ---------------------------
@@ -342,26 +362,49 @@ def get_reloadly_plans(operator_id: int):
         res = _safe_request("GET", url, headers=headers)
 
         if res.status_code != 200:
-            print("Reloadly plans failed:", res.text)
+            print("❌ Reloadly plans failed:", res.text)
             return []
 
         data = res.json()
 
+        # 🔥 DEBUG (à garder pour prod logs)
+        print("📡 RAW DATA PLANS:", data)
+
         for p in data:
+
+            description = p.get("description") or p.get("name") or ""
+
+            # ---------------------------
+            # Parse description (GB + durée)
+            # ---------------------------
+            gb, validity = _parse_plan_description(description)
+
             plans.append({
                 "id": p.get("id"),
                 "name": p.get("name"),
-                "amount": p.get("amount"),
-                "currency": p.get("currencyCode"),
+
+                # 🔥 SAFE NUMERIC
+                "amount": float(p.get("amount") or 0),
+                "currency": p.get("currencyCode") or "EUR",
+
                 "type": "DATA",
-                "description": p.get("description") or p.get("name")
+                "description": description,
+
+                # 🔥 UI READY
+                "gb": gb,                 # ex: 5GB
+                "validity": validity      # ex: 30 jours
             })
 
+        # ---------------------------
+        # Fallback debug
+        # ---------------------------
+        if not plans:
+            print("⚠️ No data plans for this operator")
+
     except Exception as e:
-        print("Reloadly plans error:", e)
+        print("❌ Reloadly plans error:", e)
 
     return plans
-
 
 # ---------------------------
 # Get Reloadly Quote (FINAL FIXED)
@@ -370,7 +413,6 @@ def get_reloadly_quote(operator_id: int, amount: float):
 
     token = get_reloadly_token()
 
-    # ✅ IMPORTANT : PAS de /v1 ici
     url = f"{RELOADLY_BASE_URL}/v1/topups/quote"
 
     headers = {
@@ -396,7 +438,11 @@ def get_reloadly_quote(operator_id: int, amount: float):
 
         data = res.json()
 
-        if not data.get("localAmount") or not data.get("localCurrency"):
+        # ✅ FIX CRITIQUE : accepter destinationAmount
+        if not (
+            (data.get("destinationAmount") and data.get("destinationCurrencyCode")) or
+            (data.get("localAmount") and data.get("localCurrency"))
+        ):
             print("⚠️ Invalid quote data")
             return None
 

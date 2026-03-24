@@ -257,15 +257,20 @@ def stripe_webhook_post():
             payout_amount = fees["payout"]
 
             print(
-                f"💰 Client base: {base_amount} | "
-                f"Fee: {fees['fee']} | "
-                f"Sent: {payout_amount} {currency}"
+                f"💰 Client: {base_amount} | Fee: {fees['fee']} | Sent: {payout_amount} {currency}"
             )
 
-            print("🚀 Sending recharge:", phone)
+            print(
+                "🚀 SENDING TOPUP:",
+                phone,
+                payout_amount,
+                country_iso,
+                "forfait_id:",
+                forfait_id
+            )
 
             # ---------------------------
-            # Reloadly call (AUTO FLOW)
+            # Reloadly call (SAFE)
             # ---------------------------
             try:
                 if forfait_id:
@@ -285,7 +290,9 @@ def stripe_webhook_post():
 
             except Exception as reloadly_error:
                 print("❌ Reloadly error:", reloadly_error)
-                return jsonify({"ok": False, "error": "reloadly_failed"}), 500
+
+                # 🔥 IMPORTANT: on NE bloque PAS Stripe
+                return jsonify({"ok": True}), 200
 
             # ---------------------------
             # Build success payload
@@ -296,11 +303,14 @@ def stripe_webhook_post():
 
             payload_obj["transaction_id"] = reloadly_result.get("transaction_id")
 
+            # 🔥 stockage idempotent (clé du système)
             if idem_key:
                 IdempotencyService.store_result(idem_key, payload_obj)
 
+            print("💾 Stored idempotency:", idem_key)
+
             # ---------------------------
-            # Email confirmation
+            # Email confirmation (non bloquant)
             # ---------------------------
             user_email = metadata.get("user_email")
 
@@ -316,7 +326,9 @@ def stripe_webhook_post():
 
         except Exception as process_error:
             print("❌ Webhook processing error:", process_error)
-            return jsonify({"ok": False}), 500
+
+            # 🔥 Stripe doit TOUJOURS recevoir 200 sinon retry en boucle
+            return jsonify({"ok": True}), 200
 
     # ---------------------------
     # Always return OK to Stripe

@@ -1,5 +1,5 @@
 # ---------------------------
-# Currency Service (FINAL CLEAN)
+# Currency Service (FINAL PRO - RELOADLY READY)
 # ---------------------------
 
 class CurrencyService:
@@ -19,7 +19,7 @@ class CurrencyService:
     }
 
     # ---------------------------
-    # Taux manuel
+    # Taux manuel (fallback)
     # ---------------------------
     _manual_rates = {
         "EUR": 1,
@@ -48,14 +48,14 @@ class CurrencyService:
         return "EUR"
 
     # ---------------------------
-    # Taux
+    # Taux (fallback uniquement)
     # ---------------------------
     @staticmethod
     def rate_from_currency(currency: str) -> float:
         return CurrencyService._manual_rates.get(currency, 1)
 
     # ---------------------------
-    # 🔥 ESTIMATION (SANS FEES)
+    # ESTIMATION (fallback only)
     # ---------------------------
     @staticmethod
     def estimate_local_amount(phone: str, amount: float):
@@ -68,14 +68,37 @@ class CurrencyService:
         return int(round(local)), currency
 
     # ---------------------------
-    # Affichage final
+    # Affichage final (SOURCE OF TRUTH = RELOADLY)
     # ---------------------------
     @staticmethod
     def received_display_value(phone, amount, selected_forfait, quote):
 
+        # ---------------------------
+        # PRIORITÉ UX : forfait data
+        # ---------------------------
         if selected_forfait and selected_forfait.get("gb"):
             return str(selected_forfait["gb"])
 
+        # ---------------------------
+        # ✅ PRIORITÉ ABSOLUE : Reloadly
+        # ---------------------------
+        if quote:
+
+            try:
+                # 🔥 vrai montant reçu utilisateur
+                if quote.get("destinationAmount") and quote.get("destinationCurrencyCode"):
+                    return f"{int(float(quote['destinationAmount']))} {quote['destinationCurrencyCode']}"
+
+                # 🔥 fallback Reloadly
+                if quote.get("localAmount") and quote.get("localCurrency"):
+                    return f"{int(float(quote['localAmount']))} {quote['localCurrency']}"
+
+            except Exception as e:
+                print("❌ CurrencyService parse error:", e)
+
+        # ---------------------------
+        # Fallback interne (sécurité)
+        # ---------------------------
         local, currency = CurrencyService.estimate_local_amount(phone, amount)
 
         return f"{local} {currency}"

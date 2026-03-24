@@ -32,7 +32,8 @@
 
       {# 🔥 DATA support (CRITICAL) #}
       <input type="hidden" name="country_name" value="{{ op.country }}">
-      <input type="hidden" name="supports_data" value="{{ 'true' if op.supports_data else 'false' }}">
+      <input type="hidden" name="supports_data"
+       value="{{ 'true' if op.supports_data or 'Data' in op.name else 'false' }}">
 
       <button
         type="submit"

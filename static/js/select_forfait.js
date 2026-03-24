@@ -1,26 +1,34 @@
 // ---------------------------
-// Select forfait (UX + SAFE + DATA FIX)
+// Select forfait (FINAL PRODUCTION)
 // ---------------------------
 
 async function selectForfait(btn){
 
-  if(!btn) return
+  if(!btn) return;
 
-  const gb = btn.dataset.gb
-  const price = btn.dataset.price
-  const planId = btn.dataset.id   // 🔥 CRITIQUE
+  const gb = btn.dataset.gb || "";
+  const price = parseFloat(btn.dataset.price || "0");
+  const planId = btn.dataset.id;
 
-  if(!gb || !price) return
+  // 🔥 sécurité stricte
+  if(!planId || price <= 0){
+    console.warn("Invalid forfait data");
+    return;
+  }
 
-  const cards = document.querySelectorAll(".tz-forfait-card")
+  const cards = document.querySelectorAll(".tz-forfait-card");
 
-  // 🔥 UX: disable all + reset
+  // ---------------------------
+  // UX: loading state
+  // ---------------------------
   cards.forEach(b=>{
-    b.classList.remove("is-selected")
-    b.disabled = true
-  })
+    b.classList.remove("is-selected");
+    b.disabled = true;
+    b.style.opacity = "0.6";
+  });
 
-  btn.classList.add("is-selected")
+  btn.classList.add("is-selected");
+  btn.style.opacity = "1";
 
   try{
 
@@ -30,86 +38,101 @@ async function selectForfait(btn){
         "Content-Type":"application/json"
       },
       body:JSON.stringify({
-        id: planId,   // 🔥 AJOUT
-        gb,
-        price
+        id: planId,
+        gb: gb,
+        price: price
       })
-    })
+    });
 
     if(!res.ok){
-      throw new Error("Network error")
+      throw new Error("Network error");
     }
 
-    const data = await res.json()
+    const data = await res.json();
 
     if(data.ok){
-      window.location.href = "/recharge/select-amount"
-      return
+      // 🔥 UX: micro delay smooth
+      setTimeout(()=>{
+        window.location.href = "/recharge/select-amount";
+      }, 120);
+      return;
     }
 
-    throw new Error("API error")
+    throw new Error("API error");
 
   } catch(e){
 
-    console.error("forfait selection error", e)
+    console.error("❌ forfait selection error:", e);
 
-    // 🔁 rollback UX
+    // ---------------------------
+    // rollback UX
+    // ---------------------------
     cards.forEach(b=>{
-      b.disabled = false
-      b.classList.remove("is-selected")
-    })
+      b.disabled = false;
+      b.style.opacity = "1";
+      b.classList.remove("is-selected");
+    });
+
+    // toast si dispo
+    if(typeof tzToast === "function"){
+      tzToast("Erreur, réessayez");
+    }
   }
 }
 
 
 // ---------------------------
-// Tabs filter (SAFE + CLEAN)
+// Tabs filter (FINAL CLEAN)
 // ---------------------------
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  const tabs = document.querySelectorAll(".tz-tab")
-  const plans = document.querySelectorAll(".tz-forfait-card")
+  const tabs = document.querySelectorAll(".tz-tab");
+  const plans = document.querySelectorAll(".tz-forfait-card");
 
-  if(!tabs.length || !plans.length) return
+  if(!tabs.length || !plans.length) return;
 
   const matchPlan = (type, planType) => {
 
-    if(type === "DATA") return planType.includes("DATA")
+    if(type === "DATA") return planType.includes("DATA");
 
-    if(type === "VOICE") {
-      return planType.includes("VOICE") || planType.includes("MIN")
+    if(type === "VOICE"){
+      return planType.includes("VOICE") || planType.includes("MIN");
     }
 
-    if(type === "SMS") return planType.includes("SMS")
+    if(type === "SMS") return planType.includes("SMS");
 
-    if(type === "COMBO") {
-      return planType.includes("COMBO") || planType.includes("BUNDLE")
+    if(type === "COMBO"){
+      return planType.includes("COMBO") || planType.includes("BUNDLE");
     }
 
-    return true
-  }
+    return true;
+  };
 
   tabs.forEach(tab => {
 
     tab.addEventListener("click", () => {
 
-      const type = (tab.dataset.type || "").toUpperCase()
+      const type = (tab.dataset.type || "").toUpperCase();
 
-      tabs.forEach(t => t.classList.remove("is-active"))
-      tab.classList.add("is-active")
+      // active tab
+      tabs.forEach(t => t.classList.remove("is-active"));
+      tab.classList.add("is-active");
 
+      // filter plans
       plans.forEach(plan => {
 
-        const planType = (plan.dataset.planType || "").toUpperCase()
+        const planType = (plan.dataset.planType || "").toUpperCase();
 
-        const show = matchPlan(type, planType)
+        const show = matchPlan(type, planType);
 
-        plan.style.display = show ? "block" : "none"
-      })
-    })
-  })
+        plan.style.display = show ? "block" : "none";
+      });
 
-  // auto trigger first tab
-  document.querySelector(".tz-tab.is-active")?.click()
-})
+    });
+
+  });
+
+  // 🔥 auto trigger
+  document.querySelector(".tz-tab.is-active")?.click();
+});

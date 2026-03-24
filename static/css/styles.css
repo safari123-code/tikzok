@@ -1659,3 +1659,21 @@ transform:translateY(-1px);
 transition:all .15s ease;
 }
 
+/* ---------------------------
+   Forfait meta UI
+--------------------------- */
+.tz-forfait-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  align-items: center;
+}
+
+.tz-badge {
+  background: rgba(33,150,243,0.1);
+  color: #2196f3;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}

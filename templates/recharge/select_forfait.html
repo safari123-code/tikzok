@@ -1,5 +1,5 @@
 {# ---------------------------
-   Feature: Select Forfait
+   Feature: Select Forfait (FINAL PRODUCTION ROBUST)
 --------------------------- #}
 {% extends "base.html" %}
 {% block title %}{{ t("recharge.selectForfait.title") }}{% endblock %}
@@ -14,29 +14,6 @@
   <h1 class="tz-title">
     {{ t("recharge.selectForfait.title") }}
   </h1>
-
-  {# ---------------------------
-     Tabs DATA / VOICE / SMS / COMBO
-  --------------------------- #}
-  <div class="tz-tabs" id="planTabs" role="tablist">
-
-    <button class="tz-tab is-active" data-type="DATA" role="tab">
-      📶 Data
-    </button>
-
-    <button class="tz-tab" data-type="VOICE" role="tab">
-      📞 Minutes
-    </button>
-
-    <button class="tz-tab" data-type="SMS" role="tab">
-      ✉️ SMS
-    </button>
-
-    <button class="tz-tab" data-type="COMBO" role="tab">
-      📦 Combo
-    </button>
-
-  </div>
 
   {# ---------------------------
      Operator Card
@@ -82,7 +59,8 @@
         type="button"
         data-plan-type="{{ f.type }}"
         data-id="{{ f.id }}"
-        data-gb="{{ f.description }}"
+        data-gb="{{ f.gb or f.description }}"
+        data-validity="{{ f.validity or '' }}"
         data-price="{{ f.amount }}"
         onclick="selectForfait(this)"
         aria-label="{{ f.name }} {{ f.amount }} {{ f.currency }}"
@@ -99,28 +77,44 @@
           />
           {% endif %}
 
-          <div class="tz-forfait-icon">
-            {% if f.type == "DATA" %}📶
-            {% elif f.type == "VOICE" %}📞
-            {% elif f.type == "SMS" %}✉️
-            {% else %}📦
-            {% endif %}
-          </div>
+          <div class="tz-forfait-icon">📶</div>
 
           <div class="tz-grow">
 
+            {# ---------------------------
+               Title dynamique (API SAFE)
+            --------------------------- #}
             <div class="tz-strong">
-              {{ f.name }}
+              {{ f.gb if f.gb else f.name }}
             </div>
 
+            {# ---------------------------
+               Description ULTRA ROBUSTE
+            --------------------------- #}
             <div class="tz-small tz-muted">
-              {{ f.description }}
+
+              {% if f.gb and f.validity %}
+                {{ f.gb }} • {{ f.validity }}
+
+              {% elif f.gb %}
+                {{ f.gb }}
+
+              {% elif f.validity %}
+                {{ f.validity }}
+
+              {% else %}
+                {{ f.description }}
+              {% endif %}
+
             </div>
 
           </div>
 
+          {# ---------------------------
+             Price SAFE
+          --------------------------- #}
           <div class="tz-forfait-price">
-            {{ f.amount }} {{ f.currency }}
+            {{ "%.0f"|format(f.amount or 0) }} {{ f.currency or "EUR" }}
           </div>
 
         </div>

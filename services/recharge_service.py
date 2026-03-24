@@ -1,5 +1,5 @@
 # ---------------------------
-# services/recharge_service.py (FINAL CLEAN)
+# services/recharge_service.py (FINAL PRO SAFE)
 # ---------------------------
 
 import re
@@ -73,24 +73,24 @@ def detect_country_iso_from_phone(phone: str) -> str | None:
 
 
 # ---------------------------
-# Quote fallback (NO Reloadly)
+# Quote fallback (SAFE ONLY)
 # ---------------------------
 
 def quote_local_amount(operator_id: int, amount: float) -> dict:
     """
-    Fallback estimation (production safe)
-    Reloadly quote non fiable en LIVE → on ignore
+    ⚠️ Fallback uniquement si Reloadly indisponible
+    Ne doit PAS être utilisé en priorité
     """
 
     return {
-        "localAmount": round(float(amount) * 70),  # ex: AFN
-        "localCurrency": "AFN",
+        "localAmount": float(amount),  # ⚠️ neutre → pas de faux taux
+        "localCurrency": "EUR",        # ⚠️ éviter mensonge FX
         "ts": int(time.time()),
     }
 
 
 # ---------------------------
-# Idempotency key
+# Idempotency key (PRO SAFE)
 # ---------------------------
 
 def generate_idempotency(user_id, phone, amount):

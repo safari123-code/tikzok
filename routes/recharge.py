@@ -261,7 +261,7 @@ def select_operator_post():
 
 
 # ---------------------------
-# Select amount (GET) - FINAL PRO
+# Select amount (GET) - FINAL PRO (FIX RELOADLY RECEIVED)
 # ---------------------------
 @recharge_bp.get("/select-amount")
 def select_amount_get():
@@ -285,10 +285,10 @@ def select_amount_get():
     # Operator amounts (SAFE)
     # ---------------------------
     operator_amounts = {
-    "fixedAmounts": [],
-    "minAmount": 2,
-    "maxAmount": 50
-}
+        "fixedAmounts": [],
+        "minAmount": 2,
+        "maxAmount": 50
+    }
 
     operator_id = operator.get("id")
     print("📡 OPERATOR ID:", operator_id)
@@ -330,7 +330,7 @@ def select_amount_get():
     print("💰 Payout:", payout_amount)
 
     # ---------------------------
-    # Reloadly quote (FIX PRODUCTION)
+    # Reloadly quote (PRODUCTION)
     # ---------------------------
     quote = None
 
@@ -338,7 +338,6 @@ def select_amount_get():
         try:
             print("📡 Using operator for quote:", operator_id)
 
-            # ✅ IMPORTANT : Reloadly utilise le montant brut
             quote = get_reloadly_quote(
                 operator_id=operator_id,
                 amount=amount
@@ -353,12 +352,24 @@ def select_amount_get():
         print("⚠️ Skip quote → no operator")
 
     # ---------------------------
-    # FINAL DISPLAY (BUSINESS CONTROL)
+    # FINAL DISPLAY (FIX RELOADLY RECEIVED)
     # ---------------------------
-    if quote and quote.get("localAmount"):
-        received_display = f"{int(float(quote['localAmount']))} {quote.get('localCurrency', '')}"
+    if quote:
+
+        # ✅ PRIORITÉ : vrai montant reçu
+        if quote.get("destinationAmount") and quote.get("destinationCurrencyCode"):
+            received_display = f"{int(float(quote['destinationAmount']))} {quote['destinationCurrencyCode']}"
+
+        # ✅ FALLBACK Reloadly
+        elif quote.get("localAmount") and quote.get("localCurrency"):
+            received_display = f"{int(float(quote['localAmount']))} {quote['localCurrency']}"
+
+        # ✅ FALLBACK interne
+        else:
+            local, cur = CurrencyService.estimate_local_amount(phone, amount)
+            received_display = f"{local} {cur}"
+
     else:
-        # ✅ utilise amount (PAS payout)
         local, cur = CurrencyService.estimate_local_amount(phone, amount)
         received_display = f"{local} {cur}"
 
@@ -410,19 +421,18 @@ def select_amount_post():
 
 
 # ---------------------------
-# AJAX: quote (Currency PRO)
+# AJAX: quote (Reloadly FIX)
 # ---------------------------
-
 @recharge_bp.post("/api/quote")
 def api_quote():
 
     phone = session.get("recharge_phone")
+    operator = session.get("recharge_operator")
 
-    if not phone:
+    if not phone or not operator:
         return jsonify({"ok": False}), 401
 
     data = request.get_json(silent=True) or {}
-
     amount = data.get("amount")
 
     try:
@@ -430,12 +440,21 @@ def api_quote():
     except Exception:
         return jsonify({"ok": False}), 400
 
-    # 🔥 utilise TON CurrencyService (clé du problème)
+    operator_id = operator.get("id")
+
+    quote = None
+
+    if operator_id:
+        try:
+            quote = get_reloadly_quote(operator_id, amount)
+        except Exception as e:
+            print("❌ AJAX quote error:", e)
+
     received = CurrencyService.received_display_value(
         phone=phone,
         amount=amount,
         selected_forfait=session.get("recharge_forfait"),
-        quote=None  # ❌ on ignore Reloadly
+        quote=quote  # ✅ FIX MAJEUR
     )
 
     return jsonify({
