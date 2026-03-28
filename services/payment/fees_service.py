@@ -1,11 +1,11 @@
 # ---------------------------
-# Feature: Fees Service (Production Ready)
+# Feature: Fees Service (FINAL FIXED - MARKUP MODEL)
 # ---------------------------
 
 class FeesService:
     """
     Centralise le calcul des frais Tikzok.
-    Compatible production (Stripe + Reloadly).
+    Modèle: MARKUP (client paie plus, payout intact).
     """
 
     # ---------------------------
@@ -25,7 +25,7 @@ class FeesService:
     }
 
     # ---------------------------
-    # Minimum fee (PRO)
+    # Minimum fee
     # ---------------------------
     MIN_FEE = 0.20
 
@@ -41,11 +41,26 @@ class FeesService:
         return cls.CURRENCY_FEES.get(currency.upper(), cls.DEFAULT_RATE)
 
     # ---------------------------
-    # Compute tax (safe money)
+    # Compute fee (NEW SAFE CORE)
+    # ---------------------------
+    @classmethod
+    def compute_fee(cls, amount: float, rate: float) -> float:
+
+        try:
+            amount = float(amount)
+        except Exception:
+            return 0.0
+
+        fee = round(amount * rate, 2)
+
+        # minimum garanti
+        return max(fee, cls.MIN_FEE)
+
+    # ---------------------------
+    # Compute tax (compat)
     # ---------------------------
     @staticmethod
     def compute_tax(amount: float, rate: float) -> float:
-
         try:
             amount = float(amount)
         except Exception:
@@ -54,48 +69,52 @@ class FeesService:
         return round(amount * rate, 2)
 
     # ---------------------------
-    # Compute total (safe)
+    # Compute total (client paie)
     # ---------------------------
-    @staticmethod
-    def compute_total(amount: float, rate: float) -> float:
+    @classmethod
+    def compute_total(cls, amount: float, rate: float) -> float:
 
         try:
             amount = float(amount)
         except Exception:
             return 0.0
 
-        total = amount + (amount * rate)
+        fee = cls.compute_fee(amount, rate)
 
-        return round(total, 2)
+        return round(amount + fee, 2)
 
     # ---------------------------
-    # Full breakdown (UI)
+    # Full breakdown (UI SAFE)
     # ---------------------------
     @classmethod
     def breakdown(cls, amount: float, currency: str) -> dict:
 
+        try:
+            amount = float(amount)
+        except Exception:
+            amount = 0.0
+
         rate = cls.get_tax_rate(currency)
 
-        tax = cls.compute_tax(amount, rate)
-        total = cls.compute_total(amount, rate)
+        fee = cls.compute_fee(amount, rate)
+        total = round(amount + fee, 2)
 
         return {
             "amount": round(amount, 2),
             "tax_rate": rate,
-            "tax": tax,
+            "tax": fee,  # garde compat naming
             "total": total
         }
 
     # ---------------------------
-    # Compute payout (BUSINESS CORE)
+    # Compute payout (FIX CRITIQUE)
     # ---------------------------
     @classmethod
     def compute_payout(cls, amount: float, currency: str) -> dict:
         """
-        Calcule:
-        - ce que paie le client
-        - la commission Tikzok
-        - ce qui est envoyé à Reloadly
+        Modèle MARKUP:
+        - client paie plus
+        - payout = amount (intouché)
         """
 
         try:
@@ -104,26 +123,19 @@ class FeesService:
             return {
                 "paid": 0.0,
                 "fee": 0.0,
-                "payout": 0.0
+                "payout": 0.0,
+                "rate": 0.0
             }
 
         rate = cls.get_tax_rate(currency)
 
-        # commission
-        fee = round(amount * rate, 2)
+        fee = cls.compute_fee(amount, rate)
 
-        # 🔥 minimum garanti
-        fee = max(fee, cls.MIN_FEE)
-
-        payout = round(amount - fee, 2)
-
-        # 🔥 sécurité business
-        if payout < 1:
-            payout = 1.0
+        total = round(amount + fee, 2)
 
         return {
-            "paid": round(amount, 2),
-            "fee": fee,
-            "payout": payout,
+            "paid": total,     # 🔥 client paie total
+            "fee": fee,        # 🔥 ta marge
+            "payout": round(amount, 2),  # 🔥 ENVOYÉ À RELOADLY
             "rate": rate
         }

@@ -1,33 +1,40 @@
 # ---------------------------
-# routes/recharge.py
+# routes/recharge.py (FINAL CLEAN SERVICES)
 # ---------------------------
 
 import json
 from pathlib import Path
-from services.reloadly_service import get_reloadly_operator_amounts
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify
 
-from services.recharge_service import (
+# ---------------------------
+# Recharge core
+# ---------------------------
+from services.recharge.recharge_service import (
     normalize_phone_e164_light,
     is_phone_length_valid,
     detect_country_iso_from_phone,
     quote_local_amount
 )
 
-from services.reloadly_service import (
-    get_reloadly_operator_amounts,
-    lookup_phone_number as get_reloadly_operator_auto_detect
-)
-
-from services.reloadly_service import (
+# ---------------------------
+# Reloadly (NEW ARCHITECTURE)
+# ---------------------------
+from services.reloadly.airtime_service import send_topup, get_topup_status
+from services.reloadly.data_service import send_data_topup, get_reloadly_quote, get_reloadly_plans
+from services.reloadly.operators_service import (
     get_reloadly_operators_by_country,
     lookup_phone_number,
-    get_reloadly_plans
+    get_reloadly_operator_amounts
 )
 
-from services.currency_service import CurrencyService
-from services.fees_service import FeesService
-from services.reloadly_service import get_reloadly_quote
+# 🔥 alias SAFE (compat ancien code)
+get_reloadly_operator_auto_detect = lookup_phone_number
+
+# ---------------------------
+# Business services
+# ---------------------------
+from services.payment.currency_service import CurrencyService
+from services.payment.fees_service import FeesService
 
 
 recharge_bp = Blueprint("recharge", __name__, url_prefix="/recharge")
@@ -36,7 +43,6 @@ recharge_bp = Blueprint("recharge", __name__, url_prefix="/recharge")
 # ---------------------------
 # Select Forfait
 # ---------------------------
-
 @recharge_bp.get("/select-forfait")
 def select_forfait_get():
 
@@ -52,7 +58,6 @@ def select_forfait_get():
     if not operator:
         operator = get_reloadly_operator_auto_detect(phone, country_iso)
 
-    # 🔥 DEBUG
     print("📡 OPERATOR:", operator)
 
     plans = []
@@ -60,7 +65,6 @@ def select_forfait_get():
     if operator and operator.get("id"):
         plans = get_reloadly_plans(operator["id"])
 
-    # 🔥 DEBUG IMPORTANT
     print("📡 PLANS RAW:", plans)
     print("📡 PLANS COUNT:", len(plans) if plans else 0)
 
@@ -70,10 +74,11 @@ def select_forfait_get():
         operator=operator,
         phone=phone
     )
+
+
 # ---------------------------
 # Select Forfait (POST)
 # ---------------------------
-
 @recharge_bp.post("/select-forfait")
 def select_forfait_post():
 
@@ -81,23 +86,23 @@ def select_forfait_post():
 
     gb = data.get("gb")
     price = data.get("price")
-    plan_id = data.get("id")  # 🔥 AJOUT CRITIQUE
+    plan_id = data.get("id")
 
     if not gb or not price or not plan_id:
         return jsonify({"ok": False}), 400
 
     session["recharge_forfait"] = {
-        "id": plan_id,   # 🔥 IMPORTANT
+        "id": plan_id,
         "gb": gb,
         "price": price
     }
 
     return jsonify({"ok": True})
 
+
 # ---------------------------
 # Country → City mapping
 # ---------------------------
-
 def get_city_for_country(iso):
 
     file = Path("static/data/country_cities.json")
@@ -116,7 +121,6 @@ def get_city_for_country(iso):
 # ---------------------------
 # API Phone Lookup
 # ---------------------------
-
 @recharge_bp.route("/api/lookup-number", methods=["POST"])
 def lookup_number():
 
@@ -130,7 +134,6 @@ def lookup_number():
     if not result:
         return jsonify({"valid": False})
 
-    # sauvegarder l'opérateur détecté
     session["recharge_operator"] = {
         "id": result.get("operatorId"),
         "name": result.get("name"),
@@ -150,7 +153,6 @@ def lookup_number():
 # ---------------------------
 # Enter number (GET)
 # ---------------------------
-
 @recharge_bp.get("/enter-number")
 def enter_number_get():
 
@@ -177,18 +179,12 @@ def enter_number_post():
     raw = request.form.get("phone", "")
     phone = normalize_phone_e164_light(raw)
 
-    # ---------------------------
-    # Detect country (IMPORTANT)
-    # ---------------------------
     country_iso = (
-        request.form.get("country_iso")  # priorité form
+        request.form.get("country_iso")
         or detect_country_iso_from_phone(phone)
         or "AF"
     )
 
-    # ---------------------------
-    # Validation
-    # ---------------------------
     if not phone or not is_phone_length_valid(phone):
 
         city = get_city_for_country(country_iso)
@@ -201,13 +197,11 @@ def enter_number_post():
             phone_error=True,
         ), 400
 
-    # ---------------------------
-    # SAVE SESSION (IMPORTANT)
-    # ---------------------------
     session["recharge_phone"] = phone
-    session["country_iso"] = country_iso.upper() # 🔥 clé admin
+    session["country_iso"] = country_iso.upper()
 
     return redirect(url_for("recharge.select_amount_get"))
+
 
 # ---------------------------
 # Select Operator (GET)
@@ -229,6 +223,8 @@ def select_operator_get():
         operators=operators,
         phone=phone
     )
+
+
 # ---------------------------
 # Select Operator (POST)
 # ---------------------------
@@ -253,7 +249,6 @@ def select_operator_post():
         "supports_data": supports_data
     }
 
-    # 🔥 LOGIQUE PRODUIT
     if supports_data:
         return redirect(url_for("recharge.select_forfait_get"))
 
@@ -261,11 +256,14 @@ def select_operator_post():
 
 
 # ---------------------------
-# Select amount (GET) - FINAL PRO (FIX RELOADLY RECEIVED)
+# Select amount (GET)
 # ---------------------------
 @recharge_bp.get("/select-amount")
 def select_amount_get():
 
+    # ---------------------------
+    # Session / sécurité
+    # ---------------------------
     phone = session.get("recharge_phone")
 
     if not phone:
@@ -273,16 +271,21 @@ def select_amount_get():
 
     country_iso = detect_country_iso_from_phone(phone) or "FR"
 
+    # ---------------------------
+    # Operator
+    # ---------------------------
     operator = session.get("recharge_operator")
 
     if not operator:
         operator = get_reloadly_operator_auto_detect(
-            phone=phone,
-            country_iso=country_iso,
+            phone,
+            country_iso
         ) or {}
 
+    operator_id = operator.get("id")
+
     # ---------------------------
-    # Operator amounts (SAFE)
+    # Operator amounts
     # ---------------------------
     operator_amounts = {
         "fixedAmounts": [],
@@ -290,89 +293,62 @@ def select_amount_get():
         "maxAmount": 50
     }
 
-    operator_id = operator.get("id")
-    print("📡 OPERATOR ID:", operator_id)
-
     if operator_id:
         try:
             operator_amounts = get_reloadly_operator_amounts(
-                operator_id=operator_id
+                operator_id
             ) or {}
-
-            print("📡 Operator amounts loaded:", bool(operator_amounts))
-
         except Exception as e:
             print("❌ Operator amounts error:", e)
-            operator_amounts = {}
-    else:
-        print("⚠️ No operator detected → fallback mode")
 
     # ---------------------------
     # Currency + fees
     # ---------------------------
     currency = CurrencyService.currency_from_phone(phone)
-    rate = CurrencyService.rate_from_currency(currency)
     tax_rate = FeesService.get_tax_rate(currency)
 
     operator["currency_code"] = currency
 
-    amount = float(session.get("recharge_amount", 5.00))
+    # ---------------------------
+    # Amount
+    # ---------------------------
+    try:
+        amount = float(session.get("recharge_amount", 5.00))
+    except Exception:
+        amount = 5.00
 
     tax = round(amount * tax_rate, 2)
     total = round(amount + tax, 2)
 
     # ---------------------------
-    # BUSINESS: compute payout (interne uniquement)
-    # ---------------------------
-    fees = FeesService.compute_payout(amount, currency)
-    payout_amount = fees["payout"]
-
-    print("💰 Payout:", payout_amount)
-
-    # ---------------------------
-    # Reloadly quote (PRODUCTION)
+    # Reloadly quote (SAFE)
     # ---------------------------
     quote = None
 
     if operator_id:
         try:
-            print("📡 Using operator for quote:", operator_id)
-
             quote = get_reloadly_quote(
                 operator_id=operator_id,
                 amount=amount
             )
-
-            print("📡 Reloadly quote:", quote)
-
+            print("QUOTE RESULT:", quote)
         except Exception as e:
             print("❌ Quote error:", e)
             quote = None
-    else:
-        print("⚠️ Skip quote → no operator")
 
     # ---------------------------
-    # FINAL DISPLAY (FIX RELOADLY RECEIVED)
+    # FINAL DISPLAY (SOURCE = RELOADLY)
     # ---------------------------
-    if quote:
+    received_display = CurrencyService.received_display_value(
+        phone=phone,
+        amount=amount,
+        selected_forfait=session.get("recharge_forfait"),
+        quote=quote
+    )
 
-        # ✅ PRIORITÉ : vrai montant reçu
-        if quote.get("destinationAmount") and quote.get("destinationCurrencyCode"):
-            received_display = f"{int(float(quote['destinationAmount']))} {quote['destinationCurrencyCode']}"
-
-        # ✅ FALLBACK Reloadly
-        elif quote.get("localAmount") and quote.get("localCurrency"):
-            received_display = f"{int(float(quote['localAmount']))} {quote['localCurrency']}"
-
-        # ✅ FALLBACK interne
-        else:
-            local, cur = CurrencyService.estimate_local_amount(phone, amount)
-            received_display = f"{local} {cur}"
-
-    else:
-        local, cur = CurrencyService.estimate_local_amount(phone, amount)
-        received_display = f"{local} {cur}"
-
+    # ---------------------------
+    # Render
+    # ---------------------------
     return render_template(
         "recharge/select_amount.html",
         phone=phone,
@@ -384,13 +360,12 @@ def select_amount_get():
         tax=tax,
         total=total,
         currency_code=currency,
-        currency_rate=rate,
         received_display=received_display
     )
+
 # ---------------------------
 # Select amount (POST)
 # ---------------------------
-
 @recharge_bp.post("/select-amount")
 def select_amount_post():
 
@@ -406,6 +381,7 @@ def select_amount_post():
     except Exception:
         return redirect(url_for("recharge.select_amount_get"))
 
+    # 🔒 sécurité business
     amount = max(1.0, min(1000.0, amount))
 
     currency = CurrencyService.currency_from_phone(phone)
@@ -414,20 +390,61 @@ def select_amount_post():
     tax = round(amount * tax_rate, 2)
     total = round(amount + tax, 2)
 
+    # ---------------------------
+    # SAVE SESSION
+    # ---------------------------
     session["recharge_amount"] = str(amount)
     session["recharge_total_amount"] = str(total)
 
     return redirect(url_for("payment.method_get"))
 
+# ---------------------------
+# Execute Topup
+# ---------------------------
+@recharge_bp.post("/execute")
+def execute_recharge():
+
+    phone = session.get("recharge_phone")
+    amount = session.get("recharge_amount")
+    country_iso = session.get("country_iso")
+    forfait = session.get("recharge_forfait")
+
+    try:
+        if forfait:
+            result = send_data_topup(phone, forfait.get("id"), country_iso)
+        else:
+            result = send_topup(phone, float(amount), country_iso)
+
+        session["last_transaction_id"] = result["transaction_id"]
+
+        return jsonify({"ok": True, "transaction_id": result["transaction_id"]})
+
+    except Exception as e:
+        print("Topup error:", e)
+        return jsonify({"ok": False}), 500
+
 
 # ---------------------------
-# AJAX: quote (Reloadly FIX)
+# Status
+# ---------------------------
+@recharge_bp.get("/status")
+def recharge_status():
+
+    tx = session.get("last_transaction_id")
+
+    result = get_topup_status(tx)
+
+    return jsonify({"ok": True, "status": result["status"]})
+
+# ---------------------------
+# AJAX Quote (FINAL SAFE + DEBUG)
 # ---------------------------
 @recharge_bp.post("/api/quote")
 def api_quote():
 
     phone = session.get("recharge_phone")
     operator = session.get("recharge_operator")
+    country_iso = session.get("country_iso")
 
     if not phone or not operator:
         return jsonify({"ok": False}), 401
@@ -440,163 +457,40 @@ def api_quote():
     except Exception:
         return jsonify({"ok": False}), 400
 
-    operator_id = operator.get("id")
+    operator_id = operator.get("id") or operator.get("operatorId")
 
     quote = None
 
     if operator_id:
         try:
-            quote = get_reloadly_quote(operator_id, amount)
+            quote = get_reloadly_quote(
+                operator_id=operator_id,
+                amount=amount,
+                phone=phone,
+                country_iso=country_iso
+            )
+
+            # 🔥 DEBUG IMPORTANT
+            print("📡 QUOTE RESULT:", quote)
+
         except Exception as e:
             print("❌ AJAX quote error:", e)
+            quote = None
 
+    # ---------------------------
+    # SOURCE OF TRUTH
+    # ---------------------------
     received = CurrencyService.received_display_value(
         phone=phone,
         amount=amount,
         selected_forfait=session.get("recharge_forfait"),
-        quote=quote  # ✅ FIX MAJEUR
+        quote=quote
     )
+
+    # 🔥 DEBUG UI
+    print("💰 RECEIVED DISPLAY:", received)
 
     return jsonify({
         "ok": True,
         "received": received
-    })
-
-
-# ---------------------------
-# Store total before payment
-# ---------------------------
-
-@recharge_bp.post("/api/store-total")
-def api_store_total():
-
-    data = request.get_json(silent=True) or {}
-
-    total = data.get("total")
-
-    try:
-        total = float(total)
-    except Exception:
-        return jsonify({"ok": False}), 400
-
-    total = max(1.0, min(1000.0, total))
-
-    session["recharge_total_amount"] = str(total)
-
-    return jsonify({"ok": True})
-
-# ---------------------------
-# Execute Topup (POST)
-# ---------------------------
-from services.reloadly_service import send_topup, send_data_topup
-
-
-@recharge_bp.post("/execute")
-def execute_recharge():
-
-    phone = session.get("recharge_phone")
-    amount = session.get("recharge_amount")
-    country_iso = session.get("country_iso")
-    forfait = session.get("recharge_forfait")  # 🔥 IMPORTANT
-
-    if not phone:
-        return jsonify({"ok": False, "error": "missing phone"}), 400
-
-    try:
-        # ---------------------------
-        # DATA FLOW
-        # ---------------------------
-        if forfait:
-            plan_id = forfait.get("id")  # ⚠️ il faut stocker ça côté frontend
-
-            if not plan_id:
-                return jsonify({"ok": False, "error": "missing plan"}), 400
-
-            result = send_data_topup(
-                phone=phone,
-                plan_id=int(plan_id),
-                country_iso=country_iso
-            )
-
-        # ---------------------------
-        # AIRTIME FLOW
-        # ---------------------------
-        else:
-            if not amount:
-                return jsonify({"ok": False, "error": "missing amount"}), 400
-
-            amount = float(amount)
-
-            result = send_topup(
-                phone=phone,
-                amount=amount,
-                country_iso=country_iso
-            )
-
-        # ---------------------------
-        # Save transaction
-        # ---------------------------
-        session["last_transaction_id"] = result["transaction_id"]
-
-        return jsonify({
-            "ok": True,
-            "transaction_id": result["transaction_id"]
-        })
-
-    except Exception as e:
-        print("Topup error:", e)
-
-        return jsonify({
-            "ok": False,
-            "error": "topup_failed"
-        }), 500
-    
-# ---------------------------
-# Check Topup Status
-# ---------------------------
-from services.reloadly_service import get_topup_status
-
-
-@recharge_bp.get("/status")
-def recharge_status():
-
-    transaction_id = session.get("last_transaction_id")
-
-    if not transaction_id:
-        return jsonify({"ok": False}), 400
-
-    try:
-        result = get_topup_status(transaction_id)
-
-        return jsonify({
-            "ok": True,
-            "status": result["status"]
-        })
-
-    except Exception as e:
-        print("Status error:", e)
-
-        return jsonify({
-            "ok": False
-        }), 500
-
-# ---------------------------
-# API: Operators list (Reloadly)
-# ---------------------------
-
-@recharge_bp.get("/api/operators")
-def api_operators():
-
-    phone = session.get("recharge_phone")
-
-    if not phone:
-        return jsonify({"ok": False}), 401
-
-    country_iso = detect_country_iso_from_phone(phone) or "FR"
-
-    operators = get_reloadly_operators_by_country(country_iso)
-
-    return jsonify({
-        "ok": True,
-        "operators": operators
     })

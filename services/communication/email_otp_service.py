@@ -3,7 +3,7 @@
 # ---------------------------
 
 import random
-from services.email_service import EmailService
+from services.communication.email_service import EmailService
 
 
 class EmailOTPService:

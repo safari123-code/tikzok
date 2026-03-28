@@ -6,8 +6,8 @@ import os
 from flask import Blueprint, render_template, session, request, redirect, url_for, current_app
 from werkzeug.utils import secure_filename
 
-from services.order_service import OrderService
-from services.user_service import UserService
+from services.order.order_service import OrderService
+from services.user.user_service import UserService
 
 account_bp = Blueprint("account", __name__, url_prefix="/account")
 

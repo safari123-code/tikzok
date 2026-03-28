@@ -9,10 +9,10 @@ from datetime import datetime
 
 from flask import session
 
-from services.history_service import HistoryService
-from services.user_service import UserService
-from services.order_service import OrderService
-from services.utils import mask_phone
+from services.order.history_service import HistoryService
+from services.user.user_service import UserService
+from services.order.order_service import OrderService
+from services.core.utils import mask_phone
 
 
 class AdminService:

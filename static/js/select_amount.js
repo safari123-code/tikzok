@@ -120,59 +120,87 @@
     }
   }
 
+ // ---------------------------
+// 🔥 BACKEND ONLY (FINAL PRODUCTION SAFE)
+// ---------------------------
+
+async function fetchQuote(amount) {
+
+  const gb = forfaitGb?.value;
+
   // ---------------------------
-  // 🔥 BACKEND ONLY (CurrencyService)
+  // Priorité forfait
   // ---------------------------
+  if (gb && rowReceived) {
+    rowReceived.textContent = gb;
+    return;
+  }
 
-  async function fetchQuote(amount) {
+  if (rowReceived) {
+    rowReceived.style.opacity = "0.6";
+  }
 
-    const gb = forfaitGb?.value;
+  try {
 
-    // forfait priorité
-    if (gb && rowReceived) {
-      rowReceived.textContent = gb;
+    const res = await fetch("/recharge/api/quote", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        amount: amount
+      })
+    });
+
+    let data = null;
+
+    // 🔥 SAFE PARSE
+    try {
+      data = await res.json();
+    } catch (_) {
+      data = null;
+    }
+
+    // ---------------------------
+    // ❌ erreur backend
+    // ---------------------------
+    if (!res.ok || !data || !data.ok) {
+
+      if (rowReceived) {
+        rowReceived.textContent = "—";
+        rowReceived.style.opacity = "0.5";
+      }
+
       return;
     }
 
-    if (rowReceived) {
-      rowReceived.style.opacity = "0.6";
+    // ---------------------------
+    // ✅ SUCCESS
+    // ---------------------------
+    if (data.received && rowReceived) {
+
+      rowReceived.textContent = data.received;
+
+      // animation micro-interaction
+      rowReceived.style.transition = "all .25s ease";
+      rowReceived.style.transform = "scale(1.05)";
+      rowReceived.style.opacity = "1";
+
+      setTimeout(() => {
+        rowReceived.style.transform = "scale(1)";
+      }, 140);
     }
 
-    try {
+  } catch (e) {
 
-      const res = await fetch("/recharge/api/quote", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          amount: amount // 🔥 PAS DE CALCUL JS
-        })
-      });
+    console.error("quote error", e);
 
-      if (!res.ok) return;
-
-      const data = await res.json();
-
-      if (!data?.ok) return;
-
-      if (data.received && rowReceived) {
-
-        rowReceived.textContent = data.received;
-
-        rowReceived.style.transition = "all .25s ease";
-        rowReceived.style.transform = "scale(1.05)";
-        rowReceived.style.opacity = "1";
-
-        setTimeout(() => {
-          rowReceived.style.transform = "scale(1)";
-        }, 140);
-      }
-
-    } catch (e) {
-      console.error("quote error", e);
+    if (rowReceived) {
+      rowReceived.textContent = "—";
+      rowReceived.style.opacity = "0.5";
     }
   }
+} 
 
   // ---------------------------
   // Debounce

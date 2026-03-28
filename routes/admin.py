@@ -6,9 +6,9 @@ from functools import wraps
 from flask import Blueprint, render_template, redirect, session, url_for, request
 
 import config
-from services.admin_service import AdminService
-from services.history_service import HistoryService
-from services.utils import mask_phone
+from services.admin.admin_service import AdminService
+from services.order.history_service import HistoryService
+from services.core.utils import mask_phone
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 

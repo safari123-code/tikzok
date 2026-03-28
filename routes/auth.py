@@ -71,7 +71,7 @@ def login():
 
         try:
 
-            from services.email_otp_service import EmailOTPService
+            from services.communication.email_otp_service import EmailOTPService
 
             code = EmailOTPService.send_verification(email_value)
 
@@ -169,7 +169,7 @@ def phone():
         # ---------------------------
         try:
 
-            from services.sms_service import SMSService
+            from services.communication.sms_service import SMSService
             import random
 
             code = str(random.randint(1000, 9999))

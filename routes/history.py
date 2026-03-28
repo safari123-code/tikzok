@@ -3,7 +3,7 @@
 # ---------------------------
 
 from flask import Blueprint, render_template
-from services.history_service import HistoryService
+from services.order.history_service import HistoryService
 
 history_bp = Blueprint("history", __name__, url_prefix="/history")
 

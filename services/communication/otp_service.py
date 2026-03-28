@@ -30,7 +30,7 @@ class OtpService:
     def expires_at(cls) -> int:
         return cls.now_ts() + cls.DEFAULT_TTL_SECONDS
     
-    from services.redis_service import redis_client
+    from services.core.redis_service import redis_client
 import hashlib
 
 

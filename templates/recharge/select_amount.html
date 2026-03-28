@@ -131,7 +131,7 @@
 {# ---------------------------
    Money Accordion Card
 --------------------------- #}
-<section class="tz-card tz-card--green" id="moneyCard" data-received="{{ received_display }}">
+<section class="tz-card tz-card--green" id="moneyCard" data-received="{{ received_display or '' }}"></section>
 
   <button type="button" class="tz-accordion" id="moneyAccordionBtn" aria-expanded="true">
     <div class="tz-check">
@@ -164,13 +164,15 @@
     <!-- Received -->
     <div class="tz-row" style="margin-top:10px;">
       <div class="tz-muted">{{ t("recharge.selectAmount.receivedAmountTitle") }}</div>
-      <div class="tz-strong" id="rowReceived">
-        {% if session.get("recharge_forfait") %}
-          {{ session.get("recharge_forfait").gb }}
-        {% else %}
-          {{ received_display }}
-        {% endif %}
-      </div>
+<div class="tz-strong" id="rowReceived">
+  {% if session.get("recharge_forfait") %}
+    {{ session.get("recharge_forfait").gb }}
+  {% elif received_display and received_display != "—" %}
+    {{ received_display }}
+  {% else %}
+    —
+  {% endif %}
+</div>
     </div>
 
   </div>

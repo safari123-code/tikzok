@@ -75,19 +75,37 @@ def detect_country_iso_from_phone(phone: str) -> str | None:
 # ---------------------------
 # Quote fallback (SAFE ONLY)
 # ---------------------------
-
 def quote_local_amount(operator_id: int, amount: float) -> dict:
     """
     ⚠️ Fallback uniquement si Reloadly indisponible
-    Ne doit PAS être utilisé en priorité
+    SAFE UX → jamais faux FX
     """
 
+    try:
+        amount = float(amount)
+    except Exception:
+        amount = 0.0
+
+    # ---------------------------
+    # 🔥 SAFE FALLBACK STRATEGY
+    # ---------------------------
     return {
-        "localAmount": float(amount),  # ⚠️ neutre → pas de faux taux
-        "localCurrency": "EUR",        # ⚠️ éviter mensonge FX
+        # ❌ on ne simule PAS conversion
+        # ✔️ on affiche montant envoyé
+        "destinationAmount": amount,
+
+        # ❌ on ne ment PAS sur devise
+        # ✔️ on reste cohérent UI
+        "destinationCurrencyCode": "EUR",
+
+        # fallback info
+        "localAmount": amount,
+        "localCurrency": "EUR",
+
+        # debug / tracking
+        "isFallback": True,
         "ts": int(time.time()),
     }
-
 
 # ---------------------------
 # Idempotency key (PRO SAFE)
