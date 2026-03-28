@@ -188,7 +188,7 @@ def card_post():
 
 
 # ---------------------------
-# Stripe webhook (FINAL SECURE)
+# Stripe webhook (FINAL SAFE PRODUCTION)
 # ---------------------------
 @payment_bp.post("/webhook")
 def stripe_webhook_post():
@@ -207,9 +207,6 @@ def stripe_webhook_post():
 
     print("✅ Stripe webhook event:", event_type)
 
-    # ---------------------------
-    # PaymentIntent succeeded only
-    # ---------------------------
     if event_type != "payment_intent.succeeded":
         return jsonify({"ok": True}), 200
 
@@ -222,9 +219,6 @@ def stripe_webhook_post():
         print("❌ Missing idempotency key")
         return jsonify({"ok": False}), 400
 
-    # ---------------------------
-    # Hard dedup check
-    # ---------------------------
     existing = IdempotencyService.get_result(idem_key)
     if existing:
         print("⚠️ Duplicate webhook ignored:", idem_key)
@@ -232,11 +226,10 @@ def stripe_webhook_post():
 
     try:
         # ---------------------------
-        # Validate Stripe payment object
+        # Validation Stripe
         # ---------------------------
         stripe_status = str(event_data.get("status") or "").strip()
         if stripe_status != "succeeded":
-            print("⚠️ PaymentIntent not succeeded:", stripe_status)
             return jsonify({"ok": True}), 200
 
         phone = str(metadata.get("recharge_phone") or "").strip()
@@ -248,42 +241,28 @@ def stripe_webhook_post():
         charged_amount = _safe_float(metadata.get("charged_amount"), 0.0)
         points_used = _safe_float(metadata.get("points_used"), 0.0)
 
-        if not phone or base_amount <= 0 or charged_amount < 0:
+        if not phone or base_amount <= 0:
             print("❌ Invalid metadata payload")
             return jsonify({"ok": False}), 400
 
-        # ---------------------------
-        # Verify charged amount from Stripe
-        # ---------------------------
         stripe_amount_received = _safe_float(event_data.get("amount_received"), 0) / 100.0
         stripe_currency = str(event_data.get("currency") or "").lower()
 
-        # tolérance légère sur les centimes
         if stripe_currency != "eur":
             print("❌ Unexpected Stripe currency:", stripe_currency)
             return jsonify({"ok": False}), 400
 
         if abs(stripe_amount_received - charged_amount) > 0.01:
-            print(
-                "❌ Amount mismatch:",
-                "stripe=", stripe_amount_received,
-                "expected=", charged_amount
-            )
+            print("❌ Amount mismatch")
             return jsonify({"ok": False}), 400
 
         # ---------------------------
-        # Build payout amount
-        # MARKUP MODEL:
-        # customer pays charged_amount
-        # Reloadly receives base_amount
+        # Recharge logic
         # ---------------------------
         payout_amount = round(base_amount, 2)
 
         print("🚀 SENDING TOPUP:", phone, payout_amount)
 
-        # ---------------------------
-        # Send Reloadly topup
-        # ---------------------------
         try:
             if forfait_id:
                 reloadly_result = send_data_topup(
@@ -297,22 +276,38 @@ def stripe_webhook_post():
                     amount=payout_amount,
                     country_iso=country_iso
                 )
+
         except Exception as reloadly_error:
             print("❌ Reloadly error:", reloadly_error)
+
+            IdempotencyService.store_result(idem_key, {
+                "status": "FAILED",
+                "reason": "reloadly_error"
+            })
+
             return jsonify({"ok": True}), 200
 
         transaction_id = reloadly_result.get("transaction_id")
+
         if not transaction_id:
             print("❌ Missing Reloadly transaction_id")
+
+            IdempotencyService.store_result(idem_key, {
+                "status": "FAILED",
+                "reason": "no_transaction_id"
+            })
+
             return jsonify({"ok": True}), 200
 
         # ---------------------------
         # Success payload
         # ---------------------------
         payload_obj = OrderService.build_success_payload(amount=base_amount)
-        payload_obj["transaction_id"] = transaction_id
-        payload_obj["charged_amount"] = charged_amount
-        payload_obj["points_used"] = points_used
+        payload_obj.update({
+            "transaction_id": transaction_id,
+            "charged_amount": charged_amount,
+            "points_used": points_used
+        })
 
         # ---------------------------
         # Store idempotent result
@@ -330,7 +325,7 @@ def stripe_webhook_post():
                     phone=phone,
                 )
             except Exception as email_error:
-                print("❌ Email send error:", email_error)
+                print("❌ Email error:", email_error)
 
     except Exception as process_error:
         print("❌ Webhook processing error:", process_error)
@@ -370,3 +365,36 @@ def payment_status():
             return jsonify({"status": "processing"})
 
     return jsonify({"status": "processing"})
+
+# ---------------------------
+# Payment success page (FINAL PRO SAFE)
+# ---------------------------
+@payment_bp.get("/success")
+def payment_success():
+
+    payload = session.get("payment_success_payload") or {}
+
+    # ---------------------------
+    # Processing state
+    # ---------------------------
+    if not payload:
+        return render_template(
+            "payment/success.html",
+            status="processing",
+            amount=None,
+            date=None,
+            order_number=None,
+            reference=None
+        )
+
+    # ---------------------------
+    # Safe payload mapping
+    # ---------------------------
+    return render_template(
+        "payment/success.html",
+        status="success",
+        amount=payload.get("amount"),
+        date=payload.get("date"),
+        order_number=payload.get("order_number"),
+        reference=payload.get("transaction_id")
+    )
