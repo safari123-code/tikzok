@@ -1,7 +1,7 @@
 # ---------------------------
 # Feature: Reloadly Data Service (FINAL PRODUCTION HARDENED)
 # ---------------------------
-
+from services.reloadly.auth_service import clear_reloadly_token
 import uuid
 from services.reloadly.auth_service import get_reloadly_token, _safe_request
 from services.reloadly.operators_service import (
@@ -39,9 +39,14 @@ def _parse_plan_description(desc: str):
 
 
 # ---------------------------
-# Get Data Plans (SAFE PROD)
+# Get Data Plans (FINAL — SHOW ALL)
 # ---------------------------
-def get_reloadly_plans(operator_id: int):
+def get_reloadly_plans(operator):
+
+    if not operator:
+        return []
+
+    operator_id = operator.get("id") or operator.get("operatorId")
 
     if not operator_id:
         return []
@@ -58,13 +63,19 @@ def get_reloadly_plans(operator_id: int):
 
         res = _safe_request("GET", url, headers=headers)
 
+        if res.status_code == 401:
+            clear_reloadly_token()
+            token = get_reloadly_token(force_refresh=True)
+
+            headers["Authorization"] = f"Bearer {token}"
+
+            res = _safe_request("GET", url, headers=headers)
+
         if res.status_code != 200:
             print("❌ Reloadly plans failed:", res.text)
             return []
 
         data = res.json()
-
-        print("📡 DATA PLANS COUNT:", len(data) if data else 0)
 
         plans = []
 
@@ -85,6 +96,9 @@ def get_reloadly_plans(operator_id: int):
                 "validity": validity
             })
 
+        # 🔥 tri UX (important)
+        plans.sort(key=lambda x: x["amount"])
+
         return plans
 
     except Exception as e:
@@ -93,7 +107,7 @@ def get_reloadly_plans(operator_id: int):
 
 
 # ---------------------------
-# Get Quote (RELOADLY API ONLY)
+# Get Quote (RELOADLY FX-RATE FINAL PRODUCTION)
 # ---------------------------
 def get_reloadly_quote(operator_id: int, amount: float, phone: str = None, country_iso: str = None):
 
@@ -104,85 +118,107 @@ def get_reloadly_quote(operator_id: int, amount: float, phone: str = None, count
 
     headers = {
         "Authorization": f"Bearer {token}",
-        "Accept": "application/com.reloadly.topups-v1+json"
+        "Accept": "application/com.reloadly.topups-v1+json",
+        "Content-Type": "application/json"
     }
 
     try:
         # ---------------------------
-        # 1. Operator details
+        # 1. Get operator (currency + fx fallback)
         # ---------------------------
-        url = f"{RELOADLY_BASE_URL}/operators/{operator_id}"
-        res = _safe_request("GET", url, headers=headers)
+        operator_url = f"{RELOADLY_BASE_URL}/operators/{operator_id}"
 
-        if res.status_code != 200:
-            print("❌ Operator fetch failed:", res.text)
+        op_res = _safe_request("GET", operator_url, headers=headers)
+
+        if op_res.status_code != 200:
+            print("❌ Operator fetch failed:", op_res.text)
             return None
 
-        data = res.json()
+        op_data = op_res.json()
 
         local_currency = (
-            data.get("localCurrency")
-            or (data.get("fx") or {}).get("currencyCode")
-            or data.get("currencyCode")
-            or (data.get("country") or {}).get("currencyCode")
+            op_data.get("localCurrency")
+            or (op_data.get("fx") or {}).get("currencyCode")
+            or op_data.get("currencyCode")
+            or (op_data.get("country") or {}).get("currencyCode")
         )
 
         if not local_currency:
-            print("❌ Currency missing from Reloadly operator response")
+            print("❌ Currency missing from Reloadly")
             return None
 
         # ---------------------------
-        # 2. Reloadly FX via suggestedAmountsMap
+        # 2. FX RATE (OFFICIAL + FALLBACK)
         # ---------------------------
         received_amount = None
 
-        if phone and country_iso:
-            try:
-                safe_amount = max(1, round(amount))
+        # 🔥 FX API officiel
+        try:
+            fx_payload = {
+                "operatorId": int(operator_id),
+                "amount": float(amount)
+            }
 
-                fx_url = (
-                    f"{RELOADLY_BASE_URL}/operators/auto-detect/phone/{phone}"
-                    f"/countries/{country_iso}"
-                    f"?suggestedAmountsMap=true&suggestedAmounts={safe_amount}"
+            fx_url = f"{RELOADLY_BASE_URL}/operators/fx-rate"
+
+            fx_res = _safe_request(
+                "POST",
+                fx_url,
+                headers=headers,
+                json=fx_payload,
+                timeout=15
+            )
+
+            if fx_res.status_code == 401:
+                clear_reloadly_token()
+                token = get_reloadly_token(force_refresh=True)
+                headers["Authorization"] = f"Bearer {token}"
+
+                fx_res = _safe_request(
+                    "POST",
+                    fx_url,
+                    headers=headers,
+                    json=fx_payload,
+                    timeout=15
                 )
 
-                fx_res = _safe_request("GET", fx_url, headers=headers)
+            if fx_res.status_code == 200:
+                fx_data = fx_res.json()
+                received_amount = fx_data.get("destinationAmount")
 
-                if fx_res.status_code == 200:
-                    fx_data = fx_res.json()
-                    mapping = fx_data.get("suggestedAmountsMap") or {}
+            else:
+                print("❌ FX RATE failed:", fx_res.text)
 
-                    # on n'utilise QUE la donnée Reloadly
-                    key = str(safe_amount)
-                    received_amount = mapping.get(key)
+        except Exception as e:
+            print("❌ FX-RATE error:", e)
 
-                    # fallback Reloadly seulement:
-                    # si la clé exacte n'existe pas mais qu'il y a d'autres clés
-                    if received_amount is None and mapping:
-                        try:
-                            closest_key = min(
-                                mapping.keys(),
-                                key=lambda k: abs(float(k) - float(safe_amount))
-                            )
-                            received_amount = mapping.get(closest_key)
-                        except Exception:
-                            received_amount = None
+        # 🔥 FALLBACK (important en LIVE)
+        if received_amount is None:
+            try:
+                fx_info = op_data.get("fx") or {}
+                rate = fx_info.get("rate")
+
+                if rate:
+                    received_amount = float(amount) * float(rate)
 
             except Exception as e:
-                print("❌ FX error:", e)
+                print("❌ FX fallback error:", e)
+
+        # 🔥 SAFE FINAL (jamais None)
+        if received_amount is None:
+            received_amount = float(amount)
 
         # ---------------------------
-        # 3. Return Reloadly-only value
+        # 3. RETURN FINAL
         # ---------------------------
         return {
-            "destinationAmount": float(received_amount) if received_amount is not None else None,
+            "destinationAmount": round(float(received_amount), 2),
             "destinationCurrencyCode": local_currency
         }
 
     except Exception as e:
         print("❌ Reloadly quote error:", e)
         return None
-
 
 # ---------------------------
 # Send Data Topup (ASYNC SAFE)

@@ -1,10 +1,12 @@
 # ---------------------------
-# services/recharge_service.py (FINAL PRO SAFE)
+# Feature: Recharge Service
 # ---------------------------
 
-import re
-import time
+from __future__ import annotations
+
 import hashlib
+import re
+from decimal import Decimal, ROUND_HALF_UP
 
 
 # ---------------------------
@@ -13,30 +15,28 @@ import hashlib
 
 _PHONE_ALLOWED = re.compile(r"[^\d+]")
 
-def normalize_phone_e164_light(raw: str) -> str:
 
+def normalize_phone_e164_light(raw: str) -> str:
     if raw is None:
         return ""
 
-    s = str(raw).strip()
+    value = str(raw).strip()
 
-    if not s:
+    if not value:
         return ""
 
-    s = _PHONE_ALLOWED.sub("", s)
+    value = _PHONE_ALLOWED.sub("", value)
 
-    if not s.startswith("+"):
-        s = "+" + s
+    if not value.startswith("+"):
+        value = "+" + value
 
-    s = "+" + re.sub(r"[^\d]", "", s[1:])
+    value = "+" + re.sub(r"[^\d]", "", value[1:])
 
-    return s
+    return value
 
 
 def is_phone_length_valid(phone: str) -> bool:
-
     digits = re.sub(r"[^\d]", "", phone or "")
-
     return 9 <= len(digits) <= 15
 
 
@@ -44,75 +44,55 @@ def is_phone_length_valid(phone: str) -> bool:
 # Country detection
 # ---------------------------
 
+_COUNTRY_PREFIXES = [
+    ("+225", "CI"),
+    ("+212", "MA"),
+    ("+234", "NG"),
+    ("+237", "CM"),
+    ("+90", "TR"),
+    ("+93", "AF"),
+    ("+49", "DE"),
+    ("+44", "GB"),
+    ("+39", "IT"),
+    ("+34", "ES"),
+    ("+33", "FR"),
+    ("+1", "US"),
+]
+
+
 def detect_country_iso_from_phone(phone: str) -> str | None:
+    normalized = normalize_phone_e164_light(phone)
 
-    digits = re.sub(r"[^\d]", "", phone or "")
-
-    if digits.startswith("93"):
-        return "AF"
-
-    if digits.startswith("33"):
-        return "FR"
-
-    if digits.startswith("49"):
-        return "DE"
-
-    if digits.startswith("39"):
-        return "IT"
-
-    if digits.startswith("34"):
-        return "ES"
-
-    if digits.startswith("44"):
-        return "GB"
-
-    if digits.startswith("1"):
-        return "US"
+    for prefix, iso in _COUNTRY_PREFIXES:
+        if normalized.startswith(prefix):
+            return iso
 
     return None
 
 
 # ---------------------------
-# Quote fallback (SAFE ONLY)
+# Quote fallback
 # ---------------------------
+
 def quote_local_amount(operator_id: int, amount: float) -> dict:
-    """
-    ⚠️ Fallback uniquement si Reloadly indisponible
-    SAFE UX → jamais faux FX
-    """
-
     try:
-        amount = float(amount)
+        value = Decimal(str(amount)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     except Exception:
-        amount = 0.0
+        value = Decimal("0.00")
 
-    # ---------------------------
-    # 🔥 SAFE FALLBACK STRATEGY
-    # ---------------------------
     return {
-        # ❌ on ne simule PAS conversion
-        # ✔️ on affiche montant envoyé
-        "destinationAmount": amount,
-
-        # ❌ on ne ment PAS sur devise
-        # ✔️ on reste cohérent UI
+        "destinationAmount": float(value),
         "destinationCurrencyCode": "EUR",
-
-        # fallback info
-        "localAmount": amount,
+        "localAmount": float(value),
         "localCurrency": "EUR",
-
-        # debug / tracking
         "isFallback": True,
-        "ts": int(time.time()),
     }
 
+
 # ---------------------------
-# Idempotency key (PRO SAFE)
+# Idempotency key
 # ---------------------------
 
-def generate_idempotency(user_id, phone, amount):
-
-    raw = f"{user_id}:{phone}:{amount}:{int(time.time() // 60)}"
-
-    return hashlib.sha256(raw.encode()).hexdigest()
+def generate_idempotency(payment_reference, phone, amount=None, plan_id=None):
+    raw = f"{payment_reference}:{phone}:{amount or ''}:{plan_id or ''}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()

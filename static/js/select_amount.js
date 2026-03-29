@@ -174,22 +174,29 @@ async function fetchQuote(amount) {
       return;
     }
 
-    // ---------------------------
-    // ✅ SUCCESS
-    // ---------------------------
-    if (data.received && rowReceived) {
+// ---------------------------
+// Feature: Display received (FINAL FIX)
+// ---------------------------
+if (rowReceived) {
 
-      rowReceived.textContent = data.received;
+  const received = data.received;
+  const currency = data.destinationCurrency || "";
 
-      // animation micro-interaction
-      rowReceived.style.transition = "all .25s ease";
-      rowReceived.style.transform = "scale(1.05)";
-      rowReceived.style.opacity = "1";
+  if (received && received !== "—") {
+    rowReceived.textContent = received; // déjà formaté backend
+  } else {
+    rowReceived.textContent = "—";
+  }
 
-      setTimeout(() => {
-        rowReceived.style.transform = "scale(1)";
-      }, 140);
-    }
+  // micro-interaction
+  rowReceived.style.transition = "all .25s ease";
+  rowReceived.style.transform = "scale(1.05)";
+  rowReceived.style.opacity = "1";
+
+  setTimeout(() => {
+    rowReceived.style.transform = "scale(1)";
+  }, 140);
+}
 
   } catch (e) {
 
@@ -316,6 +323,32 @@ forfaitCard?.addEventListener("click", (e) => {
     window.location.href = url;
   }
 });
+
+
+// ---------------------------
+// Feature: Currency formatting (intl)
+// ---------------------------
+function formatCurrency(amount, currency) {
+    try {
+        return new Intl.NumberFormat(undefined, {
+            maximumFractionDigits: 0
+        }).format(amount) + " " + currency;
+    } catch (e) {
+        return amount + " " + currency;
+    }
+}
+
+
+// ---------------------------
+// Feature: update received display
+// ---------------------------
+function updateReceived(received, currency) {
+    const el = document.getElementById("rowReceived");
+    if (!el) return;
+
+    el.innerText = received + " " + currency;
+}
+
   // ---------------------------
   // Init
   // ---------------------------

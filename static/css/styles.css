@@ -1677,3 +1677,44 @@ transition:all .15s ease;
   font-size: 12px;
   font-weight: 600;
 }
+
+/* ---------------------------
+   Feature: Smooth update effect
+--------------------------- */
+
+#rowReceived {
+    transition: all 0.2s ease;
+}
+
+#rowReceived.updating {
+    opacity: 0.6;
+    transform: scale(0.98);
+}
+
+/* ---------------------------
+# Feature: Received smooth state (FINAL FIX)
+--------------------------- */
+
+#rowReceived {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    color 0.18s ease;
+}
+
+/* état loading */
+#rowReceived.is-loading {
+  opacity: 0.4;
+  transform: scale(0.96);
+}
+
+/* état succès */
+#rowReceived.is-updated {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* retour normal */
+#rowReceived.is-reset {
+  transform: scale(1);
+}

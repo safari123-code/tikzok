@@ -91,7 +91,8 @@
 
       "enterValidNumber": "Entrez un numéro valide",
       "searchCountry": "Rechercher…",
-      "contacts": "Contacts"
+      "contacts": "Contacts",
+      "noInternetPlans": "Aucun forfait internet disponible pour cet opérateur"
     },
 
     "selectOperator": {

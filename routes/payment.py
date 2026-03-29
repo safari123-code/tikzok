@@ -313,7 +313,7 @@ def stripe_webhook_post():
         # Store idempotent result
         # ---------------------------
         IdempotencyService.store_result(idem_key, payload_obj)
-
+        IdempotencyService.store_result(idem_key, payload_obj)
         # ---------------------------
         # Optional email
         # ---------------------------

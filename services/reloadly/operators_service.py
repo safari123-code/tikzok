@@ -1,9 +1,16 @@
 # ---------------------------
-# Feature: Reloadly Operators Service (FINAL PRODUCTION)
+# Feature: Reloadly Operators Service
 # ---------------------------
 
-from services.reloadly.auth_service import get_reloadly_token, _safe_request
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, List, Optional
+
 from config import RELOADLY_BASE_URL
+from services.reloadly.auth_service import clear_reloadly_token, get_reloadly_token, _safe_request
+
+logger = logging.getLogger(__name__)
 
 RELOADLY_V1_URL = f"{RELOADLY_BASE_URL}/v1"
 
@@ -11,6 +18,7 @@ RELOADLY_V1_URL = f"{RELOADLY_BASE_URL}/v1"
 # ---------------------------
 # Helpers
 # ---------------------------
+
 def _normalize_phone(phone: str) -> str:
     return "".join(ch for ch in str(phone or "") if ch.isdigit() or ch == "+")
 
@@ -24,152 +32,203 @@ def _extract_local_number(phone: str) -> str:
     return normalized[1:] if normalized.startswith("+") else normalized
 
 
+def _build_headers(token: str) -> Dict[str, str]:
+    return {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/com.reloadly.topups-v1+json",
+    }
+
+
+def _first_logo_url(logo_urls: Any) -> Optional[str]:
+    if not logo_urls:
+        return None
+
+    first = logo_urls[0]
+
+    if isinstance(first, dict):
+        return first.get("url")
+
+    if isinstance(first, str):
+        return first
+
+    return None
+
+
+def _extract_reloadly_error(response) -> str:
+    try:
+        data = response.json()
+    except Exception:
+        return response.text or "Reloadly error"
+
+    return data.get("message") or data.get("errorCode") or response.text or "Reloadly error"
+
+
+def _request_with_token_retry(url: str):
+    token = get_reloadly_token()
+    headers = _build_headers(token)
+    response = _safe_request("GET", url, headers=headers, timeout=15)
+
+    if response.status_code == 401:
+        clear_reloadly_token()
+        token = get_reloadly_token(force_refresh=True)
+        headers = _build_headers(token)
+        response = _safe_request("GET", url, headers=headers, timeout=15)
+
+    return response
+
+
+def _map_operator(data: Dict[str, Any]) -> Dict[str, Any]:
+    country = data.get("country") or {}
+
+    return {
+        "id": data.get("operatorId") or data.get("id"),
+        "name": data.get("name"),
+        "logo_url": _first_logo_url(data.get("logoUrls")),
+        "country_name": country.get("name"),
+        "country_iso": country.get("isoName"),
+        "supports_data": bool(data.get("data") or data.get("supportsData")),
+        "supports_bundles": bool(data.get("bundle") or data.get("supportsBundles")),
+        "supports_pin": bool(data.get("pin")),
+        "supports_local_amounts": bool(data.get("supportsLocalAmounts")),
+        "denomination_type": data.get("denominationType"),
+        "destination_currency_code": data.get("destinationCurrencyCode"),
+        "sender_currency_code": data.get("senderCurrencyCode"),
+        "min_amount": data.get("minAmount"),
+        "max_amount": data.get("maxAmount"),
+        "local_min_amount": data.get("localMinAmount"),
+        "local_max_amount": data.get("localMaxAmount"),
+        "fixed_amounts": data.get("fixedAmounts") or [],
+        "local_fixed_amounts": data.get("localFixedAmounts") or [],
+        "suggested_amounts": data.get("suggestedAmounts") or [],
+        "suggested_amounts_map": data.get("suggestedAmountsMap") or {},
+        "raw": data,
+    }
+
+
 # ---------------------------
 # Lookup operator
 # ---------------------------
-def lookup_phone_number(phone: str, country: str):
 
-    token = get_reloadly_token()
-
+def lookup_phone_number(phone: str, country: str) -> Optional[Dict[str, Any]]:
     normalized_phone = _extract_local_number(phone)
     normalized_country = _normalize_country_iso(country)
 
     if not normalized_phone or not normalized_country:
         return None
 
-    url = f"https://topups.reloadly.com/operators/auto-detect/phone/{normalized_phone}/countries/{normalized_country}"
-
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/com.reloadly.topups-v1+json"
-    }
+    url = (
+        f"{RELOADLY_BASE_URL}/operators/auto-detect/phone/"
+        f"{normalized_phone}/countries/{normalized_country}"
+    )
 
     try:
-        res = _safe_request("GET", url, headers=headers)
+        response = _request_with_token_retry(url)
 
-        if res.status_code != 200:
+        if response.status_code != 200:
+            logger.warning(
+                "Reloadly lookup failed",
+                extra={
+                    "status_code": response.status_code,
+                    "phone": "***",
+                    "country": normalized_country,
+                    "message": _extract_reloadly_error(response),
+                },
+            )
             return None
 
-        data = res.json()
+        data = response.json()
+        return _map_operator(data)
 
-    except Exception:
+    except Exception as exc:
+        logger.exception("Reloadly lookup exception: %s", exc)
         return None
-
-    logos = data.get("logoUrls") or []
-
-    logo_url = None
-    if logos:
-        logo_url = logos[0]["url"] if isinstance(logos[0], dict) else logos[0]
-
-    return {
-        "operatorId": data.get("operatorId"),
-        "name": data.get("name"),
-        "logoUrl": logo_url,
-        "countryName": (data.get("country") or {}).get("name"),
-        "countryCode": (data.get("country") or {}).get("isoName"),
-        "supportsData": data.get("data", False)
-    }
 
 
 # ---------------------------
 # Get operators by country
 # ---------------------------
-def get_reloadly_operators_by_country(country_iso: str):
 
-    token = get_reloadly_token()
-
+def get_reloadly_operators_by_country(country_iso: str) -> List[Dict[str, Any]]:
     normalized_country = _normalize_country_iso(country_iso)
+
     if not normalized_country:
         return []
 
-    url = f"{RELOADLY_BASE_URL}/operators/countries/{normalized_country}?includeBundles=true&includeData=true"
-
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/com.reloadly.topups-v1+json"
-    }
+    url = (
+        f"{RELOADLY_BASE_URL}/operators/countries/{normalized_country}"
+        f"?includeBundles=true&includeData=true"
+    )
 
     try:
-        res = _safe_request("GET", url, headers=headers)
+        response = _request_with_token_retry(url)
 
-        if res.status_code != 200:
+        if response.status_code != 200:
+            logger.warning(
+                "Reloadly operators by country failed",
+                extra={
+                    "status_code": response.status_code,
+                    "country_iso": normalized_country,
+                    "message": _extract_reloadly_error(response),
+                },
+            )
             return []
 
-        data = res.json()
+        data = response.json()
 
-    except Exception:
+        if isinstance(data, dict) and "content" in data:
+            items = data.get("content") or []
+        else:
+            items = data or []
+
+        return [_map_operator(item) for item in items if isinstance(item, dict)]
+
+    except Exception as exc:
+        logger.exception("Reloadly operators country exception: %s", exc)
         return []
 
-    operators = []
-
-    for op in data:
-        logos = op.get("logoUrls") or []
-
-        logo_url = None
-        if logos:
-            logo_url = logos[0]["url"] if isinstance(logos[0], dict) else logos[0]
-
-        operators.append({
-            "id": op.get("operatorId"),
-            "name": op.get("name"),
-            "country": (op.get("country") or {}).get("name"),
-            "country_iso": (op.get("country") or {}).get("isoName"),
-            "logo_url": logo_url,
-            "supports_data": op.get("supportsData"),
-            "supports_bundles": op.get("supportsBundles"),
-        })
-
-    return operators
-
 
 # ---------------------------
-# Get operator amounts (FINAL MIGRATION)
+# Get operator amounts
 # ---------------------------
-def get_reloadly_operator_amounts(operator_id: int):
 
+def get_reloadly_operator_amounts(operator_id: int) -> Dict[str, Any]:
     if not operator_id:
         return {}
 
-    token = get_reloadly_token()
-
-    url = f"{RELOADLY_BASE_URL}/operators/{operator_id}"
-
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/com.reloadly.topups-v1+json"
-    }
+    url = f"{RELOADLY_BASE_URL}/operators/{int(operator_id)}"
 
     try:
-        res = _safe_request("GET", url, headers=headers)
+        response = _request_with_token_retry(url)
 
-        if res.status_code != 200:
-            print("❌ Operator details failed:", res.text)
+        if response.status_code != 200:
+            logger.warning(
+                "Reloadly operator details failed",
+                extra={
+                    "status_code": response.status_code,
+                    "operator_id": operator_id,
+                    "message": _extract_reloadly_error(response),
+                },
+            )
             return {}
 
-        data = res.json()
+        data = response.json()
 
-        fixed = data.get("fixedAmounts") or []
-
-        min_amount = data.get("minAmount") or data.get("minLocalAmount")
-        max_amount = data.get("maxAmount") or data.get("maxLocalAmount")
-
-        # 🔥 fallback safe UX
-        if not fixed and not min_amount:
-            return {
-                "fixedAmounts": [5, 10, 20, 50],
-                "minAmount": 5,
-                "maxAmount": 100,
-                "localCurrency": data.get("localCurrency") or "EUR"
-            }
+        fixed_amounts = data.get("fixedAmounts") or []
+        min_amount = data.get("minAmount") or data.get("localMinAmount")
+        max_amount = data.get("maxAmount") or data.get("localMaxAmount")
 
         return {
             "denominationType": data.get("denominationType"),
-            "fixedAmounts": fixed,
+            "fixedAmounts": fixed_amounts,
             "minAmount": min_amount,
             "maxAmount": max_amount,
-            "localCurrency": data.get("localCurrency"),
+            "localCurrency": data.get("destinationCurrencyCode")
+            or data.get("localCurrency")
+            or (data.get("fx") or {}).get("currencyCode"),
+            "suggestedAmounts": data.get("suggestedAmounts") or [],
+            "suggestedAmountsMap": data.get("suggestedAmountsMap") or {},
         }
 
-    except Exception as e:
-        print("❌ Operator amounts error:", e)
+    except Exception as exc:
+        logger.exception("Reloadly operator amounts exception: %s", exc)
         return {}

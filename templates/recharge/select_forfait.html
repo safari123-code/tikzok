@@ -46,7 +46,7 @@
   </section>
 
   {# ---------------------------
-     Plans list
+     Plans list (FINAL CLEAN)
   --------------------------- #}
   <div class="tz-stack" id="plansList">
 
@@ -81,38 +81,33 @@
 
           <div class="tz-grow">
 
-            {# ---------------------------
-               Title dynamique (API SAFE)
-            --------------------------- #}
             <div class="tz-strong">
               {{ f.gb if f.gb else f.name }}
             </div>
 
-            {# ---------------------------
-               Description ULTRA ROBUSTE
-            --------------------------- #}
-            <div class="tz-small tz-muted">
+<div class="tz-small tz-muted">
 
-              {% if f.gb and f.validity %}
-                {{ f.gb }} • {{ f.validity }}
+  {% if f.type == "AIRTIME" %}
+    {{ t("recharge.airtime") }}
 
-              {% elif f.gb %}
-                {{ f.gb }}
+  {% elif f.gb and f.validity %}
+    {{ f.gb }} • {{ f.validity }}
 
-              {% elif f.validity %}
-                {{ f.validity }}
+  {% elif f.gb %}
+    {{ f.gb }}
 
-              {% else %}
-                {{ f.description }}
-              {% endif %}
+  {% elif f.validity %}
+    {{ f.validity }}
 
-            </div>
+  {% else %}
+    {{ f.description }}
+
+  {% endif %}
+
+</div>
 
           </div>
 
-          {# ---------------------------
-             Price SAFE
-          --------------------------- #}
           <div class="tz-forfait-price">
             {{ "%.0f"|format(f.amount or 0) }} {{ f.currency or "EUR" }}
           </div>
@@ -125,9 +120,14 @@
 
     {% else %}
 
-      <div class="tz-card tz-card--soft tz-muted">
-        {{ t("recharge.selectForfait.noPlans") }}
-      </div>
+      {# 🔥 fallback UX propre #}
+<div class="tz-card tz-card--soft tz-muted">
+
+  <div style="text-align:center; padding:10px;">
+    📶 {{ t("recharge.noInternetPlans") }}
+  </div>
+
+</div>
 
     {% endif %}
 

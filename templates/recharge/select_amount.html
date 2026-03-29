@@ -168,7 +168,7 @@
   {% if session.get("recharge_forfait") %}
     {{ session.get("recharge_forfait").gb }}
   {% elif received_display and received_display != "—" %}
-    {{ received_display }}
+    {{ received_display }} {{ destination_currency }}
   {% else %}
     —
   {% endif %}
