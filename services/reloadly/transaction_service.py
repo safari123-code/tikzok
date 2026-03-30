@@ -182,7 +182,7 @@ def _validate_inputs(
 
 
 # ---------------------------
-# Execute recharge
+# Execute recharge (FINAL + DB)
 # ---------------------------
 
 def process_recharge(
@@ -201,6 +201,10 @@ def process_recharge(
     repo_mark_success: Callable[[str, Optional[Dict[str, Any]]], None] = _mem_mark_success,
     repo_mark_failed: Callable[[str, Optional[Dict[str, Any]]], None] = _mem_mark_failed,
 ) -> TransactionResult:
+
+    from db.database import SessionLocal
+    from models.transaction import Transaction
+
     _validate_inputs(
         phone=phone,
         country_iso=country_iso,
@@ -236,14 +240,37 @@ def process_recharge(
                     raw=existing,
                 )
 
+        # ---------------------------
+        # CREATE DB TRANSACTION
+        # ---------------------------
+        db = SessionLocal()
+
+        tx = Transaction(
+            user_id=user_id,
+            reference=reference,
+            phone=phone,
+            country_iso=country_iso,
+            amount=float(amount) if amount is not None else None,
+            plan_id=int(plan_id) if plan_id is not None else None,
+            operator_id=int(operator_id) if operator_id is not None else None,
+            status="PROCESSING",
+        )
+
+        db.add(tx)
+        db.commit()
+        db.refresh(tx)
+
+        # ---------------------------
+        # MEMORY STORE (fallback)
+        # ---------------------------
         payload = {
             "reference": reference,
             "status": "PENDING",
             "phone": phone,
             "country_iso": country_iso,
-            "amount": float(amount) if amount is not None else None,
-            "plan_id": int(plan_id) if plan_id is not None else None,
-            "operator_id": int(operator_id) if operator_id is not None else None,
+            "amount": amount,
+            "plan_id": plan_id,
+            "operator_id": operator_id,
             "user_id": user_id,
             "metadata": metadata or {},
             "created_at": int(time.time()),
@@ -256,6 +283,9 @@ def process_recharge(
         repo_mark_processing(reference, None)
 
         try:
+            # ---------------------------
+            # CALL RELOADLY
+            # ---------------------------
             if plan_id is not None:
                 raw_result = send_data_topup(
                     phone=phone,
@@ -277,14 +307,19 @@ def process_recharge(
             if raw_status == "UNKNOWN":
                 raw_status = "PROCESSING"
 
+            # ---------------------------
+            # UPDATE DB STATUS
+            # ---------------------------
+            tx.status = raw_status
+            db.commit()
+
             if raw_status in {"SUCCESS", "PROCESSING"}:
+
                 repo_mark_success(
                     reference,
                     {
                         "status": raw_status,
                         "reloadly_transaction_id": reloadly_transaction_id,
-                        "custom_identifier": reference,
-                        "reloadly_raw": raw_result,
                     },
                 )
 
@@ -298,15 +333,8 @@ def process_recharge(
                     raw=raw_result,
                 )
 
-            repo_mark_failed(
-                reference,
-                {
-                    "status": raw_status,
-                    "reloadly_transaction_id": reloadly_transaction_id,
-                    "custom_identifier": reference,
-                    "reloadly_raw": raw_result,
-                },
-            )
+            # FAILED
+            repo_mark_failed(reference, {"status": raw_status})
 
             return TransactionResult(
                 ok=False,
@@ -319,15 +347,16 @@ def process_recharge(
             )
 
         except Exception as exc:
-            repo_mark_failed(
-                reference,
-                {
-                    "status": "FAILED",
-                    "custom_identifier": reference,
-                    "error": str(exc),
-                },
-            )
+
+            tx.status = "FAILED"
+            db.commit()
+
+            repo_mark_failed(reference, {"status": "FAILED"})
+
             raise TransactionServiceError(str(exc)) from exc
+
+        finally:
+            db.close()
 
 
 # ---------------------------

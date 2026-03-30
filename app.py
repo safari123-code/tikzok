@@ -27,7 +27,11 @@ from routes.account import account_bp
 from routes.history import history_bp
 from routes.admin import admin_bp
 
-
+# ---------------------------
+# Create tables (TEMP)
+# ---------------------------
+from db.database import Base, engine
+Base.metadata.create_all(bind=engine)
 # ---------------------------
 # Helpers
 # ---------------------------

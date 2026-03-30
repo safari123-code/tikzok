@@ -1,18 +1,21 @@
 # ---------------------------
-# Auth Routes — FINAL CLEAN
+# Auth Routes — FINAL CLEAN (OTP + Redis)
 # ---------------------------
 
 from flask import Blueprint, render_template, request, session, redirect, url_for
 import re
 import time
 
+from services.communication.email_otp_service import EmailOTPService
+from services.communication.sms_service import SMSService
+from services.communication.otp_service import OtpService
+from services.auth_service import get_or_create_user
+
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 # ---------------------------
 # CONFIG OTP
 # ---------------------------
-OTP_EXPIRATION_SECONDS = 300
-OTP_MAX_ATTEMPTS = 5
 OTP_RESEND_COOLDOWN = 30
 
 
@@ -20,19 +23,10 @@ OTP_RESEND_COOLDOWN = 30
 # Helpers
 # ---------------------------
 def _valid_email(email: str):
-    """
-    Robust email validation.
-    Accepts common formats:
-    user@gmail.com
-    user.name@gmail.com
-    user+alias@gmail.com
-    """
-
     if not email:
         return False
 
     email = email.strip().lower()
-
     pattern = r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$"
 
     return re.match(pattern, email) is not None
@@ -48,7 +42,7 @@ def _mask_phone(phone: str) -> str:
 
 
 # ============================================================
-# LOGIN (EMAIL)
+# LOGIN EMAIL
 # ============================================================
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -64,27 +58,19 @@ def login():
         if name:
             session["user_name"] = name
 
-        # Cooldown protection
+        # cooldown anti spam
         last_sent = session.get("email_last_sent")
         if last_sent and time.time() - last_sent < OTP_RESEND_COOLDOWN:
             return render_template("auth/email_login.html", error=True)
 
         try:
-
-            from services.communication.email_otp_service import EmailOTPService
-
-            code = EmailOTPService.send_verification(email_value)
+            EmailOTPService.send_verification(email_value)
 
         except Exception as e:
-
             print("EMAIL ERROR:", e)
             return render_template("auth/email_login.html", error=True)
 
-        # Save OTP session
         session["pending_email"] = email_value
-        session["email_code"] = code
-        session["email_expires"] = time.time() + OTP_EXPIRATION_SECONDS
-        session["email_attempts"] = 0
         session["email_last_sent"] = time.time()
 
         return redirect(url_for("auth.email_code"))
@@ -99,9 +85,6 @@ def login():
 def email_code():
 
     email_value = session.get("pending_email")
-    saved_code = session.get("email_code")
-    expires = session.get("email_expires")
-    attempts = session.get("email_attempts", 0)
 
     if not email_value:
         return redirect(url_for("auth.login"))
@@ -110,33 +93,22 @@ def email_code():
 
         entered_code = (request.form.get("code") or "").strip()
 
-        # Expired OTP
-        if not expires or time.time() > expires:
-            session.clear()
-            return redirect(url_for("auth.login"))
+        valid = OtpService.verify_otp("email", email_value, entered_code)
 
-        # Too many attempts
-        if attempts >= OTP_MAX_ATTEMPTS:
-            session.clear()
-            return redirect(url_for("auth.login"))
-
-        # Wrong code
-        if entered_code != saved_code:
-            session["email_attempts"] = attempts + 1
+        if not valid:
             return render_template(
                 "auth/email_code.html",
                 email=email_value,
                 error=True
             )
 
-        # SUCCESS LOGIN
-        session["user_id"] = 1
+        # ✅ USER DB
+        user = get_or_create_user(email=email_value)
+
+        session["user_id"] = user.id
         session["user_email"] = email_value
 
         session.pop("pending_email", None)
-        session.pop("email_code", None)
-        session.pop("email_expires", None)
-        session.pop("email_attempts", None)
         session.pop("email_last_sent", None)
 
         return redirect("/")
@@ -164,27 +136,17 @@ def phone():
         if name:
             session["user_name"] = name
 
-        # ---------------------------
-        # Send SMS OTP (Telnyx)
-        # ---------------------------
         try:
+            code = OtpService.generate_code()
 
-            from services.communication.sms_service import SMSService
-            import random
-
-            code = str(random.randint(1000, 9999))
+            OtpService.store_otp("sms", phone_number, code)
 
             SMSService.send_sms(
                 phone_number,
                 f"Your Tikzok verification code is {code}"
             )
 
-            session["phone_code"] = code
-            session["phone_expires"] = time.time() + OTP_EXPIRATION_SECONDS
-            session["phone_attempts"] = 0
-
         except Exception as e:
-
             print("TELNYX ERROR:", e)
             return render_template("auth/phone_login.html", error=True)
 
@@ -196,7 +158,7 @@ def phone():
 
 
 # ============================================================
-# PHONE OTP
+# PHONE OTP VERIFY
 # ============================================================
 @auth_bp.route("/otp", methods=["GET", "POST"])
 def otp():
@@ -208,7 +170,20 @@ def otp():
 
     if request.method == "POST":
 
-        session["user_id"] = 1
+        entered_code = (request.form.get("code") or "").strip()
+
+        valid = OtpService.verify_otp("sms", phone_value, entered_code)
+
+        if not valid:
+            return render_template(
+                "auth/otp.html",
+                phone=phone_value,
+                error=True
+            )
+
+        user = get_or_create_user(phone=phone_value)
+
+        session["user_id"] = user.id
         session["user_phone"] = phone_value
 
         session.pop("pending_phone", None)

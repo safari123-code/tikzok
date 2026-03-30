@@ -1,54 +1,80 @@
 # ---------------------------
-# OTP Service — FINAL
-# services/otp_service.py
+# OTP Service (Redis + SMS/Email Ready)
 # ---------------------------
 
 import hmac
 import secrets
-import time
-
-
-class OtpService:
-
-    DEFAULT_TTL_SECONDS = 300  # 5 minutes
-
-    @staticmethod
-    def generate_code(length: int = 6) -> str:
-        """Generate secure numeric OTP"""
-        return "".join(secrets.choice("0123456789") for _ in range(length))
-
-    @staticmethod
-    def constant_time_equals(a: str, b: str) -> bool:
-        """Safe compare (anti timing attack)"""
-        return hmac.compare_digest(a.encode(), b.encode())
-
-    @staticmethod
-    def now_ts() -> int:
-        return int(time.time())
-
-    @classmethod
-    def expires_at(cls) -> int:
-        return cls.now_ts() + cls.DEFAULT_TTL_SECONDS
-    
-    from services.core.redis_service import redis_client
 import hashlib
 
+from services.core.redis_service import redis_client
+
 
 class OtpService:
 
-    TTL = 300
+    TTL = 300  # 5 minutes
     MAX_ATTEMPTS = 5
 
+    # ---------------------------
+    # Generate OTP
+    # ---------------------------
     @staticmethod
-    def store_otp(key: str, code: str):
-        otp_hash = hashlib.sha256(code.encode()).hexdigest()
-        redis_client.setex(key, OtpService.TTL, otp_hash)
+    def generate_code(length: int = 6) -> str:
+        return "".join(secrets.choice("0123456789") for _ in range(length))
 
+    # ---------------------------
+    # Hash OTP
+    # ---------------------------
     @staticmethod
-    def verify_otp(key: str, entered_code: str):
-        saved_hash = redis_client.get(key)
-        if not saved_hash:
+    def hash_code(code: str) -> str:
+        return hashlib.sha256(code.encode()).hexdigest()
+
+    # ---------------------------
+    # Build Redis Key
+    # ---------------------------
+    @staticmethod
+    def build_key(channel: str, target: str) -> str:
+        return f"otp:{channel}:{target}"
+
+    # ---------------------------
+    # Store OTP
+    # ---------------------------
+    @classmethod
+    def store_otp(cls, channel: str, target: str, code: str):
+        key = cls.build_key(channel, target)
+
+        data = {
+            "hash": cls.hash_code(code),
+            "attempts": 0
+        }
+
+        redis_client.setex(key, cls.TTL, str(data))
+
+    # ---------------------------
+    # Verify OTP
+    # ---------------------------
+    @classmethod
+    def verify_otp(cls, channel: str, target: str, entered_code: str) -> bool:
+        key = cls.build_key(channel, target)
+
+        raw = redis_client.get(key)
+        if not raw:
             return False
 
-        entered_hash = hashlib.sha256(entered_code.encode()).hexdigest()
-        return hmac.compare_digest(saved_hash, entered_hash)
+        data = eval(raw.decode())
+
+        # brute force protection
+        if data["attempts"] >= cls.MAX_ATTEMPTS:
+            redis_client.delete(key)
+            return False
+
+        entered_hash = cls.hash_code(entered_code)
+
+        if hmac.compare_digest(data["hash"], entered_hash):
+            redis_client.delete(key)  # one-time use
+            return True
+
+        # increment attempts
+        data["attempts"] += 1
+        redis_client.setex(key, cls.TTL, str(data))
+
+        return False

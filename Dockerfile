@@ -10,6 +10,14 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # ---------------------------
+# System deps (IMPORTANT)
+# ---------------------------
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------------------------
 # Install dependencies
 # ---------------------------
 COPY requirements.txt .
@@ -24,8 +32,6 @@ COPY . .
 # Environment
 # ---------------------------
 ENV PYTHONUNBUFFERED=1
-
-# Cloud Run fournit automatiquement PORT
 ENV PORT=8080
 
 # ---------------------------

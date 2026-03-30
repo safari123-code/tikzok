@@ -1,19 +1,16 @@
-# ---------------------------
-# Email OTP Service
-# ---------------------------
-
-import random
+import secrets
 from services.communication.email_service import EmailService
+from services.communication.otp_service import OtpService
 
 
 class EmailOTPService:
 
     # ---------------------------
-    # Generate OTP code
+    # Generate OTP code (6 chiffres sécurisé)
     # ---------------------------
     @staticmethod
     def generate_code() -> str:
-        return str(random.randint(1000, 9999))
+        return str(secrets.randbelow(9000) + 1000)
 
     # ---------------------------
     # Send verification email
@@ -23,9 +20,11 @@ class EmailOTPService:
 
         code = EmailOTPService.generate_code()
 
+        # 🔐 IMPORTANT (sinon verify cassé)
+        OtpService.store_otp("email", email, code)
+
         subject = "Code de vérification Tikzok"
 
-        # HTML email
         html = f"""
 <!DOCTYPE html>
 <html>
@@ -69,13 +68,9 @@ Ce code expire dans 5 minutes
 </html>
 """
 
-        # Text fallback
-        text = f"""
-Code de vérification Tikzok
+        text = f"""Code de vérification Tikzok
 
-Votre code :
-
-{code}
+Votre code : {code}
 
 Ce code expire dans 5 minutes.
 """
@@ -87,4 +82,5 @@ Ce code expire dans 5 minutes.
             text=text
         )
 
+        # ⚠️ OK pour test seulement
         return code
