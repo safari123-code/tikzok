@@ -39,7 +39,7 @@ def _parse_plan_description(desc: str):
 
 
 # ---------------------------
-# Get Data Plans (FINAL — SHOW ALL)
+# Get Data Plans (FINAL PRODUCTION ROBUST)
 # ---------------------------
 def get_reloadly_plans(operator):
 
@@ -59,6 +59,9 @@ def get_reloadly_plans(operator):
     }
 
     try:
+        # ---------------------------
+        # 1. Try data-plans
+        # ---------------------------
         url = f"{RELOADLY_V1_URL}/operators/{operator_id}/data-plans"
 
         res = _safe_request("GET", url, headers=headers)
@@ -66,16 +69,36 @@ def get_reloadly_plans(operator):
         if res.status_code == 401:
             clear_reloadly_token()
             token = get_reloadly_token(force_refresh=True)
-
             headers["Authorization"] = f"Bearer {token}"
+            res = _safe_request("GET", url, headers=headers)
+
+        data = []
+
+        if res.status_code == 200:
+            try:
+                data = res.json()
+            except Exception:
+                data = []
+
+        # ---------------------------
+        # 2. Fallback bundles
+        # ---------------------------
+        if not data:
+            url = f"{RELOADLY_BASE_URL}/operators/{operator_id}/bundles"
 
             res = _safe_request("GET", url, headers=headers)
 
-        if res.status_code != 200:
-            print("❌ Reloadly plans failed:", res.text)
-            return []
+            if res.status_code == 200:
+                try:
+                    data = res.json()
+                except Exception:
+                    data = []
 
-        data = res.json()
+        # ---------------------------
+        # 3. Safety
+        # ---------------------------
+        if not isinstance(data, list):
+            return []
 
         plans = []
 
@@ -85,18 +108,28 @@ def get_reloadly_plans(operator):
 
             gb, validity = _parse_plan_description(description)
 
+            amount = float(p.get("amount") or 0)
+
+            if amount <= 0:
+                continue
+
             plans.append({
                 "id": p.get("id"),
                 "name": p.get("name"),
-                "amount": float(p.get("amount") or 0),
+                "amount": amount,
                 "currency": p.get("currencyCode") or "EUR",
                 "type": "DATA",
                 "description": description,
                 "gb": gb,
-                "validity": validity
+                "validity": validity,
+
+                # 🔥 UX ready
+                "display_name": f"{gb} • {validity}" if gb or validity else description
             })
 
-        # 🔥 tri UX (important)
+        # ---------------------------
+        # 4. UX sorting
+        # ---------------------------
         plans.sort(key=lambda x: x["amount"])
 
         return plans

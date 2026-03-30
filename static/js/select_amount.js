@@ -35,10 +35,18 @@
 
   const userCurrency = "€";
 
+  let minAmount = 2;
+  let maxAmount = 40;
+
   let debounceT = null;
 
   function fmt2(v) {
     return (Math.round(Number(v || 0) * 100) / 100).toFixed(2);
+  }
+
+  function clampAmount(v) {
+    const n = Number(v || 0);
+    return Math.min(Math.max(n, minAmount), maxAmount);
   }
 
   function setSelectedButton(v) {
@@ -87,7 +95,7 @@
 
   function updateUI(amount) {
 
-    const a = Number(amount || 0);
+    const a = clampAmount(amount);
 
     if (amountInput) amountInput.value = fmt2(a);
 
@@ -101,9 +109,7 @@
       rowTax.textContent = `${fmt2(a * taxRate)} ${userCurrency}`;
 
     if (pointsEarnedText) {
-
       const points = fmt2(a * pointsRate);
-
       pointsEarnedText.textContent =
         pointsEarnedText.textContent.replace(/[0-9]+(\.[0-9]+)?/, points);
     }
@@ -117,97 +123,101 @@
 
       continueBtn.textContent =
         payTemplate.replace("{amount}", formatted);
+
+      // ✅ validation bouton (FIX)
+      const isValid = a >= minAmount && a <= maxAmount;
+      continueBtn.disabled = !isValid;
+      continueBtn.style.opacity = isValid ? "1" : "0.5";
     }
   }
 
- // ---------------------------
-// 🔥 BACKEND ONLY (FINAL PRODUCTION SAFE)
-// ---------------------------
-
-async function fetchQuote(amount) {
-
-  const gb = forfaitGb?.value;
-
   // ---------------------------
-  // Priorité forfait
+  // API
   // ---------------------------
-  if (gb && rowReceived) {
-    rowReceived.textContent = gb;
-    return;
-  }
 
-  if (rowReceived) {
-    rowReceived.style.opacity = "0.6";
-  }
+  async function fetchQuote(amount) {
 
-  try {
+    // ✅ protection API (FIX)
+    if (!amount || amount < minAmount || amount > maxAmount) {
+      return;
+    }
 
-    const res = await fetch("/recharge/api/quote", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        amount: amount
-      })
-    });
+    const gb = forfaitGb?.value;
 
-    let data = null;
+    if (gb && rowReceived) {
+      rowReceived.textContent = gb;
+      return;
+    }
 
-    // 🔥 SAFE PARSE
+    if (rowReceived) {
+      rowReceived.style.opacity = "0.6";
+    }
+
     try {
-      data = await res.json();
-    } catch (_) {
-      data = null;
-    }
 
-    // ---------------------------
-    // ❌ erreur backend
-    // ---------------------------
-    if (!res.ok || !data || !data.ok) {
+      const res = await fetch("/recharge/api/quote", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          amount: amount
+        })
+      });
+
+      let data = null;
+
+      try {
+        data = await res.json();
+      } catch (_) {
+        data = null;
+      }
+
+      // ✅ update min/max dynamique
+      if (data?.min) minAmount = Number(data.min);
+      if (data?.max) maxAmount = Number(data.max);
+
+      if (range) {
+        range.min = minAmount;
+        range.max = maxAmount;
+      }
+
+      if (!res.ok || !data || !data.ok) {
+
+        if (rowReceived) {
+          rowReceived.textContent = "—";
+          rowReceived.style.opacity = "0.5";
+        }
+
+        return;
+      }
+
+      if (rowReceived) {
+
+        const received = data.received;
+
+        rowReceived.textContent =
+          (received && received !== "—") ? received : "—";
+
+        rowReceived.style.transition = "all .25s ease";
+        rowReceived.style.transform = "scale(1.05)";
+        rowReceived.style.opacity = "1";
+
+        setTimeout(() => {
+          rowReceived.style.transform = "scale(1)";
+        }, 140);
+      }
+
+    } catch (e) {
+
+      console.error("quote error", e);
 
       if (rowReceived) {
         rowReceived.textContent = "—";
         rowReceived.style.opacity = "0.5";
       }
-
-      return;
-    }
-
-// ---------------------------
-// Feature: Display received (FINAL FIX)
-// ---------------------------
-if (rowReceived) {
-
-  const received = data.received;
-  const currency = data.destinationCurrency || "";
-
-  if (received && received !== "—") {
-    rowReceived.textContent = received; // déjà formaté backend
-  } else {
-    rowReceived.textContent = "—";
-  }
-
-  // micro-interaction
-  rowReceived.style.transition = "all .25s ease";
-  rowReceived.style.transform = "scale(1.05)";
-  rowReceived.style.opacity = "1";
-
-  setTimeout(() => {
-    rowReceived.style.transform = "scale(1)";
-  }, 140);
-}
-
-  } catch (e) {
-
-    console.error("quote error", e);
-
-    if (rowReceived) {
-      rowReceived.textContent = "—";
-      rowReceived.style.opacity = "0.5";
     }
   }
-} 
 
   // ---------------------------
   // Debounce
@@ -250,104 +260,70 @@ if (rowReceived) {
     }
   }
 
- // ---------------------------
-// Events (FINAL PRODUCTION)
-// ---------------------------
+  // ---------------------------
+  // Events
+  // ---------------------------
 
-// Accordion
-moneyBtn?.addEventListener("click", () => {
-  const isOpen = moneyPanel.style.display !== "none";
-  setMoneyOpen(!isOpen);
-});
+  moneyBtn?.addEventListener("click", () => {
+    const isOpen = moneyPanel.style.display !== "none";
+    setMoneyOpen(!isOpen);
+  });
 
-// Fixed amounts
-fixedWrap?.addEventListener("click", (e) => {
+  fixedWrap?.addEventListener("click", (e) => {
 
-  const btn = e.target.closest(".tz-amt-btn");
-  if (!btn) return;
+    const btn = e.target.closest(".tz-amt-btn");
+    if (!btn) return;
 
-  const v = parseFloat(btn.dataset.amount);
+    const v = parseFloat(btn.dataset.amount);
 
-  setSelectedButton(v);
-  updateUI(v);
-  setMoneyOpen(true);
-  scheduleQuote(v);
-  scrollToDetails();
-});
+    setSelectedButton(v);
+    updateUI(v);
+    setMoneyOpen(true);
+    scheduleQuote(v);
+    scrollToDetails();
+  });
 
-// Range slider (live)
-range?.addEventListener("input", () => {
-  updateUI(parseFloat(range.value));
-});
+  range?.addEventListener("input", () => {
+    updateUI(parseFloat(range.value));
+  });
 
-// Range slider (final)
-range?.addEventListener("change", () => {
+  range?.addEventListener("change", () => {
 
-  const v = parseFloat(range.value);
+    const v = parseFloat(range.value);
 
-  setMoneyOpen(true);
-  scheduleQuote(v);
-  scrollToDetails();
-});
+    setMoneyOpen(true);
+    scheduleQuote(v);
+    scrollToDetails();
+  });
 
-// Remove forfait
-removeForfaitBtn?.addEventListener("click", (e) => {
+  removeForfaitBtn?.addEventListener("click", (e) => {
 
-  e.preventDefault();
-  e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
 
-  if (forfaitGb) forfaitGb.value = "";
-  if (forfaitPrice) forfaitPrice.value = "";
+    if (forfaitGb) forfaitGb.value = "";
+    if (forfaitPrice) forfaitPrice.value = "";
 
-  removeForfaitBtn.style.display = "none";
+    removeForfaitBtn.style.display = "none";
 
-  const amount = parseFloat(amountInput?.value || "0");
+    const amount = parseFloat(amountInput?.value || "0");
 
-  scheduleQuote(amount);
-  setAmountLocked(false);
+    scheduleQuote(amount);
+    setAmountLocked(false);
 
-  tzToast?.(document.documentElement.dataset.tzRemovedText || "");
-});
+    tzToast?.(document.documentElement.dataset.tzRemovedText || "");
+  });
 
-// ---------------------------
-// 🔥 Forfait card click → redirect
-// ---------------------------
-forfaitCard?.addEventListener("click", (e) => {
+  forfaitCard?.addEventListener("click", (e) => {
 
-  // ignore clic sur bouton remove
-  if (e.target.closest("#removeForfaitBtn")) return;
+    if (e.target.closest("#removeForfaitBtn")) return;
 
-  const url = forfaitCard.dataset.forfaitUrl;
+    const url = forfaitCard.dataset.forfaitUrl;
 
-  if (url) {
-    window.location.href = url;
-  }
-});
-
-
-// ---------------------------
-// Feature: Currency formatting (intl)
-// ---------------------------
-function formatCurrency(amount, currency) {
-    try {
-        return new Intl.NumberFormat(undefined, {
-            maximumFractionDigits: 0
-        }).format(amount) + " " + currency;
-    } catch (e) {
-        return amount + " " + currency;
+    if (url) {
+      window.location.href = url;
     }
-}
-
-
-// ---------------------------
-// Feature: update received display
-// ---------------------------
-function updateReceived(received, currency) {
-    const el = document.getElementById("rowReceived");
-    if (!el) return;
-
-    el.innerText = received + " " + currency;
-}
+  });
 
   // ---------------------------
   // Init

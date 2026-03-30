@@ -108,30 +108,49 @@ def select_forfait_get():
     country_iso = detect_country_iso_from_phone(phone)
     operator = _session_operator()
 
+    # ---------------------------
+    # Operator detection
+    # ---------------------------
     if not operator:
         operator = get_reloadly_operator_auto_detect(phone, country_iso) or {}
 
         if operator:
             session["recharge_operator"] = operator
 
+    # ---------------------------
+    # Get plans
+    # ---------------------------
     plans = []
 
     if operator and operator.get("id"):
         plans = get_reloadly_plans(operator)
 
-    print("DATA PLANS COUNT:", len(plans))
+    logger.info("DATA PLANS COUNT: %s", len(plans))
 
-    # 🔥 AUTO REDIRECT SI PAS DE DATA
+    # ---------------------------
+    # Feature: Safe forfait fallback (UX PRO)
+    # ---------------------------
     if not plans:
-        return redirect(url_for("recharge.select_amount_get"))
+        logger.warning("No data plans found for operator")
 
+        return render_template(
+            "recharge/select_forfait.html",
+            plans=[],
+            operator=operator,
+            phone=phone,
+            no_plans=True
+        )
+
+    # ---------------------------
+    # Normal flow
+    # ---------------------------
     return render_template(
         "recharge/select_forfait.html",
         plans=plans,
         operator=operator,
         phone=phone,
+        no_plans=False
     )
-
 # ---------------------------
 # Select Forfait (POST)
 # ---------------------------
@@ -406,10 +425,29 @@ def select_amount_post():
     except Exception:
         return redirect(url_for("recharge.select_amount_get"))
 
-    amount = max(1.0, min(1000.0, amount))
+    # ---------------------------
+    # Feature: Amount validation (FINAL)
+    # ---------------------------
+
+    MIN_AMOUNT = 2.0
+    MAX_AMOUNT = 40.0
+
+    if amount < MIN_AMOUNT or amount > MAX_AMOUNT:
+        return redirect(url_for("recharge.select_amount_get"))
+
+    # clamp sécurisé
+    amount = max(MIN_AMOUNT, min(MAX_AMOUNT, amount))
+
+    # ---------------------------
+    # Currency & breakdown
+    # ---------------------------
 
     currency = CurrencyService.currency_from_phone(phone)
     breakdown = FeesService.breakdown(amount, currency)
+
+    # ---------------------------
+    # Session
+    # ---------------------------
 
     session["recharge_amount"] = str(amount)
     session["recharge_total_amount"] = str(breakdown["total"])
@@ -506,7 +544,7 @@ def recharge_status():
 
 
 # ---------------------------
-# AJAX Quote (FINAL CLEAN)
+# AJAX Quote (FINAL PRODUCTION)
 # ---------------------------
 
 @recharge_bp.post("/api/quote")
@@ -526,8 +564,29 @@ def api_quote():
     except Exception:
         return jsonify({"ok": False}), 400
 
-    amount = max(1.0, min(1000.0, amount))
+    # ---------------------------
+    # Feature: Amount validation (SECURE)
+    # ---------------------------
+
+    MIN_AMOUNT = 2.0
+    MAX_AMOUNT = 40.0
+
+    if amount < MIN_AMOUNT or amount > MAX_AMOUNT:
+        return jsonify({
+            "ok": False,
+            "error": "invalid_amount",
+            "min": MIN_AMOUNT,
+            "max": MAX_AMOUNT
+        }), 400
+
+    # clamp sécurité
+    amount = max(MIN_AMOUNT, min(MAX_AMOUNT, amount))
+
     operator_id = operator.get("id")
+
+    # ---------------------------
+    # Quote
+    # ---------------------------
 
     quote = None
 
@@ -539,11 +598,13 @@ def api_quote():
             country_iso=country_iso,
         )
 
-    print("QUOTE:", quote)
+    # log propre (prod)
+    logger.info("Reloadly quote: %s", quote)
 
     # ---------------------------
-    # 🌍 Currency
+    # Currency
     # ---------------------------
+
     currency = None
 
     if quote:
@@ -556,21 +617,25 @@ def api_quote():
         currency = operator.get("destinationCurrencyCode") or "EUR"
 
     # ---------------------------
-    # 💰 Received
+    # Received
     # ---------------------------
+
     received = None
 
     if quote and quote.get("destinationAmount"):
         received = f"{quote['destinationAmount']:.2f} {currency}"
 
-    # ---------------------------
-    # 🔥 Fallback UX propre
-    # ---------------------------
     if not received:
-        received = "—"   # ⬅️ PRO UX (pas fake data)
+        received = "—"
+
+    # ---------------------------
+    # Response
+    # ---------------------------
 
     return jsonify({
         "ok": True,
         "received": received,
-        "destinationCurrency": currency
+        "destinationCurrency": currency,
+        "min": MIN_AMOUNT,
+        "max": MAX_AMOUNT
     })

@@ -95,7 +95,7 @@ class FeesService:
     "TRY": Decimal("0.20"),
     "INR": Decimal("0.22"),
     "PKR": Decimal("0.23"),
-    "AFN": Decimal("0.20"),
+    "AFN": Decimal("0.35"),
     "LKR": Decimal("0.22"),
     "MMK": Decimal("0.23"),
     "IRR": Decimal("0.25"),
