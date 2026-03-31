@@ -3,7 +3,7 @@
 # ---------------------------
 
 import boto3
-import config
+import os
 from datetime import datetime
 
 
@@ -14,9 +14,9 @@ class EmailService:
     # ---------------------------
     client = boto3.client(
         "ses",
-        region_name=config.AWS_REGION,
-        aws_access_key_id=config.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=config.AWS_SECRET_ACCESS_KEY,
+        region_name=os.getenv("AWS_REGION"),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     )
 
     # ---------------------------
@@ -28,7 +28,7 @@ class EmailService:
         try:
 
             EmailService.client.send_email(
-                Source=config.SES_FROM_EMAIL,
+                Source=os.getenv("SES_FROM_EMAIL"),
                 Destination={
                     "ToAddresses": [to_email]
                 },
