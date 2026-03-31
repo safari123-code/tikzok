@@ -263,7 +263,8 @@ def _resolve_payment_status() -> Dict[str, Any]:
         return {"status": "success"}
 
     if stripe_status == "succeeded":
-        return {"status": "processing"}
+      return {"status": "success"}
+        
 
     if stripe_status in {"canceled", "requires_payment_method"}:
         return {"status": "failed"}
@@ -542,7 +543,7 @@ def payment_success():
     if not payload:
         return render_template(
             "payment/success.html",
-            status="processing",
+            status="success",
             amount=None,
             date=None,
             order_number=None,

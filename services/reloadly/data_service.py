@@ -152,20 +152,32 @@ def _parse_plan_description(desc: str) -> Tuple[str, str]:
 
 
 # ---------------------------
-# Get Data Plans
+# Get Data Plans (FINAL PRODUCTION)
 # ---------------------------
 
 def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
+
     if not operator:
         return []
 
-    operator_id = operator.get("id") or operator.get("operatorId")
+    # ---------------------------
+    # FIX operator_id (CRITICAL)
+    # ---------------------------
+    operator_id = (
+        operator.get("id")
+        or operator.get("operatorId")
+        or operator.get("operator_id")
+    )
+
     if not operator_id:
         return []
 
     token = get_reloadly_token()
     headers = _build_headers(token)
 
+    # ---------------------------
+    # Endpoints priority
+    # ---------------------------
     urls = [
         f"{RELOADLY_V1_URL}/operators/{int(operator_id)}/data-plans",
         f"{RELOADLY_BASE_URL}/operators/{int(operator_id)}/bundles",
@@ -182,14 +194,21 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
                 timeout=20,
             )
 
+            logger.info("Reloadly plans fetch", extra={
+                "url": url,
+                "status": res.status_code
+            })
+
             if res.status_code != 200:
-                logger.warning(
-                    "Reloadly plans fetch failed",
-                    extra={"url": url, "status_code": res.status_code},
-                )
                 continue
 
             payload = _safe_json(res)
+
+            # ---------------------------
+            # 🔥 FIX STRUCTURE (CRITICAL)
+            # ---------------------------
+            if isinstance(payload, dict):
+                payload = payload.get("content") or payload.get("data") or []
 
             if isinstance(payload, list) and payload:
                 data = payload
@@ -212,13 +231,21 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
         except Exception:
             amount = 0.0
 
+        # ---------------------------
+        # Skip invalid plans
+        # ---------------------------
         if amount <= 0:
             continue
 
         description = plan.get("description") or plan.get("name") or ""
+
         gb, validity = _parse_plan_description(description)
 
+        # ---------------------------
+        # UX display name
+        # ---------------------------
         display_name = description
+
         if gb and validity:
             display_name = f"{gb} • {validity}"
         elif gb:
@@ -240,7 +267,13 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
             }
         )
 
+    # ---------------------------
+    # Sort UX
+    # ---------------------------
     plans.sort(key=lambda item: item["amount"])
+
+    logger.info("Reloadly plans parsed", extra={"count": len(plans)})
+
     return plans
 
 

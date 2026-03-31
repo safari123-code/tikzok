@@ -95,11 +95,12 @@ def _get_payment_reference() -> str:
 
 
 # ---------------------------
-# Select Forfait (SMART UX)
+# Select Forfait (FINAL FIXED)
 # ---------------------------
 
 @recharge_bp.get("/select-forfait")
 def select_forfait_get():
+
     phone = session.get("recharge_phone")
 
     if not phone:
@@ -112,26 +113,55 @@ def select_forfait_get():
     # Operator detection
     # ---------------------------
     if not operator:
-        operator = get_reloadly_operator_auto_detect(phone, country_iso) or {}
+        detected = get_reloadly_operator_auto_detect(phone, country_iso) or {}
 
-        if operator:
+        if detected:
+            operator = {
+                "id": detected.get("id") or detected.get("operatorId"),
+                "name": detected.get("name"),
+                "logo_url": detected.get("logo_url"),
+                "country_iso": detected.get("country_iso") or country_iso,
+
+                # 🔥 FIX IMPORTANT (toujours bool propre)
+                "supports_data": bool(
+                    detected.get("data")
+                    or detected.get("supportsData")
+                    or detected.get("bundle")
+                )
+            }
+
             session["recharge_operator"] = operator
+
+    logger.info("📡 OPERATOR: %s", operator)
 
     # ---------------------------
     # Get plans
     # ---------------------------
     plans = []
 
-    if operator and operator.get("id"):
+    operator_id = (
+        operator.get("id")
+        or operator.get("operatorId")
+        or operator.get("operator_id")
+    )
+
+    if operator_id:
         plans = get_reloadly_plans(operator)
 
-    logger.info("DATA PLANS COUNT: %s", len(plans))
+    logger.info("📦 DATA PLANS COUNT: %s", len(plans))
+    logger.info("🔥 SUPPORTS DATA: %s", operator.get("supports_data"))
 
     # ---------------------------
-    # Feature: Safe forfait fallback (UX PRO)
+    # 🔥 UX SMART (IMPORTANT)
     # ---------------------------
+
+    # CAS 1 → pas de data DU TOUT
+    if operator and operator.get("supports_data") is False:
+        return redirect(url_for("recharge.select_amount_get"))
+
+    # CAS 2 → data possible mais API vide
     if not plans:
-        logger.warning("No data plans found for operator")
+        logger.warning("⚠️ No plans but operator supports data")
 
         return render_template(
             "recharge/select_forfait.html",

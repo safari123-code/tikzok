@@ -59,7 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // UX helpers
   // ---------------------------
   function setLoading(state) {
-
     if (state) {
       payBtn.classList.add("is-loading");
       payBtn.disabled = true;
@@ -71,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
       loader.style.display = "none";
       text.style.opacity = "1";
     }
-
   }
 
   // ---------------------------
@@ -127,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (result.error) {
 
-        tzToast?.(result.error.message);
+        tzToast?.(result.error.message || "Payment failed");
 
         lock = false;
         setLoading(false);
@@ -136,15 +134,24 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // ---------------------------
-      // Success → redirect
+      // SUCCESS → redirect IMMÉDIAT
       // ---------------------------
-      if (result.paymentIntent?.status === "succeeded") {
+     if (result.paymentIntent?.status === "succeeded") {
 
-        window.location.href =
-          "/payment/success?payment_intent=" +
-          result.paymentIntent.id;
+  setTimeout(() => {
+    window.location.href =
+      "/payment/success?payment_intent=" +
+      result.paymentIntent.id;
+  }, 300);
 
-      }
+} else {
+
+  tzToast?.("Payment not completed");
+
+  lock = false;
+  setLoading(false);
+
+}
 
     } catch (err) {
 

@@ -1,5 +1,5 @@
 # ---------------------------
-# Feature: Reloadly Operators Service
+# Feature: Reloadly Operators Service (FINAL SAFE)
 # ---------------------------
 
 from __future__ import annotations
@@ -77,30 +77,51 @@ def _request_with_token_retry(url: str):
     return response
 
 
+# ---------------------------
+# 🔥 FIX CRITIQUE
+# ---------------------------
 def _map_operator(data: Dict[str, Any]) -> Dict[str, Any]:
     country = data.get("country") or {}
+
+    # 🔥 FIX ROBUSTE DATA DETECTION
+    supports_data = (
+        data.get("data") is True
+        or data.get("supportsData") is True
+        or data.get("bundle") is True  # fallback important
+    )
 
     return {
         "id": data.get("operatorId") or data.get("id"),
         "name": data.get("name"),
         "logo_url": _first_logo_url(data.get("logoUrls")),
+
         "country_name": country.get("name"),
         "country_iso": country.get("isoName"),
-        "supports_data": bool(data.get("data") or data.get("supportsData")),
+
+        # 🔥 FIX IMPORTANT
+        "supports_data": bool(supports_data),
+
         "supports_bundles": bool(data.get("bundle") or data.get("supportsBundles")),
         "supports_pin": bool(data.get("pin")),
         "supports_local_amounts": bool(data.get("supportsLocalAmounts")),
+
         "denomination_type": data.get("denominationType"),
+
         "destination_currency_code": data.get("destinationCurrencyCode"),
         "sender_currency_code": data.get("senderCurrencyCode"),
+
         "min_amount": data.get("minAmount"),
         "max_amount": data.get("maxAmount"),
+
         "local_min_amount": data.get("localMinAmount"),
         "local_max_amount": data.get("localMaxAmount"),
+
         "fixed_amounts": data.get("fixedAmounts") or [],
         "local_fixed_amounts": data.get("localFixedAmounts") or [],
+
         "suggested_amounts": data.get("suggestedAmounts") or [],
         "suggested_amounts_map": data.get("suggestedAmountsMap") or {},
+
         "raw": data,
     }
 
@@ -129,7 +150,6 @@ def lookup_phone_number(phone: str, country: str) -> Optional[Dict[str, Any]]:
                 "Reloadly lookup failed",
                 extra={
                     "status_code": response.status_code,
-                    "phone": "***",
                     "country": normalized_country,
                     "message": _extract_reloadly_error(response),
                 },
@@ -137,6 +157,10 @@ def lookup_phone_number(phone: str, country: str) -> Optional[Dict[str, Any]]:
             return None
 
         data = response.json()
+
+        # 🔥 DEBUG SAFE
+        logger.info("📡 LOOKUP RESULT OK")
+
         return _map_operator(data)
 
     except Exception as exc:
