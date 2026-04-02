@@ -15,11 +15,9 @@ redis==7.2.1
 requests==2.32.5
 stripe==14.4.1
 
-boto3==1.42.63
-
 python-dotenv==1.2.1
 
 # ---------------------------
-# FIX SMS (Telnyx)
+# SMS (Telnyx)
 # ---------------------------
 telnyx==2.0.0

@@ -53,14 +53,11 @@ TELNYX_API_KEY = os.getenv("TELNYX_API_KEY", "")
 TELNYX_SMS_FROM = os.getenv("TELNYX_SMS_FROM", "")
 
 # ---------------------------
-# Amazon SES
+# Brevo (Email)
 # ---------------------------
-
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION = os.getenv("AWS_REGION", "eu-west-1")
-SES_FROM_EMAIL = os.getenv("SES_FROM_EMAIL")
-
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_FROM_EMAIL = os.getenv("BREVO_FROM_EMAIL")
+BREVO_FROM_NAME = os.getenv("BREVO_FROM_NAME", "tikzok")
 # ---------------------------
 # Stripe
 # ---------------------------

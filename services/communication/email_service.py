@@ -1,23 +1,22 @@
 # ---------------------------
-# Email Service (Amazon SES)
+# Email Service (Brevo)
 # ---------------------------
 
-import boto3
 import os
 from datetime import datetime
+import requests
 
 
 class EmailService:
 
     # ---------------------------
-    # SES Client
+    # Brevo config
     # ---------------------------
-    client = boto3.client(
-        "ses",
-        region_name=os.getenv("AWS_REGION"),
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    )
+    API_KEY = os.getenv("BREVO_API_KEY")
+    FROM_EMAIL = os.getenv("BREVO_FROM_EMAIL")
+    FROM_NAME = os.getenv("BREVO_FROM_NAME", "Tikzok")
+
+    BASE_URL = "https://api.brevo.com/v3/smtp/email"
 
     # ---------------------------
     # Generic email sender
@@ -26,32 +25,36 @@ class EmailService:
     def send_email(to_email: str, subject: str, html: str, text: str = ""):
 
         try:
+            headers = {
+                "accept": "application/json",
+                "api-key": EmailService.API_KEY,
+                "content-type": "application/json"
+            }
 
-            EmailService.client.send_email(
-                Source=os.getenv("SES_FROM_EMAIL"),
-                Destination={
-                    "ToAddresses": [to_email]
+            payload = {
+                "sender": {
+                    "name": EmailService.FROM_NAME,
+                    "email": EmailService.FROM_EMAIL
                 },
-                Message={
-                    "Subject": {
-                        "Data": subject,
-                        "Charset": "UTF-8"
-                    },
-                    "Body": {
-                        "Html": {
-                            "Data": html,
-                            "Charset": "UTF-8"
-                        },
-                        "Text": {
-                            "Data": text or "Tikzok notification",
-                            "Charset": "UTF-8"
-                        }
-                    }
-                },
+                "to": [
+                    {"email": to_email}
+                ],
+                "subject": subject,
+                "htmlContent": html,
+                "textContent": text or "Tikzok notification"
+            }
+
+            response = requests.post(
+                EmailService.BASE_URL,
+                json=payload,
+                headers=headers
             )
 
+            if response.status_code >= 300:
+                print("Brevo error:", response.text)
+
         except Exception as e:
-            print("SES email error:", e)
+            print("Brevo email error:", e)
 
     # ---------------------------
     # Payment success email
