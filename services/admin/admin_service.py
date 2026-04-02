@@ -47,19 +47,35 @@ class AdminService:
 
         return None
 
-    @staticmethod
-    def _history_items():
-        items = HistoryService.get_all_admin() or []
+# ---------------------------
+# Convert DB -> dict
+# ---------------------------
+@staticmethod
+def _history_items():
 
-        for i in items:
-            i["_sort_date"] = AdminService._parse_date(i.get("date"))
+    records = HistoryService.get_all() or []
 
-        items.sort(
-            key=lambda x: x["_sort_date"] or datetime.min,
-            reverse=True
-        )
+    items = []
 
-        return items
+    for t in records:
+        items.append({
+            "user_id": t.user_id,
+            "phone": t.phone,
+            "amount": float(t.amount or 0),
+            "date": t.created_at.strftime("%d/%m/%Y • %H:%M") if t.created_at else None,
+            "country": t.country_iso,
+        })
+
+    # tri
+    for i in items:
+        i["_sort_date"] = AdminService._parse_date(i.get("date"))
+
+    items.sort(
+        key=lambda x: x["_sort_date"] or datetime.min,
+        reverse=True
+    )
+
+    return items
 
     @staticmethod
     def _users_map():
@@ -212,7 +228,7 @@ class AdminService:
     @staticmethod
     def get_user_full_detail(user_id):
 
-        history = HistoryService.get_all_admin()
+        history = HistoryService.get_all()
         users = UserService._load()
         cards = OrderService.get_saved_cards()
 

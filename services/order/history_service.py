@@ -33,19 +33,16 @@ class HistoryService:
     def count(user_id):
         return len(HistoryService.get_by_user(user_id))
 
-    # ---------------------------
-    # Admin (all history)
-    # ---------------------------
-    @staticmethod
-    def get_all():
+# ---------------------------
+# Admin (all history)
+# ---------------------------
+@staticmethod
+def get_all(limit=1000):
 
-        db = SessionLocal()
-
-        try:
-            return (
-                db.query(Transaction)
-                .order_by(Transaction.id.desc())
-                .all()
-            )
-        finally:
-            db.close()
+    with SessionLocal() as db:
+        return (
+            db.query(Transaction)
+            .order_by(Transaction.id.desc())
+            .limit(limit)
+            .all()
+        )
