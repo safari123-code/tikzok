@@ -52,7 +52,7 @@ def admin_required(view_func):
 # ---------------------------
 def _shared_context() -> dict:
     return {
-        "history_count": HistoryService.count(),
+        "history_count": HistoryService.count_all(),
     }
 
 
