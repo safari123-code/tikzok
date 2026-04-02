@@ -68,4 +68,15 @@
 
 <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 
+<script>
+  // 🔥 empêche retour vers OTP
+  window.history.replaceState(null, "", window.location.href);
+
+  window.addEventListener("pageshow", function (event) {
+    if (event.persisted) {
+      window.location.href = "/";
+    }
+  });
+</script>
+
 {% endblock %}

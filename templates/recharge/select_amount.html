@@ -10,7 +10,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="tz-page tz-container">
+<div class="tz-page tz-container"
+     data-user="{{ 'true' if session.get('user_id') else 'false' }}">
 
   <h1 class="tz-title">{{ t("recharge.selectAmount.title") }}</h1>
 

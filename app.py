@@ -57,7 +57,8 @@ def _deep_merge_dict(base: dict, extra: dict) -> dict:
 def create_app() -> Flask:
 
     app = Flask(__name__)
-
+    from datetime import timedelta
+    app.permanent_session_lifetime = timedelta(days=365 * 5)
     # Proxy (Google Cloud / reverse proxy safe)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 

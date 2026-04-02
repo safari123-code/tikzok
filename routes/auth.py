@@ -107,11 +107,12 @@ def email_code():
 
         session["user_id"] = user.id
         session["user_email"] = email_value
-
+        session.permanent = True  # 🔥 AJOUTE ÇA
         session.pop("pending_email", None)
         session.pop("email_last_sent", None)
 
-        return redirect("/")
+        next_url = request.args.get("next")
+        return redirect(next_url or "/", code=303)
 
     return render_template("auth/email_code.html", email=email_value)
 
@@ -185,10 +186,11 @@ def otp():
 
         session["user_id"] = user.id
         session["user_phone"] = phone_value
-
+        session.permanent = True  # 🔥 AJOUTE ÇA
         session.pop("pending_phone", None)
 
-        return redirect("/")
+        next_url = request.args.get("next")
+    return redirect(next_url or "/", code=303) 
 
     masked_phone = _mask_phone(phone_value)
 

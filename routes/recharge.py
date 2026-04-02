@@ -443,6 +443,10 @@ def select_amount_get():
 
 @recharge_bp.post("/select-amount")
 def select_amount_post():
+
+        # 🔒 LOGIN CHECK (AJOUT)
+    if not session.get("user_id"):
+        return redirect(url_for("auth.login", next=request.path))
     phone = session.get("recharge_phone")
 
     if not phone:

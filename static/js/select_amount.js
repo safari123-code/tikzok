@@ -341,5 +341,18 @@
   scheduleQuote(initialAmount);
   scrollToDetails();
   applyForfaitStateFromInputs();
+// ---------------------------
+// Auth check
+// ---------------------------
+form.addEventListener("submit", function (e) {
+
+  const isLogged = document.querySelector(".tz-page")?.dataset.user === "true";
+
+  if (!isLogged) {
+    e.preventDefault();
+    window.location.href = "/auth/login";
+  }
+
+});
 
 })();
