@@ -47,35 +47,36 @@ class AdminService:
 
         return None
 
-# ---------------------------
-# Convert DB -> dict
-# ---------------------------
-@staticmethod
-def _history_items():
+class AdminService:
 
-    records = HistoryService.get_all() or []
+    # ---------------------------
+    # Convert DB -> dict
+    # ---------------------------
+    @staticmethod
+    def _history_items():
 
-    items = []
+        records = HistoryService.get_all() or []
 
-    for t in records:
-        items.append({
-            "user_id": t.user_id,
-            "phone": t.phone,
-            "amount": float(t.amount or 0),
-            "date": t.created_at.strftime("%d/%m/%Y • %H:%M") if t.created_at else None,
-            "country": t.country_iso,
-        })
+        items = []
 
-    # tri
-    for i in items:
-        i["_sort_date"] = AdminService._parse_date(i.get("date"))
+        for t in records:
+            items.append({
+                "user_id": t.user_id,
+                "phone": t.phone,
+                "amount": float(t.amount or 0),
+                "date": t.created_at.strftime("%d/%m/%Y • %H:%M") if t.created_at else None,
+                "country": t.country_iso,
+            })
 
-    items.sort(
-        key=lambda x: x["_sort_date"] or datetime.min,
-        reverse=True
-    )
+        for i in items:
+            i["_sort_date"] = AdminService._parse_date(i.get("date"))
 
-    return items
+        items.sort(
+            key=lambda x: x["_sort_date"] or datetime.min,
+            reverse=True
+        )
+
+        return items
 
     @staticmethod
     def _users_map():
