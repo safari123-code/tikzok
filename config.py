@@ -15,13 +15,13 @@ except Exception:
 # ---------------------------
 
 ENV = os.getenv("ENV", "production")
-IS_PROD = True  # 🔥 forcé en production
+IS_PROD = ENV == "production"
 
 # ---------------------------
 # Flask
 # ---------------------------
 
-SECRET_KEY = os.getenv("SECRET_KEY") or os.urandom(32)
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
@@ -34,14 +34,14 @@ SESSION_COOKIE_SAMESITE = "Lax"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # ---------------------------
-# Reloadly API (LIVE ONLY)
+# Reloadly API (SAFE MODE)
 # ---------------------------
 
 RELOADLY_CLIENT_ID = os.getenv("RELOADLY_CLIENT_ID", "")
 RELOADLY_CLIENT_SECRET = os.getenv("RELOADLY_CLIENT_SECRET", "")
 
-# 🔥 FORCÉ LIVE
-RELOADLY_ENV = "LIVE"
+# ⚡ dynamique (safe)
+RELOADLY_ENV = "LIVE" if IS_PROD else "SANDBOX"
 RELOADLY_BASE_URL = "https://topups.reloadly.com"
 RELOADLY_AUTH_URL = "https://auth.reloadly.com/oauth/token"
 
@@ -55,9 +55,11 @@ TELNYX_SMS_FROM = os.getenv("TELNYX_SMS_FROM", "")
 # ---------------------------
 # Brevo (Email)
 # ---------------------------
+
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BREVO_FROM_EMAIL = os.getenv("BREVO_FROM_EMAIL")
 BREVO_FROM_NAME = os.getenv("BREVO_FROM_NAME", "tikzok")
+
 # ---------------------------
 # Stripe
 # ---------------------------
@@ -66,7 +68,8 @@ STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY", "")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
-STRIPE_MODE = "live"
+# ⚡ dynamique (safe)
+STRIPE_MODE = "live" if IS_PROD else "test"
 
 # ---------------------------
 # Payment settings
@@ -107,9 +110,9 @@ APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
 MAX_CONTENT_LENGTH = 2 * 1024 * 1024
 
 # ---------------------------
-# Debug
+# Debug (SAFE)
 # ---------------------------
 
-print("🔥 ENV: LIVE ONLY")
-print("🔗 RELOADLY:", RELOADLY_BASE_URL)
-print("💳 STRIPE MODE: LIVE")
+if not IS_PROD:
+    print("🔗 RELOADLY:", RELOADLY_BASE_URL)
+    print("💳 STRIPE MODE:", STRIPE_MODE)

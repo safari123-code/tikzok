@@ -24,6 +24,11 @@ class EmailService:
     @staticmethod
     def send_email(to_email: str, subject: str, html: str, text: str = ""):
 
+        # 🔒 sécurité: éviter crash si config absente
+        if not EmailService.API_KEY or not EmailService.FROM_EMAIL:
+            print("⚠️ Email skipped: missing Brevo config")
+            return False
+
         try:
             headers = {
                 "accept": "application/json",
@@ -47,14 +52,19 @@ class EmailService:
             response = requests.post(
                 EmailService.BASE_URL,
                 json=payload,
-                headers=headers
+                headers=headers,
+                timeout=10  # ⚡ éviter blocage
             )
 
             if response.status_code >= 300:
-                print("Brevo error:", response.text)
+                print("❌ Brevo error:", response.text)
+                return False
+
+            return True
 
         except Exception as e:
-            print("Brevo email error:", e)
+            print("❌ Brevo email error:", e)
+            return False
 
     # ---------------------------
     # Payment success email
@@ -73,8 +83,7 @@ class EmailService:
 
         subject = f"Recharge confirmée - {reference}"
 
-        html = f"""
-<!DOCTYPE html>
+        html = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -205,7 +214,7 @@ Besoin d'aide ? Contactez support@tikzok.com
 </html>
 """
 
-        EmailService.send_email(
+        return EmailService.send_email(
             to_email=email,
             subject=subject,
             html=html
