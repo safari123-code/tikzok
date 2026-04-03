@@ -1718,3 +1718,8 @@ transition:all .15s ease;
 #rowReceived.is-reset {
   transform: scale(1);
 }
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  visibility: hidden !important;
+}

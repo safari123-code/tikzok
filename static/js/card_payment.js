@@ -20,31 +20,65 @@ const nameEl = document.getElementById("cardName");
 // ---------------------------
 const stripe = Stripe(window.STRIPE_PUBLIC_KEY);
 
-const elements = stripe.elements();
+const elements = stripe.elements({
+  locale: "fr"
+});
 
 const style = {
-base: {
-fontSize: "16px",
-color: "#1a1a1a",
-"::placeholder": {
-color: "#aab7c4"
-}
-}
+  base: {
+    fontSize: "16px",
+    color: "#1a1a1a",
+    "::placeholder": {
+      color: "#aab7c4"
+    }
+  }
 };
 
-const cardNumber = elements.create("cardNumber", { style });
+// 🔒 Anti-Link + clean UI
+const cardNumber = elements.create("cardNumber", {
+  style: style,
+  disableLink: true
+});
+
 const cardExpiry = elements.create("cardExpiry", { style });
 const cardCvc = elements.create("cardCvc", { style });
 
 cardNumber.mount("#card-number");
 cardExpiry.mount("#card-expiry");
 cardCvc.mount("#card-cvc");
+// ---------------------------
+// UX AUTO FOCUS (FINAL FIX)
+// ---------------------------
 
+// Nom → Numéro
+nameEl?.addEventListener("input", () => {
+  if (nameEl.value.trim().length >= 3) {
+    cardNumber.focus();
+  }
+});
+
+// Numéro → Expiration
+cardNumber.on("change", (event) => {
+  if (event.complete) {
+    setTimeout(() => {
+      cardExpiry.focus();
+    }, 150);
+  }
+});
+
+// Expiration → CVC
+cardExpiry.on("change", (event) => {
+  if (event.complete) {
+    setTimeout(() => {
+      cardCvc.focus();
+    }, 150);
+  }
+});
 // ---------------------------
 // Save card toggle
 // ---------------------------
 saveToggle?.addEventListener("change", () => {
-saveInput.value = saveToggle.checked ? "1" : "0";
+  saveInput.value = saveToggle.checked ? "1" : "0";
 });
 
 // ---------------------------
@@ -52,10 +86,10 @@ saveInput.value = saveToggle.checked ? "1" : "0";
 // ---------------------------
 function resetButton() {
 
-payBtn.classList.remove("is-loading");
+  payBtn.classList.remove("is-loading");
 
-if (btnLoader) btnLoader.style.display = "none";
-if (payBtnText) payBtnText.style.opacity = "1";
+  if (btnLoader) btnLoader.style.display = "none";
+  if (payBtnText) payBtnText.style.opacity = "1";
 
 }
 
@@ -66,81 +100,83 @@ let lock = false;
 
 form.addEventListener("submit", async (e) => {
 
-e.preventDefault();
+  e.preventDefault();
 
-if (lock) return;
+  if (lock) return;
 
-lock = true;
+  lock = true;
 
-payBtn.classList.add("is-loading");
+  payBtn.classList.add("is-loading");
 
-if (btnLoader) btnLoader.style.display = "inline-block";
-if (payBtnText) payBtnText.style.opacity = ".92";
+  if (btnLoader) btnLoader.style.display = "inline-block";
+  if (payBtnText) payBtnText.style.opacity = ".92";
 
-try {
+  try {
 
-  const res = await fetch("/payment/card", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
+    const res = await fetch("/payment/card", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error("Server error");
     }
-  });
 
-  if (!res.ok) {
-    throw new Error("Server error");
-  }
+    const data = await res.json();
 
-  const data = await res.json();
+    if (!data.client_secret) {
 
-  if (!data.client_secret) {
+      tzToast?.("Payment error");
 
-    tzToast?.("Payment error");
+      lock = false;
+      resetButton();
+      return;
 
-    lock = false;
-    resetButton();
-    return;
+    }
 
-  }
-
-  const result = await stripe.confirmCardPayment(
-    data.client_secret,
-    {
-      payment_method: {
-        card: cardNumber,
-        billing_details: {
-          name: nameEl?.value || ""
+    const result = await stripe.confirmCardPayment(
+      data.client_secret,
+      {
+        payment_method: {
+          card: cardNumber,
+          billing_details: {
+            name: nameEl?.value || ""
+          }
         }
       }
+    );
+
+    if (result.error) {
+
+      tzToast?.(result.error.message);
+
+      lock = false;
+      resetButton();
+
+      return;
+
     }
-  );
 
-  if (result.error) {
+    if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
 
-    tzToast?.(result.error.message);
+      window.location.href =
+        "/payment/success?payment_intent=" +
+        result.paymentIntent.id;
+
+    }
+
+  } catch (err) {
+
+    console.error("Stripe error:", err);
+
+    tzToast?.("Payment failed");
 
     lock = false;
     resetButton();
 
-    return;
-
   }
-
-  if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
-
-    window.location.href = "/payment/success?payment_intent=" + result.paymentIntent.id;
-
-  }
-
-} catch (err) {
-
-  console.error("Stripe error:", err);
-
-  tzToast?.("Payment failed");
-
-  lock = false;
-  resetButton();
-
-}
 
 });
 

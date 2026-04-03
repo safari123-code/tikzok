@@ -98,6 +98,10 @@ def _build_checkout_metadata(idem_key: str) -> Dict[str, str]:
     if not isinstance(forfait, dict):
         forfait = {}
 
+    operator = session.get("recharge_operator") or {}
+    if not isinstance(operator, dict):
+        operator = {}
+
     return {
         "payment_idempotency_key": idem_key,
         "recharge_phone": _safe_str(ctx["phone"]),
@@ -109,9 +113,10 @@ def _build_checkout_metadata(idem_key: str) -> Dict[str, str]:
         "user_id": _safe_str(session.get("user_id")),
         "user_email": _safe_str(session.get("user_email") or session.get("pending_email")),
         "forfait_id": _safe_str(forfait.get("id")),
-        "operator_id": _safe_str((session.get("recharge_operator") or {}).get("id")),
+        "operator_id": _safe_str(operator.get("id")),
+        "operator_name": _safe_str(operator.get("name")),
+        "operator_logo": _safe_str(operator.get("logo_url")),
     }
-
 
 def _store_payment_success_payload(payload: Dict[str, Any]) -> None:
     session["payment_success_payload"] = payload
@@ -419,6 +424,9 @@ def stripe_webhook_post():
     country_iso = _safe_str(metadata.get("country_iso")).upper()
     forfait_id_raw = _safe_str(metadata.get("forfait_id"))
     operator_id_raw = _safe_str(metadata.get("operator_id"))
+    operator_name = _safe_str(metadata.get("operator_name"))
+    operator_logo = _safe_str(metadata.get("operator_logo"))
+
     user_email = _safe_str(metadata.get("user_email"))
     user_id = _safe_str(metadata.get("user_id"))
 
@@ -480,12 +488,18 @@ def stripe_webhook_post():
 
         IdempotencyService.store_result(idem_key, payload_obj)
 
+        # ---------------------------
+        # EMAIL (CORRIGÉ PRO)
+        # ---------------------------
         if user_email and payload_obj.get("status") == "SUCCESS":
             try:
                 EmailService.send_payment_success(
                     email=user_email,
                     payload=payload_obj,
                     phone=phone,
+                    country_name=country_iso,
+                    operator_name=operator_name,
+                    operator_logo=operator_logo,
                 )
             except Exception as email_error:
                 print("❌ Email error:", email_error)
@@ -495,10 +509,7 @@ def stripe_webhook_post():
 
         IdempotencyService.store_result(
             idem_key,
-            {
-                "status": "FAILED",
-                "reason": "recharge_error",
-            },
+            {"status": "FAILED", "reason": "recharge_error"},
         )
 
         return jsonify({"ok": True}), 200
@@ -508,10 +519,7 @@ def stripe_webhook_post():
 
         IdempotencyService.store_result(
             idem_key,
-            {
-                "status": "FAILED",
-                "reason": "unexpected_webhook_error",
-            },
+            {"status": "FAILED", "reason": "unexpected_webhook_error"},
         )
 
         return jsonify({"ok": True}), 200
@@ -534,22 +542,31 @@ def payment_status():
 @payment_bp.get("/success")
 def payment_success():
     payment_intent_id = _get_payment_intent_id()
+
     if payment_intent_id:
         session["last_payment_intent_id"] = payment_intent_id
         _load_payload_from_payment_intent(payment_intent_id)
 
     payload = session.get("payment_success_payload") or {}
 
+    # ---------------------------
+    # Cas 1 : pas encore de payload → affichage immédiat
+    # ---------------------------
     if not payload:
+        ctx = _get_payment_context()
+
         return render_template(
             "payment/success.html",
-            status="success",
-            amount=None,
+            status="processing",
+            amount=ctx["recharge_amount"],
             date=None,
-            order_number=None,
-            reference=None,
+            order_number="...",
+            reference="...",
         )
 
+    # ---------------------------
+    # Cas 2 : payload dispo → affichage final
+    # ---------------------------
     return render_template(
         "payment/success.html",
         status="success" if _safe_str(payload.get("status"), "SUCCESS") != "FAILED" else "failed",
@@ -580,4 +597,4 @@ def success_finish_post():
     session.pop("recharge_operator", None)
     session.pop("country_iso", None)
 
-    return redirect(url_for("history.index"))
+    return redirect(url_for("recharge.enter_number_get"))

@@ -46,15 +46,16 @@ document.addEventListener("DOMContentLoaded", () => {
     rechargeInterval = setInterval(async () => {
 
       try {
-        const res = await fetch("/recharge/status");
+        const res = await fetch("/payment/status");
         const data = await res.json();
 
-        if (data.status === "SUCCESSFUL" || data.status === "success") {
+        if (data.status === "success") {
 
-          statusText.innerText = "{{ t('payment.success.done') }}";
-          clearInterval(rechargeInterval);
-          return;
-        }
+  statusText.innerText = "{{ t('payment.success.done') }}";
+
+  clearInterval(rechargeInterval);
+  return;
+}
 
         if (data.status === "FAILED") {
 
@@ -79,7 +80,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------------------------
   // 🚀 START DIRECT
   // ---------------------------
-  forceSuccess();
+  startRechargeTracking();
+
+// affichage immédiat (UX rapide)
+if (loaderIcon) loaderIcon.style.display = "none";
+if (successIcon) successIcon.style.display = "block";
+
+if (statusText) {
+  statusText.innerText = "{{ t('payment.success.processing') }}";
+}
+
+if (successContent) {
+  successContent.style.display = "block";
+}
 
 });
 </script>
@@ -134,14 +147,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div class="tz-row">
           <div class="tz-muted">{{ t("payment.success.amountLabel") }}</div>
-          <div class="tz-strong">{{ amount }} €</div>
+          <div class="tz-strong">{{ amount or "..." }} €</div>
         </div>
 
         <div class="tz-divider"></div>
 
         <div class="tz-row">
           <div class="tz-muted">{{ t("payment.success.dateLabel") }}</div>
-          <div class="tz-strong">{{ date }}</div>
+          <div class="tz-strong">{{ date or "..." }}</div>
         </div>
 
         <div class="tz-divider"></div>
@@ -153,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="tz-strong"
                  id="orderNumberText"
                  style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-              {{ order_number }}
+              {{ order_number or "..." }}
             </div>
 
             <button type="button"
@@ -174,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="tz-strong"
                  id="referenceText"
                  style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-              {{ reference }}
+              {{ reference or "..." }}
             </div>
 
             <button type="button"

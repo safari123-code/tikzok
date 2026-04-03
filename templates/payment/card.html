@@ -26,27 +26,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!form) return;
 
-  // ---------------------------
-  // Stripe init
-  // ---------------------------
-  const stripe = Stripe(window.STRIPE_PUBLIC_KEY);
-  const elements = stripe.elements();
+// ---------------------------
+// Stripe init
+// ---------------------------
+const stripe = Stripe(window.STRIPE_PUBLIC_KEY);
 
-  const style = {
-    base: {
-      fontSize: "16px",
-      color: "#1a1a1a",
-      "::placeholder": { color: "#aab7c4" }
-    }
-  };
+const elements = stripe.elements({
+  locale: "fr"
+});
 
-  const cardNumber = elements.create("cardNumber", { style });
-  const cardExpiry = elements.create("cardExpiry", { style });
-  const cardCvc = elements.create("cardCvc", { style });
+const style = {
+  base: {
+    fontSize: "16px",
+    color: "#1a1a1a",
+    "::placeholder": { color: "#aab7c4" }
+  }
+};
 
-  cardNumber.mount("#card-number");
-  cardExpiry.mount("#card-expiry");
-  cardCvc.mount("#card-cvc");
+const cardNumber = elements.create("cardNumber", {
+  style,
+  disableLink: true
+});
+
+const cardExpiry = elements.create("cardExpiry", { style });
+const cardCvc = elements.create("cardCvc", { style });
+
+cardNumber.mount("#card-number");
+cardExpiry.mount("#card-expiry");
+cardCvc.mount("#card-cvc");
+
+// ---------------------------
+// UX AUTO FOCUS (SANS NOM)
+// ---------------------------
+
+// Numéro → Expiration
+cardNumber.on("change", (event) => {
+  if (event.complete) {
+    setTimeout(() => cardExpiry.focus(), 150);
+  }
+});
+
+// Expiration → CVC
+cardExpiry.on("change", (event) => {
+  if (event.complete) {
+    setTimeout(() => cardCvc.focus(), 150);
+  }
+});
 
   // ---------------------------
   // Save card sync
@@ -192,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <!-- ================= FORM ================= -->
 
-    <form class="tz-stack" id="cardPaymentForm" novalidate>
+    <form class="tz-stack" id="cardPaymentForm" autocomplete="off" novalidate>
 
       <input type="hidden" name="amount" value="{{ amount }}">
 
@@ -232,11 +257,14 @@ document.addEventListener("DOMContentLoaded", () => {
             </label>
 
             <input
-              class="tz-input"
-              id="cardName"
-              autocomplete="cc-name"
-              required
+             class="tz-input"
+             id="cardName"
+             name="card_name"
+             autocomplete="new-password"
+             inputmode="text"
+             required
             >
+            
           </div>
 
           <div class="tz-field">
