@@ -1,7 +1,3 @@
-# ---------------------------
-# Order Service
-# ---------------------------
-
 import uuid
 import json
 import os
@@ -37,9 +33,14 @@ class OrderService:
     # Save card (tokenized mock)
     # ---------------------------
     @staticmethod
-    def maybe_store_card_tokenized(save_card: bool, number: str, expiry: str):
+    def maybe_store_card_tokenized(
+        user_id: str,
+        save_card: bool,
+        number: str,
+        expiry: str
+    ):
 
-        if not save_card:
+        if not save_card or not user_id:
             return
 
         digits = "".join(c for c in (number or "") if c.isdigit())
@@ -52,11 +53,13 @@ class OrderService:
 
         card = {
             "id": uuid.uuid4().hex,
+            "user_id": user_id,  # ✅ sécurisé
             "token": token,
             "last4": last4,
             "expiry": expiry,
             "brand": "card",
             "created_at": datetime.utcnow().isoformat(),
+            "is_default": False,
         }
 
         OrderService._store_card(card)
@@ -79,14 +82,20 @@ class OrderService:
     # Get saved cards
     # ---------------------------
     @staticmethod
-    def get_saved_cards():
+    def get_saved_cards(user_id: str = None):
 
         if not os.path.exists(CARDS_FILE):
             return []
 
         try:
             with open(CARDS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                cards = json.load(f)
+
+            if user_id:
+                return [c for c in cards if c.get("user_id") == user_id]
+
+            return cards
+
         except Exception:
             return []
 
@@ -98,7 +107,10 @@ class OrderService:
 
         cards = OrderService.get_saved_cards()
 
-        cards = [c for c in cards if c["id"] != card_id]
+        cards = [
+            c for c in cards
+            if not (c["id"] == card_id and c.get("user_id") == user_id)
+        ]
 
         with open(CARDS_FILE, "w", encoding="utf-8") as f:
             json.dump(cards, f, indent=2)
@@ -109,7 +121,7 @@ class OrderService:
     @staticmethod
     def get_saved_card(user_id, card_id):
 
-        cards = OrderService.get_saved_cards()
+        cards = OrderService.get_saved_cards(user_id)
 
         for c in cards:
             if c["id"] == card_id:
@@ -126,7 +138,8 @@ class OrderService:
         cards = OrderService.get_saved_cards()
 
         for c in cards:
-            c["is_default"] = c["id"] == card_id
+            if c.get("user_id") == user_id:
+                c["is_default"] = c["id"] == card_id
 
         with open(CARDS_FILE, "w", encoding="utf-8") as f:
             json.dump(cards, f, indent=2)

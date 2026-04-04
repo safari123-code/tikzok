@@ -8,7 +8,7 @@ import uuid
 from typing import Any, Dict, Optional
 
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
-
+from services.account.card_service import CardService
 from services.communication.email_service import EmailService
 from services.core.idempotency_service import IdempotencyService
 from services.order.order_service import OrderService
@@ -280,24 +280,29 @@ def _resolve_payment_status() -> Dict[str, Any]:
 # ---------------------------
 # Payment method
 # ---------------------------
-@payment_bp.get("/method")
-def method_get():
+@payment_bp.get("/card")
+def card_get():
+
+    if session.get("payment_selected_method") != "card":
+        return redirect(url_for("payment.method_get"))
+
     ctx = _get_payment_context()
 
     if not ctx["recharge_amount"]:
         return redirect(url_for("recharge.select_amount_get"))
 
+    _get_or_create_payment_idempotency_key()
+
     return render_template(
-        "payment/method.html",
+        "payment/card.html",
         phone=ctx["phone"],
         amount=ctx["recharge_amount"],
-        points_available=ctx["points_available"],
-        use_points=ctx["use_points"],
-        points_used=ctx["points_used"],
         final_amount=ctx["final_amount"],
-        selected_method=session.get("payment_selected_method", "card"),
+        points_used=ctx["points_used"],
         save_card=session.get("payment_save_card", True),
-        is_forfait_minutes=False,
+
+        # ✅ AJOUT ICI
+        cards=OrderService.get_saved_cards(session.get("user_id")),
     )
 
 
@@ -317,30 +322,6 @@ def method_post():
 
     return redirect(url_for("payment.card_get"))
 
-
-# ---------------------------
-# Card page
-# ---------------------------
-@payment_bp.get("/card")
-def card_get():
-    if session.get("payment_selected_method") != "card":
-        return redirect(url_for("payment.method_get"))
-
-    ctx = _get_payment_context()
-
-    if not ctx["recharge_amount"]:
-        return redirect(url_for("recharge.select_amount_get"))
-
-    _get_or_create_payment_idempotency_key()
-
-    return render_template(
-        "payment/card.html",
-        phone=ctx["phone"],
-        amount=ctx["recharge_amount"],
-        final_amount=ctx["final_amount"],
-        points_used=ctx["points_used"],
-        save_card=session.get("payment_save_card", True),
-    )
 
 
 # ---------------------------

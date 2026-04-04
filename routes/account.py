@@ -26,7 +26,9 @@ def about():
 @account_bp.route("/payment-methods")
 def payment_methods():
 
-    cards = OrderService.get_saved_cards()
+    user_id = session.get("user_id")
+
+    cards = OrderService.get_saved_cards(user_id)
 
     return render_template(
         "account/card_storage.html",

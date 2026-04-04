@@ -242,7 +242,39 @@ cardExpiry.on("change", (event) => {
         </div>
       </div>
     </section>
+<!-- ================= SAVED CARDS ================= -->
 
+{% if cards %}
+<section class="tz-card tz-card--soft">
+
+  <div class="tz-stack">
+
+    {% for card in cards %}
+    <div class="tz-saved-card"
+         data-last4="{{ card.last4 }}"
+         data-expiry="{{ card.expiry }}"
+         data-brand="{{ card.brand }}"
+         data-name="{{ card.name or '' }}">
+
+      <div class="tz-row">
+        <div>💳 {{ card.brand|default("Card") }} •••• {{ card.last4 }}</div>
+        <div>{{ card.expiry }}</div>
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+
+</section>
+{% endif %}
+
+<div id="selectedCardBox" class="tz-card tz-card--soft" style="display:none;">
+  <div class="tz-row">
+    <div id="selectedCardText"></div>
+    <button type="button" id="changeCardBtn">Changer</button>
+  </div>
+</div>
     <!-- ================= FORM ================= -->
 
     <form class="tz-stack" id="cardPaymentForm" autocomplete="off" novalidate>

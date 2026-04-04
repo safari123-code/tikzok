@@ -486,7 +486,7 @@ def select_amount_post():
     session["recharge_amount"] = str(amount)
     session["recharge_total_amount"] = str(breakdown["total"])
 
-    return redirect(url_for("payment.method_get"))
+    return redirect(url_for("payment.card_get"))
 
 
 # ---------------------------

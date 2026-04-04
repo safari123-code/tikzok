@@ -100,6 +100,47 @@ cardExpiry.on("change", (event) => {
     }, 150);
   }
 });
+
+// ---------------------------
+// Saved card UX
+// ---------------------------
+
+const selectedCardBox = document.getElementById("selectedCardBox");
+const selectedCardText = document.getElementById("selectedCardText");
+const changeCardBtn = document.getElementById("changeCardBtn");
+
+const savedCards = document.querySelectorAll(".tz-saved-card");
+
+savedCards.forEach(card => {
+
+  card.addEventListener("click", () => {
+
+    const last4 = card.dataset.last4;
+    const brand = card.dataset.brand || "Carte";
+    const name = card.dataset.name || "";
+
+    selectedCardBox.style.display = "block";
+    selectedCardText.innerHTML = `💳 ${brand} •••• ${last4}`;
+
+    if (nameEl) nameEl.value = name;
+
+    document.getElementById("card-number").parentElement.style.display = "none";
+    document.getElementById("card-expiry").parentElement.style.display = "none";
+
+    setTimeout(() => cardCvc.focus(), 200);
+
+  });
+
+});
+
+changeCardBtn?.addEventListener("click", () => {
+
+  selectedCardBox.style.display = "none";
+
+  document.getElementById("card-number").parentElement.style.display = "block";
+  document.getElementById("card-expiry").parentElement.style.display = "block";
+
+});
 // ---------------------------
 // Save card toggle
 // ---------------------------
