@@ -95,7 +95,7 @@ def _get_payment_reference() -> str:
 
 
 # ---------------------------
-# Select Forfait (FINAL FIXED)
+# Select Forfait (FINAL PRODUCTION SAFE)
 # ---------------------------
 
 @recharge_bp.get("/select-forfait")
@@ -117,22 +117,33 @@ def select_forfait_get():
 
         if detected:
             operator = {
-                "id": detected.get("id") or detected.get("operatorId"),
+                "id": (
+                    detected.get("id")
+                    or detected.get("operatorId")
+                    or detected.get("operator_id")
+                    or (detected.get("raw") or {}).get("operatorId")
+                    or (detected.get("raw") or {}).get("id")
+                ),
                 "name": detected.get("name"),
                 "logo_url": detected.get("logo_url"),
-                "country_iso": detected.get("country_iso") or country_iso,
-
-                # 🔥 FIX IMPORTANT (toujours bool propre)
+                "country_iso": (
+                    detected.get("country_iso")
+                    or detected.get("countryCode")
+                    or detected.get("country_code")
+                    or country_iso
+                ),
                 "supports_data": bool(
-                    detected.get("data")
-                    or detected.get("supportsData")
+                    detected.get("supports_data")
+                    or detected.get("supports_bundles")
                     or detected.get("bundle")
-                )
+                    or detected.get("data")
+                ),
+                "raw": detected.get("raw") or detected,
             }
 
             session["recharge_operator"] = operator
 
-    logger.info("📡 OPERATOR: %s", operator)
+    logger.info("📡 OPERATOR FINAL: %s", operator)
 
     # ---------------------------
     # Get plans
@@ -143,25 +154,23 @@ def select_forfait_get():
         operator.get("id")
         or operator.get("operatorId")
         or operator.get("operator_id")
+        or (operator.get("raw") or {}).get("operatorId")
+        or (operator.get("raw") or {}).get("id")
     )
+
+    logger.info("OPERATOR ID FINAL USED IN ROUTE: %s", operator_id)
 
     if operator_id:
         plans = get_reloadly_plans(operator)
 
+    logger.info("PLANS DEBUG: %s", plans[:3] if plans else [])
     logger.info("📦 DATA PLANS COUNT: %s", len(plans))
-    logger.info("🔥 SUPPORTS DATA: %s", operator.get("supports_data"))
 
     # ---------------------------
-    # 🔥 UX SMART (IMPORTANT)
+    # Fallback UX
     # ---------------------------
-
-    # CAS 1 → pas de data DU TOUT
-    if operator and operator.get("supports_data") is False:
-        return redirect(url_for("recharge.select_amount_get"))
-
-    # CAS 2 → data possible mais API vide
     if not plans:
-        logger.warning("⚠️ No plans but operator supports data")
+        logger.warning("⚠️ No plans → fallback airtime")
 
         return render_template(
             "recharge/select_forfait.html",
@@ -224,15 +233,38 @@ def lookup_number():
     if not result:
         return jsonify({"valid": False})
 
-    session["recharge_operator"] = result
+    session["recharge_operator"] = {
+        "id": (
+            result.get("id")
+            or result.get("operatorId")
+            or result.get("operator_id")
+            or (result.get("raw") or {}).get("operatorId")
+            or (result.get("raw") or {}).get("id")
+        ),
+        "name": result.get("name"),
+        "logo_url": result.get("logo_url"),
+        "country_iso": (
+            result.get("country_iso")
+            or result.get("countryCode")
+            or result.get("country_code")
+            or country
+        ),
+        "supports_data": bool(
+            result.get("supports_data")
+            or result.get("supports_bundles")
+            or result.get("bundle")
+            or result.get("data")
+        ),
+        "raw": result.get("raw") or result,
+    }
 
     return jsonify(
         {
             "valid": True,
-            "operatorId": result.get("id"),
-            "operatorName": result.get("name"),
-            "logoUrl": result.get("logo_url"),
-            "countryCode": result.get("country_iso"),
+            "operatorId": session["recharge_operator"].get("id"),
+            "operatorName": session["recharge_operator"].get("name"),
+            "logoUrl": session["recharge_operator"].get("logo_url"),
+            "countryCode": session["recharge_operator"].get("country_iso"),
         }
     )
 

@@ -152,7 +152,7 @@ def _parse_plan_description(desc: str) -> Tuple[str, str]:
 
 
 # ---------------------------
-# Get Data Plans (FINAL PRODUCTION)
+# Get Data Plans (FINAL WORKING)
 # ---------------------------
 
 def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
@@ -161,13 +161,15 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
         return []
 
     # ---------------------------
-    # FIX operator_id (CRITICAL)
+    # Operator ID
     # ---------------------------
     operator_id = (
         operator.get("id")
         or operator.get("operatorId")
         or operator.get("operator_id")
     )
+
+    logger.info("OPERATOR ID USED: %s", operator_id)
 
     if not operator_id:
         return []
@@ -176,14 +178,14 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
     headers = _build_headers(token)
 
     # ---------------------------
-    # Endpoints priority
+    # 🔥 VRAIS endpoints
     # ---------------------------
     urls = [
         f"{RELOADLY_V1_URL}/operators/{int(operator_id)}/data-plans",
         f"{RELOADLY_BASE_URL}/operators/{int(operator_id)}/bundles",
     ]
 
-    data: Any = []
+    data: List[Dict[str, Any]] = []
 
     for url in urls:
         try:
@@ -194,18 +196,17 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
                 timeout=20,
             )
 
-            logger.info("Reloadly plans fetch", extra={
-                "url": url,
-                "status": res.status_code
-            })
+            logger.info("FETCH URL: %s STATUS: %s", url, res.status_code)
 
             if res.status_code != 200:
                 continue
 
             payload = _safe_json(res)
 
+            logger.info("RAW RESPONSE: %s", payload)
+
             # ---------------------------
-            # 🔥 FIX STRUCTURE (CRITICAL)
+            # FIX STRUCTURE
             # ---------------------------
             if isinstance(payload, dict):
                 payload = payload.get("content") or payload.get("data") or []
@@ -214,37 +215,38 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
                 data = payload
                 break
 
-            if isinstance(payload, list):
-                data = payload
-
         except Exception as exc:
             logger.exception("Reloadly plans exception: %s", exc)
 
-    if not isinstance(data, list):
+    if not data:
+        logger.warning("⚠️ No plans → fallback airtime")
         return []
 
+    # ---------------------------
+    # Build plans
+    # ---------------------------
     plans: List[Dict[str, Any]] = []
 
     for plan in data:
         try:
             amount = float(plan.get("amount") or 0)
         except Exception:
-            amount = 0.0
+            continue
 
-        # ---------------------------
-        # Skip invalid plans
-        # ---------------------------
         if amount <= 0:
+            continue
+
+        plan_id = (
+            plan.get("productId")  # bundles
+            or plan.get("id")
+        )
+
+        if not plan_id:
             continue
 
         description = plan.get("description") or plan.get("name") or ""
 
         gb, validity = _parse_plan_description(description)
-
-        # ---------------------------
-        # UX display name
-        # ---------------------------
-        display_name = description
 
         if gb and validity:
             display_name = f"{gb} • {validity}"
@@ -252,24 +254,21 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
             display_name = gb
         elif validity:
             display_name = validity
+        else:
+            display_name = description
 
-        plans.append(
-            {
-                "id": plan.get("id"),
-                "name": plan.get("name") or description,
-                "amount": round(amount, 2),
-                "currency": plan.get("currencyCode") or "EUR",
-                "type": "DATA",
-                "description": description,
-                "gb": gb,
-                "validity": validity,
-                "display_name": display_name,
-            }
-        )
+        plans.append({
+            "id": int(plan_id),
+            "name": plan.get("name") or description,
+            "amount": round(amount, 2),
+            "currency": plan.get("currencyCode") or "EUR",
+            "type": "DATA",
+            "description": description,
+            "gb": gb,
+            "validity": validity,
+            "display_name": display_name,
+        })
 
-    # ---------------------------
-    # Sort UX
-    # ---------------------------
     plans.sort(key=lambda item: item["amount"])
 
     logger.info("Reloadly plans parsed", extra={"count": len(plans)})
@@ -408,11 +407,11 @@ def send_data_topup(
     token = get_reloadly_token()
     headers = _build_headers(token)
 
-    url = f"{RELOADLY_V1_URL}/topups-async"
+    url = f"{RELOADLY_V1_URL}/topups"
 
     payload = {
         "operatorId": operator_data["operator_id"],
-        "planId": normalized_plan_id,
+        "productId": normalized_plan_id,
         "customIdentifier": str(custom_identifier or "").strip() or None,
         "recipientPhone": {
             "countryCode": operator_data["country_code"],
