@@ -46,6 +46,32 @@ const cardCvc = elements.create("cardCvc", { style });
 cardNumber.mount("#card-number");
 cardExpiry.mount("#card-expiry");
 cardCvc.mount("#card-cvc");
+
+const brandLogo = document.getElementById("cardBrandLogo");
+
+const BRAND_ICONS = {
+  visa: "https://img.icons8.com/color/48/visa.png",
+  mastercard: "https://img.icons8.com/color/48/mastercard-logo.png",
+  amex: "https://img.icons8.com/color/48/amex.png",
+  discover: "https://img.icons8.com/color/48/discover.png",
+  diners: "https://img.icons8.com/color/48/diners-club.png",
+  jcb: "https://img.icons8.com/color/48/jcb.png",
+  unionpay: "https://img.icons8.com/color/48/unionpay.png"
+};
+
+cardNumber.on("change", (event) => {
+
+  const brand = event.brand;
+
+  if (!brand || !BRAND_ICONS[brand]) {
+    brandLogo.style.display = "none";
+    return;
+  }
+
+  brandLogo.src = BRAND_ICONS[brand];
+  brandLogo.style.display = "block";
+
+});
 // ---------------------------
 // UX AUTO FOCUS (FINAL FIX)
 // ---------------------------

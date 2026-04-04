@@ -1723,3 +1723,39 @@ input::-webkit-credentials-auto-fill-button {
   display: none !important;
   visibility: hidden !important;
 }
+/* ---------------------------
+Card wrapper FIX (no break UI)
+--------------------------- */
+
+.tz-card-input-wrapper {
+  position: relative;
+}
+
+/* Stripe garde son style */
+.tz-card-input-wrapper .tz-input {
+  width: 100%;
+}
+
+/* Logo */
+.tz-card-logo {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: auto;
+  display: none;
+  pointer-events: none;
+}
+.tz-card-input-wrapper {
+  position: relative;
+}
+
+#cardBrandLogo {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  display: none;
+}

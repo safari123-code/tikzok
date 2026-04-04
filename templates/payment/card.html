@@ -54,7 +54,35 @@ const cardCvc = elements.create("cardCvc", { style });
 cardNumber.mount("#card-number");
 cardExpiry.mount("#card-expiry");
 cardCvc.mount("#card-cvc");
+// ---------------------------
+// Card brand detection
+// ---------------------------
 
+const brandLogo = document.getElementById("cardBrandLogo");
+
+const BRAND_ICONS = {
+  visa: "https://img.icons8.com/color/48/visa.png",
+  mastercard: "https://img.icons8.com/color/48/mastercard-logo.png",
+  amex: "https://img.icons8.com/color/48/amex.png",
+  discover: "https://img.icons8.com/color/48/discover.png",
+  diners: "https://img.icons8.com/color/48/diners-club.png",
+  jcb: "https://img.icons8.com/color/48/jcb.png",
+  unionpay: "https://img.icons8.com/color/48/unionpay.png"
+};
+
+cardNumber.on("change", (event) => {
+
+  const brand = event.brand;
+
+  if (!brand || !BRAND_ICONS[brand]) {
+    brandLogo.style.display = "none";
+    return;
+  }
+
+  brandLogo.src = BRAND_ICONS[brand];
+  brandLogo.style.display = "block";
+
+});
 // ---------------------------
 // UX AUTO FOCUS (SANS NOM)
 // ---------------------------
@@ -271,7 +299,14 @@ cardExpiry.on("change", (event) => {
             <label class="tz-label">
               {{ t("payment.card.number") }}
             </label>
-            <div id="card-number" class="tz-input"></div>
+            <div class="tz-card-input-wrapper">
+
+              <div id="card-number" class="tz-input"></div>
+
+             <!-- LOGO -->
+                <img id="cardBrandLogo" alt="card" />
+
+                </div>
           </div>
 
           <div class="tz-row tz-row--gap">
