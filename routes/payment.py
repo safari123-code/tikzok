@@ -452,6 +452,10 @@ def stripe_webhook_post():
     if event_type != "payment_intent.succeeded":
         return jsonify({"ok": True}), 200
 
+    stripe_status = _safe_str(event_data.get("status"))
+    if stripe_status != "succeeded":
+        return jsonify({"ok": True}), 200
+
     metadata = event_data.get("metadata", {}) or {}
     idem_key = _safe_str(metadata.get("payment_idempotency_key"))
 
@@ -459,7 +463,7 @@ def stripe_webhook_post():
         return jsonify({"ok": False, "error": "missing_idempotency_key"}), 400
 
     # ---------------------------
-    # Idempotency check
+    # Idempotency check (APRES validation Stripe)
     # ---------------------------
     existing = IdempotencyService.get_result(idem_key)
     if existing:
@@ -469,8 +473,11 @@ def stripe_webhook_post():
     # Hard deduplication (transaction level)
     # ---------------------------
     payment_reference = _safe_str(event_data.get("id"))
+    session["last_payment_intent_id"] = payment_reference
 
-    existing_tx = get_existing_transaction(payment_reference=payment_reference)
+    existing_tx = get_existing_transaction(
+    payment_reference=payment_reference
+)
     if existing_tx:
         logger.warning("⚠️ Duplicate recharge prevented (existing transaction)")
         return jsonify({"ok": True, "deduplicated": True}), 200
@@ -546,6 +553,7 @@ def stripe_webhook_post():
             payload_obj["reason"] = "recharge_failed"
 
         IdempotencyService.store_result(idem_key, payload_obj)
+        _store_payment_success_payload(payload_obj)
 
         # ---------------------------
         # Email success
