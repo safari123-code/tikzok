@@ -283,12 +283,16 @@ def _resolve_payment_status() -> Dict[str, Any]:
 @payment_bp.get("/card")
 def card_get():
 
+    # 🔒 FORCE PASSAGE PAR METHOD
     if session.get("payment_selected_method") != "card":
         return redirect(url_for("payment.method_get"))
 
     ctx = _get_payment_context()
 
-    if not ctx["recharge_amount"]:
+    # 🔥 FIX CRITIQUE (session check)
+    amount = ctx.get("recharge_amount")
+
+    if amount is None:
         return redirect(url_for("recharge.select_amount_get"))
 
     _get_or_create_payment_idempotency_key()
@@ -296,15 +300,39 @@ def card_get():
     return render_template(
         "payment/card.html",
         phone=ctx["phone"],
-        amount=ctx["recharge_amount"],
+        amount=amount,
         final_amount=ctx["final_amount"],
         points_used=ctx["points_used"],
         save_card=session.get("payment_save_card", True),
-
-        # ✅ AJOUT ICI
         cards=OrderService.get_saved_cards(session.get("user_id")),
     )
 
+# ---------------------------
+# Payment method
+# ---------------------------
+@payment_bp.get("/method")
+def method_get():
+
+    ctx = _get_payment_context()
+
+    # 🔥 FIX CRITIQUE (NE PAS UTILISER not)
+    amount = ctx.get("recharge_amount")
+
+    if amount is None:
+        return redirect(url_for("recharge.select_amount_get"))
+
+    return render_template(
+        "payment/method.html",
+        phone=ctx["phone"],
+        amount=amount,
+        points_available=ctx["points_available"],
+        use_points=ctx["use_points"],
+        points_used=ctx["points_used"],
+        final_amount=ctx["final_amount"],
+        selected_method=session.get("payment_selected_method", "card"),
+        save_card=session.get("payment_save_card", True),
+        is_forfait_minutes=False,
+    )
 
 @payment_bp.post("/method")
 def method_post():

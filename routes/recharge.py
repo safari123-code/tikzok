@@ -512,13 +512,18 @@ def select_amount_post():
     breakdown = FeesService.breakdown(amount, currency)
 
     # ---------------------------
-    # Session
+    # Session (FIX FINAL)
     # ---------------------------
 
-    session["recharge_amount"] = str(amount)
-    session["recharge_total_amount"] = str(breakdown["total"])
+    session["recharge_amount"] = float(amount)
+    session["recharge_total_amount"] = float(breakdown["total"])
+    session.modified = True  # 🔥 IMPORTANT FLASK
 
-    return redirect(url_for("payment.card_get"))
+    # ---------------------------
+    # FLOW → METHOD (OBLIGATOIRE)
+    # ---------------------------
+
+    return redirect(url_for("payment.method_get"))
 
 
 # ---------------------------
