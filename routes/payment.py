@@ -98,12 +98,12 @@ def _build_checkout_metadata(idem_key: str) -> Dict[str, str]:
     ctx = _get_payment_context()
 
     # ---------------------------
-    # PROTECTION IDEMPOTENCY (FINAL SAFE)
+    # PROTECTION IDEMPOTENCY
     # ---------------------------
     current_amount = float(ctx["final_amount"])
     last_amount = session.get("last_payment_amount")
 
-    # 🔥 FIX CRITIQUE → toujours définir AVANT
+    # IMPORTANT : définir avant
     forfait = session.get("recharge_forfait") or {}
     if not isinstance(forfait, dict):
         forfait = {}
@@ -112,16 +112,11 @@ def _build_checkout_metadata(idem_key: str) -> Dict[str, str]:
     if not isinstance(operator, dict):
         operator = {}
 
-    # 🔄 reset si montant change
     if last_amount and float(last_amount) != current_amount:
         session.pop("payment_idempotency_key", None)
 
-    # 🔁 toujours mettre à jour
     session["last_payment_amount"] = current_amount
 
-    # ---------------------------
-    # Metadata Stripe
-    # ---------------------------
     return {
         "payment_idempotency_key": idem_key,
         "recharge_phone": _safe_str(ctx["phone"]),
@@ -475,9 +470,7 @@ def stripe_webhook_post():
     payment_reference = _safe_str(event_data.get("id"))
     session["last_payment_intent_id"] = payment_reference
 
-    existing_tx = get_existing_transaction(
-    payment_reference=payment_reference
-)
+    existing_tx = get_existing_transaction(payment_reference)
     if existing_tx:
         logger.warning("⚠️ Duplicate recharge prevented (existing transaction)")
         return jsonify({"ok": True, "deduplicated": True}), 200
