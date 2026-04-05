@@ -96,17 +96,15 @@ def _get_payment_intent_id() -> str:
 
 def _build_checkout_metadata(idem_key: str) -> Dict[str, str]:
     ctx = _get_payment_context()
-# ---------------------------
-# PROTECTION IDEMPOTENCY (ANTI BUG STRIPE)
-# ---------------------------
+
+    # ---------------------------
+    # PROTECTION IDEMPOTENCY (FINAL SAFE)
+    # ---------------------------
     current_amount = float(ctx["final_amount"])
     last_amount = session.get("last_payment_amount")
 
-    if last_amount and float(last_amount) != current_amount:
-       session.pop("payment_idempotency_key", None)
-
-       session["last_payment_amount"] = current_amount
-       forfait = session.get("recharge_forfait") or {}
+    # 🔥 FIX CRITIQUE → toujours définir AVANT
+    forfait = session.get("recharge_forfait") or {}
     if not isinstance(forfait, dict):
         forfait = {}
 
@@ -114,6 +112,16 @@ def _build_checkout_metadata(idem_key: str) -> Dict[str, str]:
     if not isinstance(operator, dict):
         operator = {}
 
+    # 🔄 reset si montant change
+    if last_amount and float(last_amount) != current_amount:
+        session.pop("payment_idempotency_key", None)
+
+    # 🔁 toujours mettre à jour
+    session["last_payment_amount"] = current_amount
+
+    # ---------------------------
+    # Metadata Stripe
+    # ---------------------------
     return {
         "payment_idempotency_key": idem_key,
         "recharge_phone": _safe_str(ctx["phone"]),
@@ -123,12 +131,15 @@ def _build_checkout_metadata(idem_key: str) -> Dict[str, str]:
         "points_used": f"{ctx['points_used']:.2f}",
         "country_iso": _safe_str(session.get("country_iso")).upper(),
         "user_id": _safe_str(session.get("user_id")),
-        "user_email": _safe_str(session.get("user_email") or session.get("pending_email")),
+        "user_email": _safe_str(
+            session.get("user_email") or session.get("pending_email")
+        ),
         "forfait_id": _safe_str(forfait.get("id")),
         "operator_id": _safe_str(operator.get("id")),
         "operator_name": _safe_str(operator.get("name")),
         "operator_logo": _safe_str(operator.get("logo_url")),
     }
+
 
 def _store_payment_success_payload(payload: Dict[str, Any]) -> None:
     session["payment_success_payload"] = payload
