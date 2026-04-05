@@ -1,10 +1,12 @@
 # ---------------------------
 # routes/payment.py
 # ---------------------------
-from datetime import datetime
-from __future__ import annotations
 
+from __future__ import annotations  # ✅ TOUJOURS EN PREMIER
+
+from datetime import datetime
 import uuid
+import logging
 from typing import Any, Dict, Optional
 
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
@@ -23,9 +25,6 @@ from services.reloadly.transaction_service import (
 )
 
 payment_bp = Blueprint("payment", __name__, url_prefix="/payment")
-
-
-import logging
 
 logger = logging.getLogger(__name__)
 
