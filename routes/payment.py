@@ -96,8 +96,17 @@ def _get_payment_intent_id() -> str:
 
 def _build_checkout_metadata(idem_key: str) -> Dict[str, str]:
     ctx = _get_payment_context()
+# ---------------------------
+# PROTECTION IDEMPOTENCY (ANTI BUG STRIPE)
+# ---------------------------
+    current_amount = float(ctx["final_amount"])
+    last_amount = session.get("last_payment_amount")
 
-    forfait = session.get("recharge_forfait") or {}
+    if last_amount and float(last_amount) != current_amount:
+       session.pop("payment_idempotency_key", None)
+
+       session["last_payment_amount"] = current_amount
+       forfait = session.get("recharge_forfait") or {}
     if not isinstance(forfait, dict):
         forfait = {}
 

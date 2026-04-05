@@ -517,6 +517,15 @@ def select_amount_post():
 
     session["recharge_amount"] = float(amount)
     session["recharge_total_amount"] = float(breakdown["total"])
+
+    # ---------------------------
+    # 🔥 FIX CRITIQUE IDEMPOTENCY (STRIPE)
+    # ---------------------------
+
+    session.pop("payment_idempotency_key", None)
+    session.pop("last_payment_amount", None)
+    session.pop("payment_hash", None)
+
     session.modified = True
 
     # ---------------------------
@@ -524,7 +533,6 @@ def select_amount_post():
     # ---------------------------
 
     return redirect(url_for("payment.method_get"))
-
 
 # ---------------------------
 # Execute Topup (DISABLED)
