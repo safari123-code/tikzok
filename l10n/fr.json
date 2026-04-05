@@ -124,74 +124,101 @@
     }
   },
 
-  "payment": {
-    "method": {
-      "title": "Méthode de paiement",
-      "points": "Points",
-      "saveCard": "Enregistrer la carte",
-      "chooseMethod": "Choisir une méthode",
-      "cardPayment": "Carte bancaire",
-      "cardPaymentDesc": "Paiement sécurisé",
-      "applePay": "Apple Pay",
-      "applePayDesc": "Bientôt disponible",
-      "googlePay": "Google Pay",
-      "googlePayDesc": "Bientôt disponible",
-      "paypal": "PayPal",
-      "paypalDesc": "Bientôt disponible",
-      "wallet": "Wallet",
-      "walletDesc": "Bientôt disponible",
-      "methodSelected": "Méthode sélectionnée",
-      "methodUnavailable": "Méthode indisponible",
-      "paypalComingSoon": "Bientôt disponible",
-      "pay": "Payer {amount}",
-      "pointsAvailable": "Points disponibles : {points}",
-      "setDefault": "Définir comme moyen de paiement",
-
-      "payment.method.title": "Méthode de paiement",
-      "payment.points.title": "Points",
-      "payment.points.available": "Points disponibles : {points}",
-      "payment.saveCard": "Enregistrer la carte",
-      "payment.chooseMethod": "Choisir une méthode de paiement",
-      "payment.methods.card.title": "Carte bancaire",
-      "payment.methods.card.desc": "Payer avec votre carte Visa ou Mastercard",
-      "payment.methodSelected": "Méthode sélectionnée",
-      "payment.pay": "Payer {amount} €"
-    },
-
-    "points": {
-      "title": "Points",
-      "available": "Points disponibles : {points}"
-    },
-
-    "methods": {
-      "card": {
-        "title": "Carte bancaire",
-        "desc": "Payer avec votre carte Visa ou Mastercard"
-      }
-    },
-
+"payment": {
+  "method": {
+    "title": "Méthode de paiement",
+    "points": "Points",
     "saveCard": "Enregistrer la carte",
-    "chooseMethod": "Choisir une méthode de paiement",
+    "chooseMethod": "Choisir une méthode",
+    "cardPayment": "Carte bancaire",
+    "cardPaymentDesc": "Paiement sécurisé",
+    "applePay": "Apple Pay",
+    "applePayDesc": "Bientôt disponible",
+    "googlePay": "Google Pay",
+    "googlePayDesc": "Bientôt disponible",
+    "paypal": "PayPal",
+    "paypalDesc": "Bientôt disponible",
+    "wallet": "Wallet",
+    "walletDesc": "Bientôt disponible",
     "methodSelected": "Méthode sélectionnée",
-    "pay": "Payer {amount} €",
+    "methodUnavailable": "Méthode indisponible",
+    "paypalComingSoon": "Bientôt disponible",
+    "pay": "Payer {amount}",
+    "pointsAvailable": "Points disponibles : {points}",
+    "setDefault": "Définir comme moyen de paiement",
 
-    "card": {
-      "title": "Paiement carte",
-      "securityNotice": "Vos informations de paiement sont protégées.",
-      "invalidForm": "Formulaire invalide.",
-      "genericError": "Une erreur est survenue.",
-      "holderName": "Nom du titulaire",
-      "number": "Numéro de carte",
-      "expiry": "MM/AA",
-      "cvv": "CVV",
-      "payAmount": "Payer {amount} €",
-      "scanTooltip": "Scanner la carte",
-      "invalidCardHolderName": "Nom invalide",
+    "payment.method.title": "Méthode de paiement",
+    "payment.points.title": "Points",
+    "payment.points.available": "Points disponibles : {points}",
+    "payment.saveCard": "Enregistrer la carte",
+    "payment.chooseMethod": "Choisir une méthode de paiement",
+    "payment.methods.card.title": "Carte bancaire",
+    "payment.methods.card.desc": "Payer avec votre carte Visa ou Mastercard",
+    "payment.methodSelected": "Méthode sélectionnée",
+    "payment.pay": "Payer {amount} €",
+
+    "legacy_errors": {
+      "emptyName": "Veuillez entrer le nom sur la carte",
+      "invalidName": "Nom invalide",
       "invalidCardNumber": "Numéro de carte invalide",
-      "invalidExpiry": "Date invalide",
-      "invalidCvv": "CVV invalide",
-      "formError": "Veuillez corriger les erreurs"
-    },
+      "incompleteCardNumber": "Numéro de carte incomplet",
+      "invalidExpiry": "Date d'expiration invalide",
+      "invalidCvc": "Code de sécurité invalide",
+      "paymentFailed": "Paiement échoué",
+      "paymentNotCompleted": "Paiement non complété",
+      "serverError": "Erreur serveur, veuillez réessayer"
+    }
+  },
+
+  "points": {
+    "title": "Points",
+    "available": "Points disponibles : {points}"
+  },
+
+  "methods": {
+    "card": {
+      "title": "Carte bancaire",
+      "desc": "Payer avec votre carte Visa ou Mastercard"
+    }
+  },
+
+  "saveCard": "Enregistrer la carte",
+  "chooseMethod": "Choisir une méthode de paiement",
+  "methodSelected": "Méthode sélectionnée",
+  "pay": "Payer {amount} €",
+
+  "card": {
+    "title": "Paiement carte",
+    "securityNotice": "Vos informations de paiement sont protégées.",
+    "invalidForm": "Formulaire invalide.",
+    "genericError": "Une erreur est survenue.",
+
+    "holderName": "Nom du titulaire",
+    "number": "Numéro de carte",
+    "expiry": "MM/AA",
+    "cvv": "CVV",
+    "payAmount": "Payer {amount} €",
+    "scanTooltip": "Scanner la carte",
+
+    "invalidCardHolderName": "Nom invalide",
+    "invalidCardNumber": "Numéro de carte invalide",
+    "invalidExpiry": "Date invalide",
+    "invalidCvv": "CVV invalide",
+    "formError": "Veuillez corriger les erreurs",
+
+    "errors": {
+      "emptyName": "Veuillez entrer le nom sur la carte",
+      "invalidName": "Nom invalide",
+      "invalidCardNumber": "Numéro de carte invalide",
+      "incompleteCardNumber": "Numéro de carte incomplet",
+      "invalidExpiry": "Date d'expiration invalide",
+      "invalidCvc": "Code de sécurité invalide",
+      "paymentFailed": "Paiement échoué",
+      "paymentNotCompleted": "Paiement non complété",
+      "serverError": "Erreur serveur, veuillez réessayer"
+    }
+  },
+
 
     "success": {
       "title": "Paiement réussi",
