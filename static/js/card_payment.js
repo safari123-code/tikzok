@@ -152,12 +152,10 @@ saveToggle?.addEventListener("change", () => {
 // Helpers
 // ---------------------------
 function resetButton() {
-
   payBtn.classList.remove("is-loading");
 
   if (btnLoader) btnLoader.style.display = "none";
   if (payBtnText) payBtnText.style.opacity = "1";
-
 }
 
 // ---------------------------
@@ -170,7 +168,6 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   if (lock) return;
-
   lock = true;
 
   payBtn.classList.add("is-loading");
@@ -187,22 +184,47 @@ form.addEventListener("submit", async (e) => {
       }
     });
 
-    if (!res.ok) {
-      throw new Error("Server error");
-    }
+    // 🔥 DEBUG RESPONSE RAW
+    const raw = await res.text();
+    console.log("RAW RESPONSE:", raw);
 
-    const data = await res.json();
-
-    if (!data.client_secret) {
-
-      tzToast?.("Payment error");
-
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      console.error("JSON parse error:", e);
+      tzToast?.("Server error");
       lock = false;
       resetButton();
       return;
-
     }
 
+    console.log("DATA:", data);
+
+    if (!res.ok) {
+      tzToast?.("Server error");
+      lock = false;
+      resetButton();
+      return;
+    }
+
+    // 🔥 Already processed (idempotency)
+    if (data.already_processed) {
+      window.location.href = "/payment/success";
+      return;
+    }
+
+    // 🔥 Missing client secret
+    if (!data.client_secret) {
+      tzToast?.("Payment initialization failed");
+      lock = false;
+      resetButton();
+      return;
+    }
+
+    // ---------------------------
+    // Stripe confirm
+    // ---------------------------
     const result = await stripe.confirmCardPayment(
       data.client_secret,
       {
@@ -216,29 +238,40 @@ form.addEventListener("submit", async (e) => {
     );
 
     if (result.error) {
+      console.error("Stripe error:", result.error);
 
-      tzToast?.(result.error.message);
+      tzToast?.(
+        result.error.message || "Paiement refusé"
+      );
+
+      cardNumber.focus();
 
       lock = false;
       resetButton();
-
       return;
-
     }
 
-    if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
-
+    // ---------------------------
+    // SUCCESS
+    // ---------------------------
+    if (result.paymentIntent?.status === "succeeded") {
       window.location.href =
         "/payment/success?payment_intent=" +
         result.paymentIntent.id;
-
+      return;
     }
+
+    // fallback
+    tzToast?.("Payment failed");
+
+    lock = false;
+    resetButton();
 
   } catch (err) {
 
-    console.error("Stripe error:", err);
+    console.error("Stripe fatal error:", err);
 
-    tzToast?.("Payment failed");
+    tzToast?.("Network error");
 
     lock = false;
     resetButton();
@@ -246,5 +279,4 @@ form.addEventListener("submit", async (e) => {
   }
 
 });
-
 })();
