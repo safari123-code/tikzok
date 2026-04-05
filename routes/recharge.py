@@ -67,11 +67,9 @@ def _session_operator():
 
 def _get_payment_reference() -> str:
     """
-    Remplace dès que possible par ta vraie source Stripe :
-    - payment_intent_id
-    - checkout_session_id
-    - internal order id
+    Source UNIQUE de référence paiement (ANTI DOUBLE RECHARGE)
     """
+
     candidates = [
         session.get("stripe_payment_intent_id"),
         session.get("payment_intent_id"),
@@ -84,13 +82,14 @@ def _get_payment_reference() -> str:
         if value:
             return str(value)
 
-    # fallback compat
-    phone = session.get("recharge_phone") or ""
-    amount = session.get("recharge_amount") or ""
-    forfait = session.get("recharge_forfait") or {}
-    forfait_id = forfait.get("id") if isinstance(forfait, dict) else ""
+    # ---------------------------
+    # 🔒 FALLBACK SAFE (UUID)
+    # ---------------------------
+    import uuid
 
-    fallback = f"fallback:{phone}:{amount}:{forfait_id}"
+    fallback = f"fallback:{uuid.uuid4()}"
+    session["recharge_payment_reference"] = fallback  # 🔥 IMPORTANT
+
     return fallback
 
 
@@ -476,9 +475,10 @@ def select_amount_get():
 @recharge_bp.post("/select-amount")
 def select_amount_post():
 
-        # 🔒 LOGIN CHECK (AJOUT)
+    # 🔒 LOGIN CHECK
     if not session.get("user_id"):
         return redirect(url_for("auth.login", next=request.path))
+
     phone = session.get("recharge_phone")
 
     if not phone:
@@ -492,7 +492,7 @@ def select_amount_post():
         return redirect(url_for("recharge.select_amount_get"))
 
     # ---------------------------
-    # Feature: Amount validation (FINAL)
+    # Feature: Amount validation
     # ---------------------------
 
     MIN_AMOUNT = 2.0
@@ -512,65 +512,35 @@ def select_amount_post():
     breakdown = FeesService.breakdown(amount, currency)
 
     # ---------------------------
-    # Session (FIX FINAL)
+    # Session
     # ---------------------------
 
     session["recharge_amount"] = float(amount)
     session["recharge_total_amount"] = float(breakdown["total"])
-    session.modified = True  # 🔥 IMPORTANT FLASK
+    session.modified = True
 
     # ---------------------------
-    # FLOW → METHOD (OBLIGATOIRE)
+    # FLOW → METHOD
     # ---------------------------
 
     return redirect(url_for("payment.method_get"))
 
 
 # ---------------------------
-# Execute Topup
+# Execute Topup (DISABLED)
 # ---------------------------
 
 @recharge_bp.post("/execute")
 def execute_recharge():
-    phone = session.get("recharge_phone")
-    amount = session.get("recharge_amount")
-    country_iso = session.get("country_iso")
-    forfait = session.get("recharge_forfait")
-    operator = _session_operator()
-
-    if not phone or not country_iso:
-        return jsonify({"ok": False, "message": "Session invalide"}), 400
-
-    try:
-        payment_reference = _get_payment_reference()
-
-        result = process_recharge(
-            payment_reference=payment_reference,
-            phone=phone,
-            country_iso=country_iso,
-            amount=float(amount) if amount and not forfait else None,
-            plan_id=int(forfait.get("id")) if forfait else None,
-            operator_id=operator.get("id") if operator else None,
-            user_id=session.get("user_id"),
-            metadata={"flow": "recharge_route"},
-        )
-
-        session["last_transaction_id"] = result.transaction_id
-        session["last_transaction_reference"] = result.custom_identifier
-
-        return jsonify(
-            {
-                "ok": result.ok or result.status == "PROCESSING",
-                "transaction_id": result.transaction_id,
-                "status": result.status,
-                "reference": result.custom_identifier,
-                "duplicate": result.is_duplicate,
-            }
-        )
-
-    except TransactionServiceError as exc:
-        logger.exception("Topup transaction error: %s", exc)
-        return jsonify({"ok": False, "message": str(exc)}), 500
+    """
+    ⚠️ Désactivé volontairement
+    Toute recharge doit passer UNIQUEMENT par Stripe webhook
+    pour éviter les doubles transactions.
+    """
+    return jsonify({
+        "ok": False,
+        "error": "disabled"
+    }), 403
 
 
 # ---------------------------
@@ -600,14 +570,12 @@ def recharge_status():
 
         session["last_transaction_id"] = result.transaction_id
 
-        return jsonify(
-            {
-                "ok": True,
-                "status": result.status,
-                "transaction_id": result.transaction_id,
-                "reference": result.custom_identifier,
-            }
-        )
+        return jsonify({
+            "ok": True,
+            "status": result.status,
+            "transaction_id": result.transaction_id,
+            "reference": result.custom_identifier,
+        })
 
     except Exception as exc:
         logger.exception("Recharge status error: %s", exc)

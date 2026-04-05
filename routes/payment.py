@@ -1,7 +1,7 @@
 # ---------------------------
 # routes/payment.py
 # ---------------------------
-
+from datetime import datetime
 from __future__ import annotations
 
 import uuid
@@ -24,6 +24,10 @@ from services.reloadly.transaction_service import (
 
 payment_bp = Blueprint("payment", __name__, url_prefix="/payment")
 
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------
 # Helpers
@@ -130,6 +134,12 @@ def _store_payment_success_payload(payload: Dict[str, Any]) -> None:
         session["last_transaction_reference"] = reference
 
 
+# ---------------------------
+# Feature: Success Payload FIX FINAL
+# ---------------------------
+
+from datetime import datetime
+
 def _build_success_payload(
     *,
     base_amount: float,
@@ -138,18 +148,26 @@ def _build_success_payload(
     transaction_id: Optional[int],
     transaction_reference: str,
 ) -> Dict[str, Any]:
+
     payload_obj = OrderService.build_success_payload(amount=base_amount)
 
-    payload_obj.update(
-        {
-            "status": "SUCCESS",
-            "charged_amount": charged_amount,
-            "points_used": points_used,
-            "transaction_id": transaction_id,
-            "reference": transaction_id,
-            "transaction_reference": transaction_reference,
-        }
-    )
+    payload_obj.update({
+        "status": "SUCCESS",
+
+        # 🔥 IMPORTANT POUR UI
+        "amount": charged_amount,
+
+        # 🔥 DATA
+        "charged_amount": charged_amount,
+        "points_used": points_used,
+        "transaction_id": transaction_id,
+        "transaction_reference": transaction_reference,
+        "reference": transaction_reference,
+
+        # 🔥 AJOUTS UI (corrige ton écran)
+        "date": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
+        "order_number": transaction_id,
+    })
 
     return payload_obj
 
@@ -421,8 +439,21 @@ def stripe_webhook_post():
     if not idem_key:
         return jsonify({"ok": False, "error": "missing_idempotency_key"}), 400
 
+    # ---------------------------
+    # Idempotency check
+    # ---------------------------
     existing = IdempotencyService.get_result(idem_key)
     if existing:
+        return jsonify({"ok": True, "deduplicated": True}), 200
+
+    # ---------------------------
+    # Hard deduplication (transaction level)
+    # ---------------------------
+    payment_reference = _safe_str(event_data.get("id"))
+
+    existing_tx = get_existing_transaction(payment_reference=payment_reference)
+    if existing_tx:
+        logger.warning("⚠️ Duplicate recharge prevented (existing transaction)")
         return jsonify({"ok": True, "deduplicated": True}), 200
 
     stripe_status = _safe_str(event_data.get("status"))
@@ -469,7 +500,7 @@ def stripe_webhook_post():
 
     try:
         result = process_recharge(
-            payment_reference=_safe_str(event_data.get("id")),
+            payment_reference=payment_reference,
             phone=phone,
             country_iso=country_iso,
             amount=None if forfait_id_raw else round(base_amount, 2),
@@ -478,7 +509,7 @@ def stripe_webhook_post():
             user_id=user_id or session.get("user_id"),
             metadata={
                 "flow": "stripe_webhook",
-                "payment_intent_id": _safe_str(event_data.get("id")),
+                "payment_intent_id": payment_reference,
                 "payment_idempotency_key": idem_key,
             },
         )
@@ -498,7 +529,7 @@ def stripe_webhook_post():
         IdempotencyService.store_result(idem_key, payload_obj)
 
         # ---------------------------
-        # EMAIL (CORRIGÉ PRO)
+        # Email success
         # ---------------------------
         if user_email and payload_obj.get("status") == "SUCCESS":
             try:
@@ -582,7 +613,7 @@ def payment_success():
         amount=payload.get("amount"),
         date=payload.get("date"),
         order_number=payload.get("order_number"),
-        reference=payload.get("transaction_id") or payload.get("reference"),
+        reference=payload.get("transaction_reference") or payload.get("reference"),
     )
 
 

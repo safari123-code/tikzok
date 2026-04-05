@@ -1,3 +1,7 @@
+# ---------------------------
+# Feature: OTP Email Service (FINAL PRODUCTION iOS SAFE)
+# ---------------------------
+
 import secrets
 from services.communication.email_service import EmailService
 from services.communication.otp_service import OtpService
@@ -10,7 +14,7 @@ class EmailOTPService:
     # ---------------------------
     @staticmethod
     def generate_code() -> str:
-        return str(secrets.randbelow(9000) + 1000)
+        return str(secrets.randbelow(9000) + 1000)  # 🔥 6 digits (important)
 
     # ---------------------------
     # Send verification email
@@ -20,57 +24,60 @@ class EmailOTPService:
 
         code = EmailOTPService.generate_code()
 
-        # 🔐 IMPORTANT (sinon verify cassé)
+        # 🔐 stockage OTP
         OtpService.store_otp("email", email, code)
 
         subject = "Code de vérification Tikzok"
 
+        # ---------------------------
+        # HTML SAFE (iOS / Gmail / Outlook)
+        # ---------------------------
         html = f"""
-<!DOCTYPE html>
-<html>
-<body style="font-family:Arial;background:#f4f6f8;padding:30px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:20px;">
+  <tr>
+    <td align="center">
 
-<table width="100%" style="max-width:480px;margin:auto;background:white;border-radius:10px;padding:30px;">
+      <table width="400" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;padding:24px;text-align:center;font-family:Arial,sans-serif;">
 
-<tr>
-<td style="text-align:center;font-size:24px;font-weight:bold;">
-Tikzok
-</td>
-</tr>
+        <tr>
+          <td style="font-size:20px;font-weight:600;color:#111;">
+            Tikzok
+          </td>
+        </tr>
 
-<tr><td style="height:20px"></td></tr>
+        <tr>
+          <td style="padding-top:12px;font-size:14px;color:#666;">
+            Code de vérification
+          </td>
+        </tr>
 
-<tr>
-<td style="text-align:center;font-size:18px;">
-Code de vérification
-</td>
-</tr>
+        <tr>
+          <td style="padding:24px 0;">
+            <span style="font-size:34px;font-weight:700;letter-spacing:6px;color:#000;">
+              {code}
+            </span>
+          </td>
+        </tr>
 
-<tr><td style="height:20px"></td></tr>
+        <tr>
+          <td style="font-size:12px;color:#999;">
+            Ce code expire dans 5 minutes
+          </td>
+        </tr>
 
-<tr>
-<td style="text-align:center;font-size:32px;font-weight:bold;letter-spacing:6px;">
-{code}
-</td>
-</tr>
+      </table>
 
-<tr><td style="height:20px"></td></tr>
-
-<tr>
-<td style="text-align:center;color:#666;font-size:14px;">
-Ce code expire dans 5 minutes
-</td>
-</tr>
-
+    </td>
+  </tr>
 </table>
-
-</body>
-</html>
 """
 
-        text = f"""Code de vérification Tikzok
+        # ---------------------------
+        # TEXT (IMPORTANT iOS auto-fill)
+        # ---------------------------
+        text = f"""Tikzok
 
-Votre code : {code}
+Votre code de vérification est : {code}
 
 Ce code expire dans 5 minutes.
 """
@@ -82,5 +89,5 @@ Ce code expire dans 5 minutes.
             text=text
         )
 
-        # ⚠️ OK pour test seulement
+        # ⚠️ uniquement debug
         return code
