@@ -1759,3 +1759,12 @@ Card wrapper FIX (no break UI)
   width: 28px;
   display: none;
 }
+
+/* ---------------------------
+# Disable zoom / app feel
+# --------------------------- */
+
+html, body {
+    touch-action: manipulation;
+    overscroll-behavior: none;
+}

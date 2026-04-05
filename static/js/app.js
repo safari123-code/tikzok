@@ -2,7 +2,18 @@ function tzCloseAbout(){
   document.body.style.opacity = "0";
   setTimeout(()=> history.back(),150);
 }
+// ---------------------------
+// Disable double tap zoom
+// ---------------------------
+let lastTouchEnd = 0;
 
+document.addEventListener('touchend', function (event) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
 // ---------------------------
 // Gmail suggestion button (FINAL)
 // ---------------------------
