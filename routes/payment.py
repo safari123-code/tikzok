@@ -103,15 +103,16 @@ def _build_checkout_metadata(idem_key: str) -> Dict[str, str]:
     current_amount = float(ctx["final_amount"])
     last_amount = session.get("last_payment_amount")
 
-    # IMPORTANT : définir avant
-    forfait = session.get("recharge_forfait") or {}
+    # IMPORTANT : définir AVANT tout
+    forfait = session.get("recharge_forfait")
     if not isinstance(forfait, dict):
         forfait = {}
 
-    operator = session.get("recharge_operator") or {}
+    operator = session.get("recharge_operator")
     if not isinstance(operator, dict):
         operator = {}
 
+    # reset si montant change
     if last_amount and float(last_amount) != current_amount:
         session.pop("payment_idempotency_key", None)
 
