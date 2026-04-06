@@ -156,6 +156,7 @@
     "payment.methods.card.desc": "Payer avec votre carte Visa ou Mastercard",
     "payment.methodSelected": "Méthode sélectionnée",
     "payment.pay": "Payer {amount} €",
+    "currency.eur": "€",
 
     "legacy_errors": {
       "emptyName": "Veuillez entrer le nom sur la carte",

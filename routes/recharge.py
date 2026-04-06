@@ -91,12 +91,18 @@ def _get_payment_reference() -> str:
     session["recharge_payment_reference"] = fallback  # 🔥 IMPORTANT
 
     return fallback
-
-
 # ---------------------------
-# Select Forfait (FINAL PRODUCTION SAFE)
+# Clear forfait
 # ---------------------------
+@recharge_bp.post("/clear-forfait")
+def clear_forfait():
+    session.pop("recharge_forfait", None)
+    return jsonify({"ok": True})
 
+
+    # ---------------------------
+    # 🔒 select-forfait
+    # ---------------------------
 @recharge_bp.get("/select-forfait")
 def select_forfait_get():
 
@@ -106,40 +112,46 @@ def select_forfait_get():
         return redirect(url_for("recharge.enter_number_get"))
 
     country_iso = detect_country_iso_from_phone(phone)
+
     operator = _session_operator()
 
     # ---------------------------
-    # Operator detection
+    # si operator sans data → trouver version DATA du même opérateur
+    # ---------------------------
+    if operator and not operator.get("supports_data"):
+
+        operators = get_reloadly_operators_by_country(country_iso)
+
+        base_name = (operator.get("name") or "").lower()
+
+        data_match = next(
+            (
+                op for op in operators
+                if op.get("supports_data")
+                and base_name.split("data")[0].strip()
+                in (op.get("name") or "").lower()
+            ),
+            None
+        )
+
+        if data_match:
+            operator = data_match
+            session["recharge_operator"] = operator
+
+    # ---------------------------
+    # aucun operator → fallback auto detect
     # ---------------------------
     if not operator:
-        detected = get_reloadly_operator_auto_detect(phone, country_iso) or {}
 
-        if detected:
-            operator = {
-                "id": (
-                    detected.get("id")
-                    or detected.get("operatorId")
-                    or detected.get("operator_id")
-                    or (detected.get("raw") or {}).get("operatorId")
-                    or (detected.get("raw") or {}).get("id")
-                ),
-                "name": detected.get("name"),
-                "logo_url": detected.get("logo_url"),
-                "country_iso": (
-                    detected.get("country_iso")
-                    or detected.get("countryCode")
-                    or detected.get("country_code")
-                    or country_iso
-                ),
-                "supports_data": bool(
-                    detected.get("supports_data")
-                    or detected.get("supports_bundles")
-                    or detected.get("bundle")
-                    or detected.get("data")
-                ),
-                "raw": detected.get("raw") or detected,
-            }
+        operators = get_reloadly_operators_by_country(country_iso)
 
+        operators = [
+            op for op in operators
+            if op.get("supports_data")
+        ]
+
+        if operators:
+            operator = operators[0]
             session["recharge_operator"] = operator
 
     logger.info("📡 OPERATOR FINAL: %s", operator)
@@ -150,27 +162,17 @@ def select_forfait_get():
     plans = []
 
     operator_id = (
-        operator.get("id")
-        or operator.get("operatorId")
-        or operator.get("operator_id")
-        or (operator.get("raw") or {}).get("operatorId")
-        or (operator.get("raw") or {}).get("id")
+        (operator or {}).get("id")
+        or ((operator or {}).get("raw") or {}).get("operatorId")
     )
-
-    logger.info("OPERATOR ID FINAL USED IN ROUTE: %s", operator_id)
 
     if operator_id:
         plans = get_reloadly_plans(operator)
 
-    logger.info("PLANS DEBUG: %s", plans[:3] if plans else [])
-    logger.info("📦 DATA PLANS COUNT: %s", len(plans))
-
     # ---------------------------
-    # Fallback UX
+    # fallback UX
     # ---------------------------
     if not plans:
-        logger.warning("⚠️ No plans → fallback airtime")
-
         return render_template(
             "recharge/select_forfait.html",
             plans=[],
@@ -179,9 +181,6 @@ def select_forfait_get():
             no_plans=True
         )
 
-    # ---------------------------
-    # Normal flow
-    # ---------------------------
     return render_template(
         "recharge/select_forfait.html",
         plans=plans,
@@ -189,6 +188,7 @@ def select_forfait_get():
         phone=phone,
         no_plans=False
     )
+
 # ---------------------------
 # Select Forfait (POST)
 # ---------------------------
@@ -204,11 +204,22 @@ def select_forfait_post():
     if not gb or not price or not plan_id:
         return jsonify({"ok": False}), 400
 
+    # ---------------------------
+    # Save forfait
+    # ---------------------------
     session["recharge_forfait"] = {
         "id": int(plan_id),
         "gb": gb,
         "price": price,
     }
+
+    # ---------------------------
+    # 🔒 LOCK operator (IMPORTANT)
+    # ---------------------------
+    operator = session.get("recharge_operator")
+
+    if operator:
+        session["recharge_operator"] = operator
 
     return jsonify({"ok": True})
 
@@ -232,7 +243,15 @@ def lookup_number():
     if not result:
         return jsonify({"valid": False})
 
-    session["recharge_operator"] = {
+    # ---------------------------
+    # 🔥 STORE FULL OPERATOR (FIX CRITIQUE)
+    # ---------------------------
+    session["recharge_operator"] = result
+
+    # ---------------------------
+    # ensure normalized keys (SAFE)
+    # ---------------------------
+    session["recharge_operator"].update({
         "id": (
             result.get("id")
             or result.get("operatorId")
@@ -255,7 +274,7 @@ def lookup_number():
             or result.get("data")
         ),
         "raw": result.get("raw") or result,
-    }
+    })
 
     return jsonify(
         {
@@ -266,7 +285,6 @@ def lookup_number():
             "countryCode": session["recharge_operator"].get("country_iso"),
         }
     )
-
 
 # ---------------------------
 # Enter number (GET)
@@ -346,25 +364,30 @@ def select_operator_get():
 @recharge_bp.route("/select-operator", methods=["POST"])
 def select_operator_post():
     operator_id = request.form.get("operator_id")
-    operator_name = request.form.get("operator_name")
-    operator_logo = request.form.get("operator_logo")
-    country_name = request.form.get("country_name")
     country_iso = request.form.get("country_iso") or session.get("country_iso")
-    supports_data = str(request.form.get("supports_data")).lower() == "true"
 
     if not operator_id:
         return redirect(url_for("recharge.select_operator_get"))
 
-    session["recharge_operator"] = {
-        "id": int(operator_id),
-        "name": operator_name,
-        "logo_url": operator_logo,
-        "country_name": country_name,
-        "country_iso": country_iso,
-        "supports_data": supports_data,
-    }
+    # ---------------------------
+    # 🔥 GET FULL OPERATOR FROM RELOADLY
+    # ---------------------------
+    operators = get_reloadly_operators_by_country(country_iso)
 
-    if supports_data:
+    full_operator = next(
+        (op for op in operators if str(op.get("id")) == str(operator_id)),
+        None
+    )
+
+    if not full_operator:
+        return redirect(url_for("recharge.select_operator_get"))
+
+    # ---------------------------
+    # STORE FULL OPERATOR
+    # ---------------------------
+    session["recharge_operator"] = full_operator
+
+    if full_operator.get("supports_data"):
         return redirect(url_for("recharge.select_forfait_get"))
 
     return redirect(url_for("recharge.select_amount_get"))
@@ -389,8 +412,10 @@ def select_amount_get():
     # ---------------------------
     if not operator:
         operator = get_reloadly_operator_auto_detect(phone, country_iso) or {}
-        if operator:
-            session["recharge_operator"] = operator
+
+    # 🔒 LOCK operator (IMPORTANT)
+    if operator:
+        session["recharge_operator"] = operator
 
     operator_id = operator.get("id")
 
@@ -414,8 +439,10 @@ def select_amount_get():
 
     operator["currency_code"] = currency
 
-    # ✅ NOUVEAU : devise reçue (RELOADLY)
-    destination_currency = operator.get("destinationCurrencyCode")
+    destination_currency = (
+        operator.get("destinationCurrencyCode")
+        or (operator.get("raw") or {}).get("destinationCurrencyCode")
+    )
 
     try:
         amount = float(session.get("recharge_amount", 5.00))
@@ -462,8 +489,6 @@ def select_amount_get():
         total=breakdown["total"],
         currency_code=currency,
         received_display=received_display,
-
-        # ✅ AJOUT IMPORTANT
         destination_currency=destination_currency,
     )
 

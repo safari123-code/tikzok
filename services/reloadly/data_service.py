@@ -150,26 +150,19 @@ def _parse_plan_description(desc: str) -> Tuple[str, str]:
 
     return gb, validity
 
-
 # ---------------------------
-# Get Data Plans (FINAL WORKING)
+# Get Data Plans (FINAL ULTRA SAFE)
 # ---------------------------
-
 def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
 
     if not operator:
         return []
 
-    # ---------------------------
-    # Operator ID
-    # ---------------------------
     operator_id = (
         operator.get("id")
         or operator.get("operatorId")
         or operator.get("operator_id")
     )
-
-    logger.info("OPERATOR ID USED: %s", operator_id)
 
     if not operator_id:
         return []
@@ -178,14 +171,15 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
     headers = _build_headers(token)
 
     # ---------------------------
-    # 🔥 VRAIS endpoints
+    # 1. Official endpoints
     # ---------------------------
     urls = [
         f"{RELOADLY_V1_URL}/operators/{int(operator_id)}/data-plans",
         f"{RELOADLY_BASE_URL}/operators/{int(operator_id)}/bundles",
+        f"{RELOADLY_BASE_URL}/operators/{int(operator_id)}/bundles?bundleType=DATA",
     ]
 
-    data: List[Dict[str, Any]] = []
+    data = []
 
     for url in urls:
         try:
@@ -196,18 +190,11 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
                 timeout=20,
             )
 
-            logger.info("FETCH URL: %s STATUS: %s", url, res.status_code)
-
             if res.status_code != 200:
                 continue
 
             payload = _safe_json(res)
 
-            logger.info("RAW RESPONSE: %s", payload)
-
-            # ---------------------------
-            # FIX STRUCTURE
-            # ---------------------------
             if isinstance(payload, dict):
                 payload = payload.get("content") or payload.get("data") or []
 
@@ -215,63 +202,126 @@ def get_reloadly_plans(operator: Dict[str, Any] | None) -> List[Dict[str, Any]]:
                 data = payload
                 break
 
-        except Exception as exc:
-            logger.exception("Reloadly plans exception: %s", exc)
+        except Exception:
+            pass
 
-    if not data:
-        logger.warning("⚠️ No plans → fallback airtime")
-        return []
-
-    # ---------------------------
-    # Build plans
-    # ---------------------------
     plans: List[Dict[str, Any]] = []
 
-    for plan in data:
+    # ---------------------------
+    # 2. API plans
+    # ---------------------------
+    if data:
+        for plan in data:
+
+            try:
+                amount = float(plan.get("amount") or 0)
+            except Exception:
+                continue
+
+            if amount <= 0:
+                continue
+
+            description = (
+                plan.get("description")
+                or plan.get("name")
+                or ""
+            )
+
+            gb, validity = _parse_plan_description(description)
+
+            if gb and validity:
+                display_name = f"{gb} • {validity}"
+            elif gb:
+                display_name = gb
+            elif validity:
+                display_name = validity
+            else:
+                display_name = description
+
+            plans.append({
+                "id": plan.get("productId") or plan.get("id"),
+                "name": description,
+                "amount": round(amount, 2),
+                "currency": plan.get("currencyCode") or "EUR",
+                "type": "DATA",
+                "description": description,
+                "gb": gb,
+                "validity": validity,
+                "display_name": display_name,
+            })
+
+    # ---------------------------
+    # 3. fallback fixedAmounts
+    # ---------------------------
+    if not plans:
+
         try:
-            amount = float(plan.get("amount") or 0)
+            url = f"{RELOADLY_BASE_URL}/operators/{int(operator_id)}"
+            res = _request_with_token_refresh("GET", url, headers=headers)
+
+            if res.status_code == 200:
+                details = _safe_json(res) or {}
+            else:
+                details = {}
+
         except Exception:
-            continue
+            details = {}
 
-        if amount <= 0:
-            continue
+        raw1 = operator.get("raw") or {}
+        raw2 = raw1.get("raw") or {}
 
-        plan_id = (
-            plan.get("productId")  # bundles
-            or plan.get("id")
+        fixed = (
+            operator.get("fixed_amounts")
+            or raw1.get("fixedAmounts")
+            or raw2.get("fixedAmounts")
+            or details.get("fixedAmounts")
+            or []
         )
 
-        if not plan_id:
-            continue
+        descs = (
+            raw1.get("fixedAmountsDescriptions")
+            or raw2.get("fixedAmountsDescriptions")
+            or details.get("fixedAmountsDescriptions")
+            or {}
+        )
 
-        description = plan.get("description") or plan.get("name") or ""
+        for amount in fixed:
 
-        gb, validity = _parse_plan_description(description)
+            try:
+                amount = float(amount)
+            except Exception:
+                continue
 
-        if gb and validity:
-            display_name = f"{gb} • {validity}"
-        elif gb:
-            display_name = gb
-        elif validity:
-            display_name = validity
-        else:
-            display_name = description
+            description = (
+                descs.get(str(amount))
+                or descs.get(f"{amount:.2f}")
+                or ""
+            )
 
-        plans.append({
-            "id": int(plan_id),
-            "name": plan.get("name") or description,
-            "amount": round(amount, 2),
-            "currency": plan.get("currencyCode") or "EUR",
-            "type": "DATA",
-            "description": description,
-            "gb": gb,
-            "validity": validity,
-            "display_name": display_name,
-        })
+            gb, validity = _parse_plan_description(description)
 
-    plans.sort(key=lambda item: item["amount"])
+            if gb and validity:
+                display_name = f"{gb} • {validity}"
+            elif gb:
+                display_name = gb
+            elif validity:
+                display_name = validity
+            else:
+                display_name = description
 
-    logger.info("Reloadly plans parsed", extra={"count": len(plans)})
+            plans.append({
+                "id": int(amount * 1000),
+                "name": description,
+                "amount": round(amount, 2),
+                "currency": details.get("destinationCurrencyCode") or "EUR",
+                "type": "DATA",
+                "description": description,
+                "gb": gb,
+                "validity": validity,
+                "display_name": display_name,
+            })
+
+    plans.sort(key=lambda x: x["amount"])
 
     return plans
 

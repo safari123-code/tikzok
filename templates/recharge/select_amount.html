@@ -67,7 +67,9 @@
 
       <div class="tz-card__title">{{ t("recharge.selectAmount.amountLabel") }}</div>
 
-      <div class="tz-amount" id="amountDisplay">{{ "%.2f"|format(amount) }} €</div>
+      <div class="tz-amount" id="amountDisplay">
+  {{ "%.2f"|format(amount if not session.get("recharge_forfait") else amount) }} €
+</div>
 
       {% if amounts and amounts.fixedAmounts and amounts.fixedAmounts|length > 0 %}
         <div class="tz-wrap" id="fixedAmountWrap">

@@ -296,23 +296,55 @@
     scrollToDetails();
   });
 
-  removeForfaitBtn?.addEventListener("click", (e) => {
+removeForfaitBtn?.addEventListener("click", async (e) => {
 
-    e.preventDefault();
-    e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 
-    if (forfaitGb) forfaitGb.value = "";
-    if (forfaitPrice) forfaitPrice.value = "";
+  // clear backend
+  try {
+    await fetch("/recharge/clear-forfait", { method: "POST" });
+  } catch (_) {}
 
-    removeForfaitBtn.style.display = "none";
+  // clear inputs
+  if (forfaitGb) forfaitGb.value = "";
+  if (forfaitPrice) forfaitPrice.value = "";
 
-    const amount = parseFloat(amountInput?.value || "0");
+  // reset UI titre
+  if (forfaitTitle) {
+    forfaitTitle.textContent =
+      document.documentElement.dataset.choosePlanText ||
+      "Choose internet plan";
+  }
 
-    scheduleQuote(amount);
-    setAmountLocked(false);
+  // unlock amount
+  setAmountLocked(false);
 
-    tzToast?.(document.documentElement.dataset.tzRemovedText || "");
-  });
+  // reset amount -> min
+  let newAmount = minAmount || 2;
+
+  // reset range
+  if (range) {
+    range.value = newAmount;
+  }
+
+  // reset buttons
+  fixedWrap?.querySelectorAll(".tz-amt-btn")
+    .forEach(b => b.classList.remove("is-selected"));
+
+  // update UI
+  updateUI(newAmount);
+  scheduleQuote(newAmount);
+
+  // reset received
+  if (rowReceived) {
+    rowReceived.textContent = "—";
+  }
+
+  removeForfaitBtn.style.display = "none";
+
+  tzToast?.(document.documentElement.dataset.tzRemovedText || "");
+});
 
   forfaitCard?.addEventListener("click", (e) => {
 
