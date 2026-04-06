@@ -4,10 +4,10 @@
     "remove": "Remove",
     "hello": "Hello",
     "user": "International mobile top-up",
-    "language": "Language",
     "goodMorning": "Good morning",
     "goodEvening": "Good evening",
     "goodAfternoon": "Good afternoon",
+    "language": "Language",
     "save": "Save",
     "back": "Back",
     "yes": "Yes",
@@ -26,53 +26,53 @@
     "about": "About"
   },
 
-"auth": {
-  "name": "Name",
-  "name_placeholder": "Your name or first name",
+  "auth": {
+    "name": "Name",
+    "name_placeholder": "Your name or first name",
 
-  "login": "Login",
-  "logout": "Logout",
-  "choose": "Choose a method",
-  "choose_hint": "Access your account in seconds",
+    "login": "Login",
+    "logout": "Logout",
+    "choose": "Choose a method",
+    "choose_hint": "Access your account in seconds",
 
-  "email": "Email",
-  "phone": "Phone",
+    "email": "Email",
+    "phone": "Phone",
 
-  "email_required": "Email required",
-  "email_invalid": "Invalid email",
-  "phone_required": "Phone number required",
+    "email_required": "Email required",
+    "email_invalid": "Invalid email",
+    "phone_required": "Number required",
 
-  "security_hint": "One-time code. We never share your information.",
+    "security_hint": "One-time code. We never share your information.",
 
-  "email_hint": "We will send you a verification code",
-  "email_label": "Email address",
-  "email_placeholder": "name@gmail.com",
-  "email_help": "Check the spelling. The code arrives quickly.",
+    "email_hint": "We will send you a verification code",
+    "email_label": "Email address",
+    "email_placeholder": "name@gmail.com",
+    "email_help": "Check spelling. The code arrives quickly.",
 
-  "phone_hint": "We will send you a code by SMS",
-  "phone_label": "Phone number",
-  "phone_placeholder": "Phone number",
-  "phone_help": "Use international format (ex: +33...).",
+    "phone_hint": "We will send you a code by SMS",
+    "phone_label": "Phone number",
+    "phone_placeholder": "Phone number",
+    "phone_help": "Use international format (e.g. +33...).",
 
-  "invalid_phone": "Invalid phone number",
+    "invalid_phone": "Invalid number",
 
-  "otp_title": "Verification",
-  "otp_sent_to": "Code sent to",
-  "otp_label": "Code",
-  "otp_placeholder": "Enter the code",
-  "otp_help": "You can paste the code. It is one-time use.",
-  "otp_invalid": "Invalid or expired code",
+    "otp_title": "Verification",
+    "otp_sent_to": "Code sent to",
+    "otp_label": "Code",
+    "otp_placeholder": "Enter code",
+    "otp_help": "You can paste the code. It is one-time use.",
+    "otp_invalid": "Invalid or expired code",
 
-  "resend": "Resend",
-  "change_email": "Change email",
-  "change_phone": "Change phone number",
+    "resend": "Resend",
+    "change_email": "Change email",
+    "change_phone": "Change number",
 
-  "logout_confirm": "Do you want to log out?",
+    "logout_confirm": "Do you want to log out?",
 
-  "or_continue": "Or continue with",
+    "or_continue": "Or continue with",
 
-  "legal_notice": "By continuing, you accept our Terms of Service and Privacy Policy."
-},
+    "legal_notice": "By continuing, you agree to our Terms of Service and Privacy Policy."
+  },
 
   "lang": {
     "fr": "French",
@@ -81,22 +81,28 @@
 
   "recharge": {
     "enterNumber": {
-      "title": "Enter the number",
+      "title": "Enter number",
       "beneficiaryNumber": "Recipient number",
       "phoneExample": "+33…",
+
+      "enterNumber": "Enter a number",
+      "validNumber": "Valid number",
+      "invalidNumber": "Invalid number",
+
       "enterValidNumber": "Enter a valid number",
       "searchCountry": "Search…",
-      "contacts": "Contacts"
+      "contacts": "Contacts",
+      "noInternetPlans": "No internet plans available for this operator"
     },
 
     "selectOperator": {
-      "title": "Choose an operator",
+      "title": "Choose operator",
       "emptyTitle": "No operator found",
       "emptyMessage": "We couldn't find any operator for this number."
     },
 
     "selectForfait": {
-      "title": "Choose a plan",
+      "title": "Choose plan",
       "internet": "Internet",
       "days": "{days} days"
     },
@@ -106,7 +112,7 @@
       "operatorNotDetected": "Operator not detected",
       "editOperator": "Edit operator",
       "amountLabel": "Amount",
-      "chooseInternetPlan": "Choose an internet plan",
+      "chooseInternetPlan": "Choose internet plan",
       "creditAndTotal": "Credit & total",
       "amountRow": "Amount",
       "taxesRow": "Taxes",
@@ -124,7 +130,7 @@
       "points": "Points",
       "saveCard": "Save card",
       "chooseMethod": "Choose a method",
-      "cardPayment": "Credit card",
+      "cardPayment": "Card payment",
       "cardPaymentDesc": "Secure payment",
       "applePay": "Apple Pay",
       "applePayDesc": "Coming soon",
@@ -134,54 +140,101 @@
       "paypalDesc": "Coming soon",
       "wallet": "Wallet",
       "walletDesc": "Coming soon",
-      "methodSelected": "Selected method",
+      "methodSelected": "Method selected",
       "methodUnavailable": "Method unavailable",
       "paypalComingSoon": "Coming soon",
       "pay": "Pay {amount}",
       "pointsAvailable": "Available points: {points}",
+      "setDefault": "Set as payment method",
 
       "payment.method.title": "Payment method",
       "payment.points.title": "Points",
       "payment.points.available": "Available points: {points}",
       "payment.saveCard": "Save card",
       "payment.chooseMethod": "Choose a payment method",
-      "payment.methods.card.title": "Credit card",
+      "payment.methods.card.title": "Card payment",
       "payment.methods.card.desc": "Pay with your Visa or Mastercard",
-      "payment.methodSelected": "Selected method",
-      "payment.pay": "Pay {amount} €"
-     },
+      "payment.methodSelected": "Method selected",
+      "payment.pay": "Pay {amount} €",
 
+      "legacy_errors": {
+        "emptyName": "Please enter the name on card",
+        "invalidName": "Invalid name",
+        "invalidCardNumber": "Invalid card number",
+        "incompleteCardNumber": "Incomplete card number",
+        "invalidExpiry": "Invalid expiry date",
+        "invalidCvc": "Invalid security code",
+        "paymentFailed": "Payment failed",
+        "paymentNotCompleted": "Payment not completed",
+        "serverError": "Server error, please try again"
+      }
+    },
 
-     "card": {
+    "points": {
+      "title": "Points",
+      "available": "Available points: {points}"
+    },
+
+    "methods": {
+      "card": {
+        "title": "Card payment",
+        "desc": "Pay with your Visa or Mastercard"
+      }
+    },
+
+    "saveCard": "Save card",
+    "chooseMethod": "Choose a payment method",
+    "methodSelected": "Method selected",
+    "pay": "Pay {amount} €",
+
+    "card": {
       "title": "Card payment",
       "securityNotice": "Your payment information is protected.",
       "invalidForm": "Invalid form.",
       "genericError": "An error occurred.",
+
       "holderName": "Cardholder name",
       "number": "Card number",
       "expiry": "MM/YY",
       "cvv": "CVV",
-      "payAmount": "Pay {amount}",
+      "payAmount": "Pay {amount} €",
       "scanTooltip": "Scan card",
+
       "invalidCardHolderName": "Invalid name",
       "invalidCardNumber": "Invalid card number",
-      "invalidExpiry": "Invalid expiry date",
+      "invalidExpiry": "Invalid date",
       "invalidCvv": "Invalid CVV",
-      "formError": "Please fix the errors"
+      "formError": "Please fix the errors",
+
+      "errors": {
+        "emptyName": "Please enter the name on card",
+        "invalidName": "Invalid name",
+        "invalidCardNumber": "Invalid card number",
+        "incompleteCardNumber": "Incomplete card number",
+        "invalidExpiry": "Invalid expiry date",
+        "invalidCvc": "Invalid security code",
+        "paymentFailed": "Payment failed",
+        "paymentNotCompleted": "Payment not completed",
+        "serverError": "Server error, please try again"
+      }
     },
 
     "success": {
       "title": "Payment successful",
-      "message": "Your payment has been confirmed.",
+      "message": "Your payment has been validated.",
       "amount": "Amount",
       "date": "Date",
       "order": "Order",
       "reference": "Reference",
       "finish": "Finish",
+
       "amountLabel": "Amount",
       "dateLabel": "Date",
       "orderLabel": "Order",
-      "referenceLabel": "Reference"
+      "referenceLabel": "Reference",
+
+      "processing": "Top-up in progress... please wait ⏳",
+      "done": "Top-up sent successfully ✅"
     },
 
     "empty": {
@@ -209,7 +262,7 @@
   },
 
   "about": {
-    "description": "Simple and fast mobile top-up app.",
+    "description": "Simple and fast mobile top-up application.",
     "privacy": "Privacy policy",
     "terms": "Terms of use"
   },
@@ -218,7 +271,7 @@
     "name": "Name",
     "email": "Email",
     "phone": "Phone",
-    "birthdate": "Date of birth",
+    "birthdate": "Birth date",
     "not_defined": "Not defined"
   }
 }

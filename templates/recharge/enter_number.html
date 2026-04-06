@@ -8,6 +8,12 @@
 
 {% block content %}
 <div class="tz-page">
+  <div class="tz-bg">
+  <img
+    src="{{ url_for('static', filename='images/bg.jpeg') }}"
+    alt=""
+  >
+</div>
 
   <h1 class="tz-title">
     {{ t("recharge.enterNumber.title") }}
@@ -99,17 +105,6 @@
       </div>
 
     </section>
-
-    <section class="tz-city-card">
-
-      <img
-        id="cityImage"
-        class="tz-city-card__img"
-        src="{{ url_for('static', filename='images/cities/' ~ (country_iso|default('fr')|lower) ~ '.jpg') }}"
-        data-default-src="{{ url_for('static', filename='images/cities/default.jpg') }}"
-        alt=""
-        loading="lazy"
-      >
 
     </section>
 

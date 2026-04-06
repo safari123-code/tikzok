@@ -179,40 +179,32 @@
     }
   }
 
-  function setCityByIso(iso) {
-    if (!cityImage) {
-      return;
-    }
+function setCityByIso(iso) {
+  if (!cityImage) return;
 
-    const normalizedIso = sanitizeIso(iso);
-    const defaultSrc = cityImage.dataset.defaultSrc || "/static/images/cities/default.jpg";
+  const normalizedIso = sanitizeIso(iso);
 
-    cityImage.onerror = function () {
-      this.onerror = null;
-      this.src = defaultSrc;
-    };
-
-    cityImage.src = `/static/images/cities/${normalizedIso}.jpg`;
-  }
+  cityImage.src =
+    "https://source.unsplash.com/1200x600/?" +
+    normalizedIso +
+    ",capital,city";
+}
 
   function formatForDisplay(e164) {
     return e164 ? e164.replace(/\s+/g, "") : "";
   }
 
-  function setPhoneValue(text) {
-    if (!phoneInput) {
-      return;
-    }
+function setCityByIso(iso) {
+  if (!cityImage) return;
 
-    _isProgrammaticUpdate = true;
-    phoneInput.value = text;
-    try {
-      phoneInput.setSelectionRange(text.length, text.length);
-    } catch (e) {
-      // no-op
-    }
-    _isProgrammaticUpdate = false;
-  }
+  const normalizedIso = sanitizeIso(iso);
+
+  cityImage.src =
+    "https://source.unsplash.com/1200x600/?city," +
+    normalizedIso +
+    "&sig=" +
+    Date.now();
+}
 
   function normalizeInternationalNumber(phone) {
     const cleaned = sanitizeToPhoneInput(phone);
