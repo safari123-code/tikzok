@@ -2,8 +2,11 @@
 {# SEO META GLOBAL #}
 {# --------------------------- #}
 
-{% set seo_title = seo_title if seo_title else "Tikzok - Recharge mobile internationale" %}
-{% set seo_description = seo_description if seo_description else "Recharge mobile internationale instantanée. Plus de 150 pays supportés." %}
+{% set default_title = "Tikzok - Recharge mobile internationale" %}
+{% set default_description = "Recharge mobile internationale instantanée. Envoyez du crédit dans plus de 150 pays avec Tikzok." %}
+
+{% set seo_title = seo_title if seo_title else default_title %}
+{% set seo_description = seo_description if seo_description else default_description %}
 {% set seo_url = request.url %}
 
 <title>{{ seo_title }}</title>
