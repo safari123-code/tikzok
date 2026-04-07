@@ -15,7 +15,8 @@
     "copy": "Copy",
     "copied": "Copied",
     "copyFailed": "Copy failed",
-    "removed": "Removed"
+    "removed": "Removed",
+    "close": "Close"
   },
 
   "account": {

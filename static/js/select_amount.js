@@ -76,19 +76,16 @@
     }, 200);
   }
 
-  function setAmountLocked(locked) {
+function setAmountLocked(locked) {
 
-    if (fixedWrap) {
-      fixedWrap.style.opacity = locked ? "0.45" : "1";
-      fixedWrap.style.pointerEvents = locked ? "none" : "auto";
-    }
-
-    if (range) {
-      range.disabled = !!locked;
-      range.style.opacity = locked ? "0.45" : "1";
-    }
+  if (fixedWrap) {
+    fixedWrap.style.display = locked ? "none" : "flex";
   }
 
+  if (range) {
+    range.style.display = locked ? "none" : "block";
+  }
+}
   // ---------------------------
   // UI update
   // ---------------------------
@@ -301,49 +298,11 @@ removeForfaitBtn?.addEventListener("click", async (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  // clear backend
   try {
     await fetch("/recharge/clear-forfait", { method: "POST" });
   } catch (_) {}
 
-  // clear inputs
-  if (forfaitGb) forfaitGb.value = "";
-  if (forfaitPrice) forfaitPrice.value = "";
-
-  // reset UI titre
-  if (forfaitTitle) {
-    forfaitTitle.textContent =
-      document.documentElement.dataset.choosePlanText ||
-      "Choose internet plan";
-  }
-
-  // unlock amount
-  setAmountLocked(false);
-
-  // reset amount -> min
-  let newAmount = minAmount || 2;
-
-  // reset range
-  if (range) {
-    range.value = newAmount;
-  }
-
-  // reset buttons
-  fixedWrap?.querySelectorAll(".tz-amt-btn")
-    .forEach(b => b.classList.remove("is-selected"));
-
-  // update UI
-  updateUI(newAmount);
-  scheduleQuote(newAmount);
-
-  // reset received
-  if (rowReceived) {
-    rowReceived.textContent = "—";
-  }
-
-  removeForfaitBtn.style.display = "none";
-
-  tzToast?.(document.documentElement.dataset.tzRemovedText || "");
+  window.location.href = "/recharge/select-forfait";
 });
 
   forfaitCard?.addEventListener("click", (e) => {
@@ -388,3 +347,24 @@ form.addEventListener("submit", function (e) {
 });
 
 })();
+
+// ---------------------------
+// Close forfait page
+// ---------------------------
+document.addEventListener("DOMContentLoaded", () => {
+
+  const closeBtn = document.getElementById("closeForfaitBtn");
+  if(!closeBtn) return;
+
+  closeBtn.addEventListener("click", async () => {
+
+    try{
+      await fetch("/recharge/clear-forfait",{
+        method:"POST"
+      });
+    }catch(e){}
+
+    window.location.href = "/recharge/select-amount";
+  });
+
+});
