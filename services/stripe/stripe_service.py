@@ -29,9 +29,11 @@ class StripeService:
                 amount=unit_amount,
                 currency=currency,
                 metadata=metadata or {},
+
+                # ✅ IMPORTANT FIX CB + VISA + MASTERCARD
                 automatic_payment_methods={"enabled": True},
-                idempotency_key=(metadata or {}).get("payment_idempotency_key")
             )
+
             return intent
 
         except Exception as e:

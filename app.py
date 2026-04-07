@@ -198,6 +198,49 @@ def create_app() -> Flask:
 # ---------------------------
 app = create_app()
 
+# ---------------------------
+# SEO - Sitemap XML
+# ---------------------------
+from flask import Response
+from datetime import datetime
+
+@app.route("/sitemap.xml")
+def sitemap():
+
+    pages = []
+
+    pages.append(url_for("index", _external=True))
+    pages.append(url_for("recharge.enter_number_get", _external=True))
+
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+
+    for page in pages:
+        xml.append("<url>")
+        xml.append(f"<loc>{page}</loc>")
+        xml.append(f"<lastmod>{datetime.utcnow().date()}</lastmod>")
+        xml.append("<changefreq>daily</changefreq>")
+        xml.append("<priority>0.9</priority>")
+        xml.append("</url>")
+
+    xml.append("</urlset>")
+
+    return Response("\n".join(xml), mimetype="application/xml")
+
+# ---------------------------
+# SEO - Robots.txt
+# ---------------------------
+from flask import Response
+
+@app.route("/robots.txt")
+def robots():
+    content = []
+    content.append("User-agent: *")
+    content.append("Allow: /")
+    content.append("")
+    content.append("Sitemap: " + url_for("sitemap", _external=True))
+
+    return Response("\n".join(content), mimetype="text/plain")
 
 @app.route("/")
 def index():

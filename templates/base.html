@@ -13,7 +13,7 @@
 
   {% set history_count = history_count if history_count is defined else 0 %}
 
-  <title>{% block title %}Tikzok{% endblock %}</title>
+  {% include "components/seo_meta.html" %}
 
   <!-- Main CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">

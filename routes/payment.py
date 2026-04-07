@@ -166,22 +166,33 @@ def _build_success_payload(
 
     payload_obj = OrderService.build_success_payload(amount=base_amount)
 
+    ref = f"{transaction_id:012d}" if transaction_id else "000000000000"
+
+    # ---------------------------
+    # Taxes = total - montant
+    # ---------------------------
+    tax = round(charged_amount - base_amount, 2)
+
     payload_obj.update({
         "status": "SUCCESS",
 
-        # 🔥 IMPORTANT POUR UI
-        "amount": charged_amount,
+        # UI values
+        "amount": base_amount,
+        "tax": tax,
+        "total": charged_amount,
 
-        # 🔥 DATA
+        # data
         "charged_amount": charged_amount,
         "points_used": points_used,
         "transaction_id": transaction_id,
-        "transaction_reference": transaction_reference,
-        "reference": transaction_reference,
 
-        # 🔥 AJOUTS UI (corrige ton écran)
+        # reference
+        "transaction_reference": ref,
+        "reference": ref,
+
+        # UI
         "date": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
-        "order_number": transaction_id,
+        "order_number": ref,
     })
 
     return payload_obj
