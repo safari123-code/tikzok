@@ -147,7 +147,15 @@ if (successContent) {
 
         <div class="tz-row">
           <div class="tz-muted">{{ t("payment.success.amountLabel") }}</div>
-          <div class="tz-strong">{{ amount or "..." }} €</div>
+<div class="tz-strong">
+{% if forfait_display %}
+  {{ forfait_display }}
+{% elif received_display %}
+  {{ received_display }}
+{% else %}
+  {{ amount or "..." }} €
+{% endif %}
+</div>
         </div>
 
         <div class="tz-divider"></div>

@@ -195,6 +195,7 @@ def select_forfait_get():
 
 @recharge_bp.post("/select-forfait")
 def select_forfait_post():
+    session.pop("received_display", None)
     data = request.get_json(silent=True) or {}
 
     gb = data.get("gb")
@@ -399,6 +400,7 @@ def select_operator_post():
 
 @recharge_bp.get("/select-amount")
 def select_amount_get():
+    session.pop("received_display", None)
     phone = session.get("recharge_phone")
 
     if not phone:
@@ -473,7 +475,8 @@ def select_amount_get():
         selected_forfait=session.get("recharge_forfait"),
         quote=quote,
     )
-
+    session["received_display"] = received_display
+    
     # ---------------------------
     # Template
     # ---------------------------
@@ -539,7 +542,7 @@ def select_amount_post():
     # ---------------------------
     # Session
     # ---------------------------
-
+    session.pop("received_display", None)
     session["recharge_amount"] = float(amount)
     session["recharge_total_amount"] = float(breakdown["total"])
 

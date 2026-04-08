@@ -98,8 +98,12 @@ document.addEventListener("DOMContentLoaded", () => {
           {{ phone }}
         </div>
         {% endif %}
-        <div class="tz-amount-sm" id="finalAmountText">
-          {{ "%.2f"|format(final_amount) }} €
+       <div class="tz-amount-sm" id="finalAmountText">
+       {% if forfait_display %}
+        {{ forfait_display }}
+          {% else %}
+         {{ received_display if received_display else "%.2f"|format(final_amount) ~ " €" }}
+         {% endif %}
         </div>
       </div>
     </section>

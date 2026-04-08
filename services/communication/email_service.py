@@ -93,6 +93,8 @@ class EmailService:
         # ---------------------------
         # Data (SAFE + PRO)
         # ---------------------------
+        forfait = payload.get("forfait")
+
         amount = payload.get("amount") or 0
         charged_amount = payload.get("charged_amount") or amount
         points_used = payload.get("points_used") or 0
@@ -195,7 +197,9 @@ Livré instantanément ⚡
 
 <tr>
 <td style="color:#9ca3af;">Produit :</td>
-<td style="text-align:right;">Recharge mobile</td>
+<td style="text-align:right;">
+{forfait if forfait else "Recharge mobile"}
+</td>
 </tr>
 
 <tr><td style="height:20px"></td></tr>

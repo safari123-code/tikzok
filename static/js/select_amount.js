@@ -347,24 +347,3 @@ form.addEventListener("submit", function (e) {
 });
 
 })();
-
-// ---------------------------
-// Close forfait page
-// ---------------------------
-document.addEventListener("DOMContentLoaded", () => {
-
-  const closeBtn = document.getElementById("closeForfaitBtn");
-  if(!closeBtn) return;
-
-  closeBtn.addEventListener("click", async () => {
-
-    try{
-      await fetch("/recharge/clear-forfait",{
-        method:"POST"
-      });
-    }catch(e){}
-
-    window.location.href = "/recharge/select-amount";
-  });
-
-});

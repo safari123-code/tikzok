@@ -44,6 +44,14 @@ def _safe_str(value: Any, default: str = "") -> str:
         return default
     return str(value).strip()
 
+# ---------------------------
+# Forfait display helper
+# ---------------------------
+def _get_forfait_display():
+    forfait = session.get("recharge_forfait") or {}
+    if isinstance(forfait, dict) and forfait.get("gb"):
+        return str(forfait.get("gb"))
+    return None
 
 def _get_payment_context() -> Dict[str, Any]:
     phone = session.get("recharge_phone", "")
@@ -327,13 +335,10 @@ def _resolve_payment_status() -> Dict[str, Any]:
 @payment_bp.get("/card")
 def card_get():
 
-    # 🔒 FORCE PASSAGE PAR METHOD
     if session.get("payment_selected_method") != "card":
         return redirect(url_for("payment.method_get"))
 
     ctx = _get_payment_context()
-
-    # 🔥 FIX CRITIQUE (session check)
     amount = ctx.get("recharge_amount")
 
     if amount is None:
@@ -341,15 +346,49 @@ def card_get():
 
     _get_or_create_payment_idempotency_key()
 
+    # ---------------------------
+    # FIX Reloadly quote
+    # ---------------------------
+    received_display = session.get("received_display")
+
+    if not received_display:
+
+        from services.reloadly.data_service import get_reloadly_quote
+        from services.payment.currency_service import CurrencyService
+
+        phone = session.get("recharge_phone")
+        operator = session.get("recharge_operator") or {}
+        country_iso = session.get("country_iso")
+        operator_id = operator.get("id")
+
+        quote = None
+        if operator_id:
+            quote = get_reloadly_quote(
+                operator_id=operator_id,
+                amount=ctx.get("base_amount"),
+                phone=phone,
+                country_iso=country_iso,
+            )
+
+        received_display = CurrencyService.received_display_value(
+            phone=phone,
+            amount=ctx.get("base_amount"),
+            selected_forfait=session.get("recharge_forfait"),
+            quote=quote
+        )
+
     return render_template(
         "payment/card.html",
         phone=ctx["phone"],
         amount=amount,
+        forfait_display=_get_forfait_display(),
         final_amount=ctx["final_amount"],
         points_used=ctx["points_used"],
         save_card=session.get("payment_save_card", True),
         cards=OrderService.get_saved_cards(session.get("user_id")),
+        received_display=received_display
     )
+
 
 # ---------------------------
 # Payment method
@@ -358,17 +397,47 @@ def card_get():
 def method_get():
 
     ctx = _get_payment_context()
-
-    # 🔥 FIX CRITIQUE (NE PAS UTILISER not)
     amount = ctx.get("recharge_amount")
 
     if amount is None:
         return redirect(url_for("recharge.select_amount_get"))
 
+    # ---------------------------
+    # FIX Reloadly quote
+    # ---------------------------
+    received_display = session.get("received_display")
+
+    if not received_display:
+
+        from services.reloadly.data_service import get_reloadly_quote
+        from services.payment.currency_service import CurrencyService
+
+        phone = session.get("recharge_phone")
+        operator = session.get("recharge_operator") or {}
+        country_iso = session.get("country_iso")
+        operator_id = operator.get("id")
+
+        quote = None
+        if operator_id:
+            quote = get_reloadly_quote(
+                operator_id=operator_id,
+                amount=ctx.get("base_amount"),
+                phone=phone,
+                country_iso=country_iso,
+            )
+
+        received_display = CurrencyService.received_display_value(
+            phone=phone,
+            amount=ctx.get("base_amount"),
+            selected_forfait=session.get("recharge_forfait"),
+            quote=quote
+        )
+
     return render_template(
         "payment/method.html",
         phone=ctx["phone"],
         amount=amount,
+        forfait_display=_get_forfait_display(),
         points_available=ctx["points_available"],
         use_points=ctx["use_points"],
         points_used=ctx["points_used"],
@@ -376,7 +445,9 @@ def method_get():
         selected_method=session.get("payment_selected_method", "card"),
         save_card=session.get("payment_save_card", True),
         is_forfait_minutes=False,
+        received_display=received_display
     )
+
 
 @payment_bp.post("/method")
 def method_post():
@@ -395,12 +466,12 @@ def method_post():
     return redirect(url_for("payment.card_get"))
 
 
-
 # ---------------------------
 # Process card payment
 # ---------------------------
 @payment_bp.post("/card")
 def card_post():
+
     if session.get("payment_selected_method") != "card":
         return redirect(url_for("payment.method_get"))
 
@@ -427,12 +498,10 @@ def card_post():
 
         session["last_payment_intent_id"] = intent.id
 
-        return jsonify(
-            {
-                "client_secret": intent.client_secret,
-                "payment_intent_id": intent.id,
-            }
-        )
+        return jsonify({
+            "client_secret": intent.client_secret,
+            "payment_intent_id": intent.id,
+        })
 
     except Exception as exc:
         print("Stripe payment intent error:", exc)
@@ -613,6 +682,7 @@ def payment_status():
 # ---------------------------
 @payment_bp.get("/success")
 def payment_success():
+
     payment_intent_id = _get_payment_intent_id()
 
     if payment_intent_id:
@@ -621,8 +691,11 @@ def payment_success():
 
     payload = session.get("payment_success_payload") or {}
 
+    received_display = session.get("received_display")
+    forfait_display = _get_forfait_display()
+
     # ---------------------------
-    # Cas 1 : pas encore de payload → affichage immédiat
+    # Cas 1 : pas encore de payload
     # ---------------------------
     if not payload:
         ctx = _get_payment_context()
@@ -634,10 +707,12 @@ def payment_success():
             date=None,
             order_number="...",
             reference="...",
+            forfait_display=forfait_display,
+            received_display=received_display,
         )
 
     # ---------------------------
-    # Cas 2 : payload dispo → affichage final
+    # Cas 2 : payload final
     # ---------------------------
     return render_template(
         "payment/success.html",
@@ -646,7 +721,22 @@ def payment_success():
         date=payload.get("date"),
         order_number=payload.get("order_number"),
         reference=payload.get("transaction_reference") or payload.get("reference"),
+        forfait_display=forfait_display,
+        received_display=received_display,
     )
+
+    # ---------------------------
+    # Cas 2 : payload dispo → affichage final
+    # ---------------------------
+    return render_template(
+    "payment/success.html",
+    status="success" if _safe_str(payload.get("status"), "SUCCESS") != "FAILED" else "failed",
+    amount=payload.get("amount"),
+    forfait_display=_get_forfait_display(),
+    date=payload.get("date"),
+    order_number=payload.get("order_number"),
+    reference=payload.get("transaction_reference") or payload.get("reference"),
+)
 
 
 # ---------------------------

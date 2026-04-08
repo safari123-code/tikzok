@@ -136,3 +136,24 @@ document.addEventListener("DOMContentLoaded", () => {
   // 🔥 auto trigger
   document.querySelector(".tz-tab.is-active")?.click();
 });
+
+// ---------------------------
+// Close forfait -> enter number
+// ---------------------------
+document.addEventListener("DOMContentLoaded", () => {
+
+  const btn = document.getElementById("closeForfaitBtn");
+  if(!btn) return;
+
+  btn.addEventListener("click", async () => {
+
+    try{
+      await fetch("/recharge/clear-forfait",{
+        method:"POST"
+      });
+    }catch(e){}
+
+    window.location.href = "/recharge/enter-number";
+  });
+
+});

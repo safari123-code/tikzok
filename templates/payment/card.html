@@ -269,9 +269,13 @@ form.addEventListener("submit", async (e) => {
     <section class="tz-card tz-card--soft">
       <div class="tz-row">
         <div class="tz-strong">{{ phone }}</div>
-        <div class="tz-strong" style="color:#2196f3;">
-          {{ amount }} €
-        </div>
+          <div class="tz-strong" style="color:#2196f3;">
+           {% if forfait_display %}
+           {{ forfait_display }}
+          {% else %}
+          {{ received_display if received_display else amount ~ " €" }}
+          {% endif %}
+          </div>
       </div>
     </section>
 <!-- ================= SAVED CARDS ================= -->
