@@ -664,24 +664,32 @@ function bindEvents() {
 // ---------------------------
 function bindKeyboardUI() {
 
-  if (!window.visualViewport) return;
+  if (!phoneInput) return;
 
-  const vv = window.visualViewport;
+  // keyboard open
+  phoneInput.addEventListener("focus", () => {
+    document.body.classList.add("tz-keyboard-open");
+  });
 
-  function update() {
+  // keyboard close
+  phoneInput.addEventListener("blur", () => {
+    setTimeout(() => {
+      document.body.classList.remove("tz-keyboard-open");
+    }, 150);
+  });
+
+  // iOS / Android fallback
+  window.addEventListener("resize", () => {
+
     const keyboardOpen =
-      vv.height < window.innerHeight - 120;
+      window.innerHeight < screen.height * 0.75;
 
     document.body.classList.toggle(
       "tz-keyboard-open",
       keyboardOpen
     );
-  }
-
-  vv.addEventListener("resize", update);
-  vv.addEventListener("scroll", update);
+  });
 }
-
 
 // ---------------------------
 // Init
