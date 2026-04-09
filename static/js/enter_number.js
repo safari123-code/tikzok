@@ -511,12 +511,18 @@ function setCityByIso(iso) {
     scheduleLookup();
   }
 
-// ---------------------------
-// Contact picker — FINAL UNIVERSAL
-// ---------------------------
-async function pickContact() {
+  // ---------------------------
+  // Contact picker
+  // ---------------------------
+  async function pickContact() {
+    if (!("contacts" in navigator) || !("select" in navigator.contacts)) {
+      const message = contactBtn?.dataset?.unavailableMessage || "";
+      if (message) {
+        alert(message);
+      }
+      return;
+    }
 
-  if (navigator.contacts && navigator.contacts.select) {
     try {
       const contacts = await navigator.contacts.select(["tel"], { multiple: false });
 
@@ -524,235 +530,133 @@ async function pickContact() {
         return;
       }
 
-      applyContactNumber(contacts[0].tel[0]);
-      return;
+      let raw = String(contacts[0].tel[0] || "").replace(/[^\d+]/g, "");
 
+      if (raw.startsWith("+")) {
+        raw = normalizeInternationalNumber(raw);
+      } else {
+        if (raw.startsWith("0")) {
+          raw = raw.slice(1);
+        }
+
+        const country = getSelectedCountry();
+        const dialDigits = digitsOnly(country?.dial || "");
+
+        raw = dialDigits ? `+${dialDigits}${raw}` : `+${raw}`;
+      }
+
+      setPhoneValue(formatForDisplay(raw));
+      lastLookupKey = "";
+      lastLookupValid = false;
+      validateAndSync();
+      phoneInput?.focus();
     } catch (e) {
-      return;
+      // cancelled
     }
   }
 
-  phoneInput?.focus();
+  // ---------------------------
+  // Events
+  // ---------------------------
+  function bindEvents() {
+    phoneInput?.addEventListener("input", () => {
+      if (_isProgrammaticUpdate) {
+        return;
+      }
 
-  if (help) {
-    help.classList.remove("tz-help--ok", "tz-help--muted");
-    help.classList.add("tz-help--error");
-    help.textContent =
-      contactBtn?.dataset?.unavailableMessage ||
-      help.dataset.invalid ||
-      "";
-  }
-}
-
-
-// ---------------------------
-// Apply contact number
-// ---------------------------
-function applyContactNumber(rawNumber) {
-
-  let raw = String(rawNumber || "").replace(/[^\d+]/g, "");
-
-  if (!raw) return;
-
-  if (raw.startsWith("+")) {
-    raw = normalizeInternationalNumber(raw);
-  } else {
-
-    if (raw.startsWith("0")) {
-      raw = raw.slice(1);
-    }
-
-    const country = getSelectedCountry();
-    const dialDigits = digitsOnly(country?.dial || "");
-
-    raw = dialDigits ? `+${dialDigits}${raw}` : `+${raw}`;
-  }
-
-  setPhoneValue(formatForDisplay(raw));
-
-  lastLookupKey = "";
-  lastLookupValid = false;
-
-  validateAndSync();
-  phoneInput?.focus();
-}
-
-
-// ---------------------------
-// Continue loading
-// ---------------------------
-function setContinueLoading(loading){
-
-  if(!continueBtn) return;
-
-  const loader = document.getElementById("continueLoader");
-  const text = document.getElementById("continueText");
-
-  if(loading){
-    continueBtn.classList.add("is-loading");
-    continueBtn.disabled = true;
-
-    if(loader) loader.style.display = "block";
-    if(text) text.style.opacity = ".6";
-
-  }else{
-    continueBtn.classList.remove("is-loading");
-
-    if(loader) loader.style.display = "none";
-    if(text) text.style.opacity = "1";
-  }
-}
-
-
-// ---------------------------
-// Events
-// ---------------------------
-function bindEvents() {
-
-  phoneInput?.addEventListener("input", () => {
-    if (_isProgrammaticUpdate) return;
-
-    lastLookupKey = "";
-    lastLookupValid = false;
-    validateAndSync();
-  });
-
-  phoneInput?.addEventListener("blur", () => {
-    tzLookupNumber();
-  });
-
-  contactBtn?.addEventListener("click", pickContact);
-
-  document.addEventListener("tz:country-selected", (event) => {
-    const country = event.detail?.country;
-    if (!country) return;
-
-    applyCountry(country, { setPrefixIfEmpty: true });
-    lastLookupKey = "";
-    lastLookupValid = false;
-    validateAndSync();
-    phoneInput?.focus();
-  });
-
-  form?.addEventListener("submit", async (e) => {
-
-    setContinueLoading(true);
-    validateAndSync();
-
-    if (!phoneE164?.value) {
-      setContinueLoading(false);
-      e.preventDefault();
-      return;
-    }
-
-    if (lastLookupValid) return;
-
-    e.preventDefault();
-    await tzLookupNumber();
-
-    if (lastLookupValid) {
-      form.submit();
-    } else {
-      setContinueLoading(false);
-    }
-  });
-}
-
-
-// ---------------------------
-// Keyboard detection
-// ---------------------------
-function bindKeyboardUI() {
-
-  if (!phoneInput) return;
-
-  // keyboard open
-  phoneInput.addEventListener("focus", () => {
-    document.body.classList.add("tz-keyboard-open");
-  });
-
-  // keyboard close
-  phoneInput.addEventListener("blur", () => {
-    setTimeout(() => {
-      document.body.classList.remove("tz-keyboard-open");
-    }, 150);
-  });
-
-  // iOS / Android fallback
-  window.addEventListener("resize", () => {
-
-    const keyboardOpen =
-      window.innerHeight < screen.height * 0.75;
-
-    document.body.classList.toggle(
-      "tz-keyboard-open",
-      keyboardOpen
-    );
-  });
-}
-
-// ---------------------------
-// Init
-// ---------------------------
-async function init() {
-
-  if (!phoneInput || !countryBtn) return;
-
-  try {
-    COUNTRIES = await getCountriesPromise();
-    if (!Array.isArray(COUNTRIES)) {
-      COUNTRIES = [];
-    }
-  } catch (e) {
-    COUNTRIES = [];
-  }
-
-  buildDialIndex();
-
-  const initialIso = getSelectedIso();
-  const initialCountry =
-    findCountryByIso(initialIso) ||
-    COUNTRIES[0] ||
-    null;
-
-  if (initialCountry) {
-    applyCountry(initialCountry, {
-      setPrefixIfEmpty:
-        !String(phoneInput.value || "").trim()
+      lastLookupKey = "";
+      lastLookupValid = false;
+      validateAndSync();
     });
-  } else {
-    setCityByIso(initialIso);
+
+    phoneInput?.addEventListener("blur", () => {
+      tzLookupNumber();
+    });
+
+    contactBtn?.addEventListener("click", pickContact);
+
+    document.addEventListener("tz:country-selected", (event) => {
+      const country = event.detail?.country;
+      if (!country) {
+        return;
+      }
+
+      applyCountry(country, { setPrefixIfEmpty: true });
+      lastLookupKey = "";
+      lastLookupValid = false;
+      validateAndSync();
+      phoneInput?.focus();
+    });
+
+    form?.addEventListener("submit", async (e) => {
+      validateAndSync();
+
+      if (!phoneE164?.value) {
+        e.preventDefault();
+        return;
+      }
+
+      if (lastLookupValid) {
+        return;
+      }
+
+      e.preventDefault();
+      await tzLookupNumber();
+
+      if (lastLookupValid) {
+        form.submit();
+      }
+    });
   }
 
-  const initialValue =
-    String(phoneInput.value || "").trim();
-
-  if (!initialValue && initialCountry?.dial) {
-    setPhoneValue(
-      formatForDisplay(initialCountry.dial)
-    );
-    syncHiddenE164(initialCountry.dial);
-  }
-
-  validateAndSync();
-  bindEvents();
-  bindKeyboardUI();
-
-  setTimeout(() => {
-
-    if (!phoneInput) return;
-
-    phoneInput.focus();
+  // ---------------------------
+  // Init
+  // ---------------------------
+  async function init() {
+    if (!phoneInput || !countryBtn) {
+      return;
+    }
 
     try {
-      const len = phoneInput.value.length;
-      phoneInput.setSelectionRange(len, len);
-    } catch (e) {}
+      COUNTRIES = await getCountriesPromise();
+      if (!Array.isArray(COUNTRIES)) {
+        COUNTRIES = [];
+      }
+    } catch (e) {
+      COUNTRIES = [];
+    }
 
-    phoneInput.click();
+    buildDialIndex();
 
-  }, 150);
-}
+    const initialIso = getSelectedIso();
+    const initialCountry = findCountryByIso(initialIso) || COUNTRIES[0] || null;
 
-init();
+    if (initialCountry) {
+      applyCountry(initialCountry, {
+        setPrefixIfEmpty: !String(phoneInput.value || "").trim()
+      });
+    } else {
+      setCityByIso(initialIso);
+    }
+
+    const initialValue = String(phoneInput.value || "").trim();
+    if (!initialValue && initialCountry?.dial) {
+      setPhoneValue(formatForDisplay(initialCountry.dial));
+      syncHiddenE164(initialCountry.dial);
+    }
+
+    validateAndSync();
+    bindEvents();
+
+    requestAnimationFrame(() => {
+      phoneInput.focus();
+      try {
+        phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
+      } catch (e) {
+        // no-op
+      }
+    });
+  }
+
+  init();
 })();

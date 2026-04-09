@@ -1824,5 +1824,5 @@ object-fit:cover;
 opacity:1;
 }
 body.tz-keyboard-open .tz-primary-btn{
-bottom:260px;
+transform: translateY(0);
 }
