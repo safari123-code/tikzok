@@ -516,7 +516,6 @@ function setCityByIso(iso) {
 // ---------------------------
 async function pickContact() {
 
-  // Android Chrome contact picker
   if (navigator.contacts && navigator.contacts.select) {
     try {
       const contacts = await navigator.contacts.select(["tel"], { multiple: false });
@@ -533,7 +532,6 @@ async function pickContact() {
     }
   }
 
-  // fallback iOS / WebView / Desktop
   phoneInput?.focus();
 
   if (help) {
@@ -576,123 +574,94 @@ function applyContactNumber(rawNumber) {
   lastLookupValid = false;
 
   validateAndSync();
-
   phoneInput?.focus();
 }
 
-  // ---------------------------
-  // Events
-  // ---------------------------
-  function bindEvents() {
-    phoneInput?.addEventListener("input", () => {
-      if (_isProgrammaticUpdate) {
-        return;
-      }
 
-      lastLookupKey = "";
-      lastLookupValid = false;
-      validateAndSync();
-    });
+// ---------------------------
+// Continue loading
+// ---------------------------
+function setContinueLoading(loading){
 
-    phoneInput?.addEventListener("blur", () => {
-      tzLookupNumber();
-    });
+  if(!continueBtn) return;
 
-    contactBtn?.addEventListener("click", pickContact);
+  const loader = document.getElementById("continueLoader");
+  const text = document.getElementById("continueText");
 
-    document.addEventListener("tz:country-selected", (event) => {
-      const country = event.detail?.country;
-      if (!country) {
-        return;
-      }
+  if(loading){
+    continueBtn.classList.add("is-loading");
+    continueBtn.disabled = true;
 
-      applyCountry(country, { setPrefixIfEmpty: true });
-      lastLookupKey = "";
-      lastLookupValid = false;
-      validateAndSync();
-      phoneInput?.focus();
-    });
+    if(loader) loader.style.display = "block";
+    if(text) text.style.opacity = ".6";
 
-    form?.addEventListener("submit", async (e) => {
-      validateAndSync();
+  }else{
+    continueBtn.classList.remove("is-loading");
 
-      if (!phoneE164?.value) {
-        e.preventDefault();
-        return;
-      }
-
-      if (lastLookupValid) {
-        return;
-      }
-
-      e.preventDefault();
-      await tzLookupNumber();
-
-      if (lastLookupValid) {
-        form.submit();
-      }
-    });
+    if(loader) loader.style.display = "none";
+    if(text) text.style.opacity = "1";
   }
+}
 
-  // ---------------------------
-  // Init
-  // ---------------------------
-  async function init() {
-    if (!phoneInput || !countryBtn) {
+
+// ---------------------------
+// Events
+// ---------------------------
+function bindEvents() {
+
+  phoneInput?.addEventListener("input", () => {
+    if (_isProgrammaticUpdate) return;
+
+    lastLookupKey = "";
+    lastLookupValid = false;
+    validateAndSync();
+  });
+
+  phoneInput?.addEventListener("blur", () => {
+    tzLookupNumber();
+  });
+
+  contactBtn?.addEventListener("click", pickContact);
+
+  document.addEventListener("tz:country-selected", (event) => {
+    const country = event.detail?.country;
+    if (!country) return;
+
+    applyCountry(country, { setPrefixIfEmpty: true });
+    lastLookupKey = "";
+    lastLookupValid = false;
+    validateAndSync();
+    phoneInput?.focus();
+  });
+
+  form?.addEventListener("submit", async (e) => {
+
+    setContinueLoading(true);
+    validateAndSync();
+
+    if (!phoneE164?.value) {
+      setContinueLoading(false);
+      e.preventDefault();
       return;
     }
 
-    try {
-      COUNTRIES = await getCountriesPromise();
-      if (!Array.isArray(COUNTRIES)) {
-        COUNTRIES = [];
-      }
-    } catch (e) {
-      COUNTRIES = [];
-    }
+    if (lastLookupValid) return;
 
-    buildDialIndex();
+    e.preventDefault();
+    await tzLookupNumber();
 
-    const initialIso = getSelectedIso();
-    const initialCountry = findCountryByIso(initialIso) || COUNTRIES[0] || null;
-
-    if (initialCountry) {
-      applyCountry(initialCountry, {
-        setPrefixIfEmpty: !String(phoneInput.value || "").trim()
-      });
+    if (lastLookupValid) {
+      form.submit();
     } else {
-      setCityByIso(initialIso);
+      setContinueLoading(false);
     }
+  });
+}
 
-    const initialValue = String(phoneInput.value || "").trim();
-    if (!initialValue && initialCountry?.dial) {
-      setPhoneValue(formatForDisplay(initialCountry.dial));
-      syncHiddenE164(initialCountry.dial);
-    }
 
-    validateAndSync();
-    bindEvents();
-    bindKeyboardUI();
 // ---------------------------
-// Auto focus mobile safe
+// Keyboard detection
 // ---------------------------
-setTimeout(() => {
-
-  if (!phoneInput) return;
-
-  phoneInput.focus();
-
-  try {
-    const len = phoneInput.value.length;
-    phoneInput.setSelectionRange(len, len);
-  } catch (e) {}
-
-  // iOS keyboard trigger
-  phoneInput.click();
-
-}, 150);
-  }
-
 function bindKeyboardUI() {
 
   if (!window.visualViewport) return;
@@ -700,8 +669,8 @@ function bindKeyboardUI() {
   const vv = window.visualViewport;
 
   function update() {
-
-    const keyboardOpen = vv.height < window.innerHeight - 120;
+    const keyboardOpen =
+      vv.height < window.innerHeight - 120;
 
     document.body.classList.toggle(
       "tz-keyboard-open",
@@ -713,31 +682,69 @@ function bindKeyboardUI() {
   vv.addEventListener("scroll", update);
 }
 
-  init();
-})();
 
-function applyContactNumber(rawNumber){
+// ---------------------------
+// Init
+// ---------------------------
+async function init() {
 
-  let raw = String(rawNumber || "").replace(/[^\d+]/g,"");
+  if (!phoneInput || !countryBtn) return;
 
-  if (raw.startsWith("+")) {
-    raw = normalizeInternationalNumber(raw);
-  } else {
-
-    if (raw.startsWith("0")) {
-      raw = raw.slice(1);
+  try {
+    COUNTRIES = await getCountriesPromise();
+    if (!Array.isArray(COUNTRIES)) {
+      COUNTRIES = [];
     }
-
-    const country = getSelectedCountry();
-    const dial = digitsOnly(country?.dial || "");
-
-    raw = dial ? `+${dial}${raw}` : `+${raw}`;
+  } catch (e) {
+    COUNTRIES = [];
   }
 
-  setPhoneValue(formatForDisplay(raw));
-  lastLookupKey = "";
-  lastLookupValid = false;
+  buildDialIndex();
+
+  const initialIso = getSelectedIso();
+  const initialCountry =
+    findCountryByIso(initialIso) ||
+    COUNTRIES[0] ||
+    null;
+
+  if (initialCountry) {
+    applyCountry(initialCountry, {
+      setPrefixIfEmpty:
+        !String(phoneInput.value || "").trim()
+    });
+  } else {
+    setCityByIso(initialIso);
+  }
+
+  const initialValue =
+    String(phoneInput.value || "").trim();
+
+  if (!initialValue && initialCountry?.dial) {
+    setPhoneValue(
+      formatForDisplay(initialCountry.dial)
+    );
+    syncHiddenE164(initialCountry.dial);
+  }
 
   validateAndSync();
-  phoneInput.focus();
+  bindEvents();
+  bindKeyboardUI();
+
+  setTimeout(() => {
+
+    if (!phoneInput) return;
+
+    phoneInput.focus();
+
+    try {
+      const len = phoneInput.value.length;
+      phoneInput.setSelectionRange(len, len);
+    } catch (e) {}
+
+    phoneInput.click();
+
+  }, 150);
 }
+
+init();
+})();

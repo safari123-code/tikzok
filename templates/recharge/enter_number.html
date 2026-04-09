@@ -108,16 +108,16 @@
 
     </section>
 
-    <button
-      type="submit"
-      class="tz-primary-btn"
-      id="continueBtn"
-      disabled
-      aria-disabled="true"
-    >
-      {{ t("common.continue") }}
-    </button>
-
+<button
+type="submit"
+class="tz-primary-btn"
+id="continueBtn"
+disabled
+aria-disabled="true"
+>
+<span class="tz-btn-loader" id="continueLoader" style="display:none"></span>
+<span id="continueText">{{ t("common.continue") }}</span>
+</button>
   </form>
 
   <div
