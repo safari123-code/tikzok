@@ -511,18 +511,13 @@ function setCityByIso(iso) {
     scheduleLookup();
   }
 
-  // ---------------------------
-  // Contact picker
-  // ---------------------------
-  async function pickContact() {
-    if (!("contacts" in navigator) || !("select" in navigator.contacts)) {
-      const message = contactBtn?.dataset?.unavailableMessage || "";
-      if (message) {
-        alert(message);
-      }
-      return;
-    }
+// ---------------------------
+// Contact picker — FINAL UNIVERSAL
+// ---------------------------
+async function pickContact() {
 
+  // Android Chrome contact picker
+  if (navigator.contacts && navigator.contacts.select) {
     try {
       const contacts = await navigator.contacts.select(["tel"], { multiple: false });
 
@@ -530,30 +525,60 @@ function setCityByIso(iso) {
         return;
       }
 
-      let raw = String(contacts[0].tel[0] || "").replace(/[^\d+]/g, "");
+      applyContactNumber(contacts[0].tel[0]);
+      return;
 
-      if (raw.startsWith("+")) {
-        raw = normalizeInternationalNumber(raw);
-      } else {
-        if (raw.startsWith("0")) {
-          raw = raw.slice(1);
-        }
-
-        const country = getSelectedCountry();
-        const dialDigits = digitsOnly(country?.dial || "");
-
-        raw = dialDigits ? `+${dialDigits}${raw}` : `+${raw}`;
-      }
-
-      setPhoneValue(formatForDisplay(raw));
-      lastLookupKey = "";
-      lastLookupValid = false;
-      validateAndSync();
-      phoneInput?.focus();
     } catch (e) {
-      // cancelled
+      return;
     }
   }
+
+  // fallback iOS / WebView / Desktop
+  phoneInput?.focus();
+
+  if (help) {
+    help.classList.remove("tz-help--ok", "tz-help--muted");
+    help.classList.add("tz-help--error");
+    help.textContent =
+      contactBtn?.dataset?.unavailableMessage ||
+      help.dataset.invalid ||
+      "";
+  }
+}
+
+
+// ---------------------------
+// Apply contact number
+// ---------------------------
+function applyContactNumber(rawNumber) {
+
+  let raw = String(rawNumber || "").replace(/[^\d+]/g, "");
+
+  if (!raw) return;
+
+  if (raw.startsWith("+")) {
+    raw = normalizeInternationalNumber(raw);
+  } else {
+
+    if (raw.startsWith("0")) {
+      raw = raw.slice(1);
+    }
+
+    const country = getSelectedCountry();
+    const dialDigits = digitsOnly(country?.dial || "");
+
+    raw = dialDigits ? `+${dialDigits}${raw}` : `+${raw}`;
+  }
+
+  setPhoneValue(formatForDisplay(raw));
+
+  lastLookupKey = "";
+  lastLookupValid = false;
+
+  validateAndSync();
+
+  phoneInput?.focus();
+}
 
   // ---------------------------
   // Events
@@ -647,16 +672,72 @@ function setCityByIso(iso) {
 
     validateAndSync();
     bindEvents();
+    bindKeyboardUI();
+// ---------------------------
+// Auto focus mobile safe
+// ---------------------------
+setTimeout(() => {
 
-    requestAnimationFrame(() => {
-      phoneInput.focus();
-      try {
-        phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
-      } catch (e) {
-        // no-op
-      }
-    });
+  if (!phoneInput) return;
+
+  phoneInput.focus();
+
+  try {
+    const len = phoneInput.value.length;
+    phoneInput.setSelectionRange(len, len);
+  } catch (e) {}
+
+  // iOS keyboard trigger
+  phoneInput.click();
+
+}, 150);
   }
+
+function bindKeyboardUI() {
+
+  if (!window.visualViewport) return;
+
+  const vv = window.visualViewport;
+
+  function update() {
+
+    const keyboardOpen = vv.height < window.innerHeight - 120;
+
+    document.body.classList.toggle(
+      "tz-keyboard-open",
+      keyboardOpen
+    );
+  }
+
+  vv.addEventListener("resize", update);
+  vv.addEventListener("scroll", update);
+}
 
   init();
 })();
+
+function applyContactNumber(rawNumber){
+
+  let raw = String(rawNumber || "").replace(/[^\d+]/g,"");
+
+  if (raw.startsWith("+")) {
+    raw = normalizeInternationalNumber(raw);
+  } else {
+
+    if (raw.startsWith("0")) {
+      raw = raw.slice(1);
+    }
+
+    const country = getSelectedCountry();
+    const dial = digitsOnly(country?.dial || "");
+
+    raw = dial ? `+${dial}${raw}` : `+${raw}`;
+  }
+
+  setPhoneValue(formatForDisplay(raw));
+  lastLookupKey = "";
+  lastLookupValid = false;
+
+  validateAndSync();
+  phoneInput.focus();
+}

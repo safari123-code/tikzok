@@ -1768,7 +1768,7 @@ html, body {
     touch-action: manipulation;
     overscroll-behavior: none;
 }
-.tz-primary-btn{
+.tz-page .tz-primary-btn{
 position:fixed;
 bottom:20px;
 left:16px;
@@ -1779,7 +1779,7 @@ margin:auto;
 z-index:100;
 }
 .tz-page{
-padding-bottom:110px;
+padding:8px 0 110px;
 }
 /* ---------------------------
 Enter number background FIX
