@@ -654,6 +654,7 @@ def stripe_webhook_post():
         return jsonify({"ok": True}), 200
 
     try:
+        print("FORFAIT DEBUG:", forfait_id_raw)
         result = process_recharge(
             payment_reference=payment_reference,
             phone=phone,
@@ -701,7 +702,10 @@ def stripe_webhook_post():
         # ---------------------------
         # Email success
         # ---------------------------
-        if user_email and payload_obj.get("status") == "SUCCESS":
+        # ---------------------------
+# Email success (ONLY when reloadly success)
+# ---------------------------
+        if user_email and result.status == "SUCCESS":
             try:
                 EmailService.send_payment_success(
                     email=user_email,
