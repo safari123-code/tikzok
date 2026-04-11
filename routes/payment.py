@@ -15,7 +15,6 @@ from services.account.card_service import CardService
 from services.communication.email_service import EmailService
 from services.core.idempotency_service import IdempotencyService
 from services.order.order_service import OrderService
-from services.order.points_service import PointsService
 from services.stripe.stripe_service import StripeService
 from services.reloadly.transaction_service import (
     TransactionServiceError,
