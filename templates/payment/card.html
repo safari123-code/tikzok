@@ -289,7 +289,8 @@ if (result.paymentIntent?.status === "succeeded") {
 <section class="tz-card tz-card--soft">
   <div class="tz-row">
 
-    {% if request.args.get("amount") %}
+    {% if not phone %}
+    
       <div class="tz-strong">
         {{ t("wallet.addCredit") }}
       </div>
@@ -297,7 +298,9 @@ if (result.paymentIntent?.status === "succeeded") {
       <div class="tz-strong" style="color:#2196f3;">
         {{ "%.2f"|format(amount|float) }} €
       </div>
+
     {% else %}
+
       <div class="tz-strong">
         {{ phone }}
       </div>
@@ -311,6 +314,7 @@ if (result.paymentIntent?.status === "succeeded") {
           {{ "%.2f"|format(amount|float) }} €
         {% endif %}
       </div>
+
     {% endif %}
 
   </div>

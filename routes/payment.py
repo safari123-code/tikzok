@@ -352,26 +352,26 @@ def card_get():
     # ---------------------------
     # Amount from shared link
     # ---------------------------
- amount_param = request.args.get("amount")
+    amount_param = request.args.get("amount")
 
- if amount_param:
-    try:
-        amount = float(amount_param)
+    if amount_param:
+        try:
+            amount = float(amount_param)
 
-        session["recharge_amount"] = amount
-        session["recharge_total_amount"] = amount
+            session["recharge_amount"] = amount
+            session["recharge_total_amount"] = amount
 
-        # reset old recharge flow
-        session.pop("recharge_phone", None)
-        session.pop("recharge_forfait", None)
-        session.pop("recharge_operator", None)
-        session.pop("received_display", None)
+            # reset old recharge flow
+            session.pop("recharge_phone", None)
+            session.pop("recharge_forfait", None)
+            session.pop("recharge_operator", None)
+            session.pop("received_display", None)
 
-        # optional UX flag
-        session["payment_selected_method"] = "card"
+            # optional UX flag
+            session["payment_selected_method"] = "card"
 
-    except Exception:
-        pass
+        except Exception:
+            pass
 
     # ---------------------------
     # EXISTING LOGIC (UNCHANGED)
