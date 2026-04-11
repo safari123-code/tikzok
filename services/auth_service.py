@@ -3,7 +3,7 @@
 # ---------------------------
 
 from db.database import SessionLocal
-from models.user import User
+from db.models.user import User
 
 
 # ---------------------------

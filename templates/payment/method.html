@@ -10,42 +10,85 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-  const usePointsToggle = document.getElementById("usePointsToggle");
-  const usePointsInput = document.getElementById("usePointsInput");
+const form = document.getElementById("paymentMethodForm");
 
-  const saveCardToggle = document.getElementById("saveCardToggle");
-  const saveCardInput = document.getElementById("saveCardInput");
+const amount = parseFloat(form.dataset.amount || "0");
+const credit = parseFloat(form.dataset.credit || "0");
 
-  const methodButtons = document.querySelectorAll("[data-method]");
-  const selectedMethodInput = document.getElementById("selectedMethodInput");
+const useCreditToggle = document.getElementById("useCreditToggle");
+const useCreditInput = document.getElementById("useCreditInput");
 
-  // ---------------------------
-  // Sync use points
-  // ---------------------------
-  usePointsToggle?.addEventListener("change", () => {
-    usePointsInput.value = usePointsToggle.checked ? "1" : "0";
-  });
+const saveCardToggle = document.getElementById("saveCardToggle");
+const saveCardInput = document.getElementById("saveCardInput");
 
-  // ---------------------------
-  // Sync save card
-  // ---------------------------
-  saveCardToggle?.addEventListener("change", () => {
-    saveCardInput.value = saveCardToggle.checked ? "1" : "0";
-  });
+const finalAmountText = document.getElementById("finalAmountText");
+const walletBalance = document.getElementById("walletBalance");
+const payBtn = document.getElementById("payBtn");
 
-  // ---------------------------
-  // Select payment method (Flutter-like)
-  // ---------------------------
-  methodButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
+function format(v){
+return (Math.round(v * 100)/100).toFixed(2);
+}
 
-      methodButtons.forEach(b => b.classList.remove("tz-card--highlight"));
-      btn.classList.add("tz-card--highlight");
+function compute(){
 
-      selectedMethodInput.value = btn.dataset.method;
+const useCredit = useCreditToggle?.checked || false;
 
-    });
-  });
+let creditUsed = 0;
+let finalAmount = amount;
+let remaining = credit;
+
+if(useCredit){
+
+creditUsed = Math.min(credit, amount);
+
+finalAmount = amount - creditUsed;
+
+remaining = credit - creditUsed;
+
+}
+
+// wallet UI
+if(walletBalance){
+walletBalance.textContent =
+`${format(remaining)} €`;
+}
+
+// amount UI
+if(finalAmountText){
+finalAmountText.textContent =
+`${format(finalAmount)} €`;
+}
+
+// button UI
+if(payBtn){
+payBtn.textContent =
+`Payer ${format(finalAmount)} €`;
+}
+
+// hidden input
+if(useCreditInput){
+useCreditInput.value = useCredit ? "1" : "0";
+}
+
+}
+
+// toggle credit
+useCreditToggle?.addEventListener(
+"change",
+compute
+);
+
+// save card toggle
+saveCardToggle?.addEventListener(
+"change",
+()=>{
+saveCardInput.value =
+saveCardToggle.checked ? "1" : "0";
+}
+);
+
+// init
+compute();
 
 });
 </script>
@@ -61,64 +104,71 @@ document.addEventListener("DOMContentLoaded", () => {
         class="tz-stack"
         id="paymentMethodForm"
         data-amount="{{ "%.2f"|format(amount) }}"
-        data-points="{{ "%.2f"|format(points_available) }}"
+        data-credit="{{ "%.2f"|format(credit_available) }}"
         data-toast-key="{{ session.get('payment_toast','') }}">
 
-    {# ---------------------------
-       Points Card
-    --------------------------- #}
-    <section class="tz-card tz-card--green">
-      <div class="tz-row">
-        <div class="tz-check">
-          <span aria-hidden="true">⭐</span>
-          <div>
-            <div class="tz-small tz-muted">{{ t("payment.points.title") }}</div>
-            <div class="tz-strong">
-              {{ t("payment.points.available", {"points": ("%.2f"|format(points_available))}) }}
-            </div>
-          </div>
-        </div>
+{# ---------------------------
+   Wallet Credit
+--------------------------- #}
+<section class="tz-card tz-card--green">
+  <div class="tz-row">
 
-        {% if not is_forfait_minutes %}
-        <label class="tz-check" style="gap:8px;">
-          <input type="checkbox" id="usePointsToggle" {% if use_points %}checked{% endif %}>
-        </label>
-        {% endif %}
+    <div class="tz-check">
+      <span aria-hidden="true">💰</span>
+      <div>
+        <div class="tz-small tz-muted">
+          {{ t("wallet.creditAvailable") }}
+        </div>
+        <div class="tz-strong" id="walletBalance">
+          {{ "%.2f"|format(session.get("user_balance",0)) }} €
+        </div>
       </div>
-    </section>
+    </div>
 
-    {# ---------------------------
-       Recap Card
-    --------------------------- #}
-    <section class="tz-card tz-card--soft">
-      <div class="tz-row">
-        {% if not is_forfait_minutes %}
-        <div class="tz-grow tz-strong"
-             style="font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-          {{ phone }}
-        </div>
-        {% endif %}
-       <div class="tz-amount-sm" id="finalAmountText">
-       {% if forfait_display %}
+    {% if not is_forfait_minutes %}
+<label class="tz-check">
+  <input type="checkbox"
+         id="useCreditToggle"
+         {% if from_wallet %}disabled{% endif %}>
+</label>
+    {% endif %}
+
+  </div>
+</section>
+
+{# ---------------------------
+   Recap Card
+--------------------------- #}
+<section class="tz-card tz-card--soft">
+  <div class="tz-row">
+    {% if not is_forfait_minutes %}
+    <div class="tz-grow tz-strong"
+         style="font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+      {{ phone }}
+    </div>
+    {% endif %}
+
+    <div class="tz-amount-sm" id="finalAmountText">
+      {% if forfait_display %}
         {{ forfait_display }}
-          {% else %}
-         {{ received_display if received_display else "%.2f"|format(final_amount) ~ " €" }}
-         {% endif %}
-        </div>
-      </div>
-    </section>
+      {% else %}
+        {{ received_display if received_display else "%.2f"|format(final_amount) ~ " €" }}
+      {% endif %}
+    </div>
+  </div>
+</section>
 
-    {# ---------------------------
-       Save Card
-    --------------------------- #}
-    <section class="tz-card">
-      <div class="tz-row">
-        <label class="tz-check">
-          <input type="checkbox" id="saveCardToggle" {% if save_card %}checked{% endif %}>
-          <span>{{ t("payment.saveCard") }}</span>
-        </label>
-      </div>
-    </section>
+{# ---------------------------
+   Save Card
+--------------------------- #}
+<section class="tz-card">
+  <div class="tz-row">
+    <label class="tz-check">
+      <input type="checkbox" id="saveCardToggle" {% if save_card %}checked{% endif %}>
+      <span>{{ t("payment.saveCard") }}</span>
+    </label>
+  </div>
+</section>
 
     {# ---------------------------
        Methods
@@ -156,10 +206,9 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     </section>
 
-    <input type="hidden" name="selected_method" id="selectedMethodInput" value="{{ selected_method }}">
-    <input type="hidden" name="save_card" id="saveCardInput" value="{% if save_card %}1{% else %}0{% endif %}">
-    <input type="hidden" name="use_points" id="usePointsInput" value="{% if use_points %}1{% else %}0{% endif %}">
-
+<input type="hidden" name="selected_method" id="selectedMethodInput" value="{{ selected_method }}">
+<input type="hidden" name="save_card" id="saveCardInput" value="{% if save_card %}1{% else %}0{% endif %}">
+<input type="hidden" name="use_credit" id="useCreditInput" value="0">
     {# ---------------------------
        Pay Button
     --------------------------- #}

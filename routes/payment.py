@@ -9,6 +9,7 @@ import uuid
 import logging
 from typing import Any, Dict, Optional
 
+from services.wallet.credit_service import CreditService
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 from services.account.card_service import CardService
 from services.communication.email_service import EmailService
@@ -59,19 +60,33 @@ def _get_payment_context() -> Dict[str, Any]:
     base_amount = _safe_float(session.get("recharge_amount"), 0.0)
     recharge_total_amount = _safe_float(session.get("recharge_total_amount"), 0.0)
 
-    points_available = _safe_float(PointsService.get_points(), 0.0)
-    use_points = bool(session.get("payment_use_points", False))
+    # ---------------------------
+    # Wallet credit
+    # ---------------------------
+    user_id = session.get("user_id")
 
-    points_used = min(points_available, recharge_total_amount) if use_points else 0.0
-    final_amount = max(0.0, recharge_total_amount - points_used)
+    credit_available = 0.0
+    if user_id:
+        credit_available = _safe_float(
+            CreditService.get_balance(user_id), 0.0
+        )
+
+    use_credit = bool(session.get("payment_use_credit", False))
+
+    credit_used = min(credit_available, recharge_total_amount) if use_credit else 0.0
+
+    final_amount = max(
+        0.0,
+        recharge_total_amount - credit_used
+    )
 
     return {
         "phone": phone,
         "base_amount": base_amount,
         "recharge_amount": recharge_total_amount,
-        "points_available": points_available,
-        "use_points": use_points,
-        "points_used": points_used,
+        "credit_available": credit_available,
+        "use_credit": use_credit,
+        "credit_used": credit_used,
         "final_amount": final_amount,
     }
 
@@ -132,7 +147,7 @@ def _build_checkout_metadata(idem_key: str) -> Dict[str, str]:
         "base_amount": f"{ctx['base_amount']:.2f}",
         "recharge_amount": f"{ctx['recharge_amount']:.2f}",
         "charged_amount": f"{ctx['final_amount']:.2f}",
-        "points_used": f"{ctx['points_used']:.2f}",
+        "credit_used": f"{ctx['credit_used']:.2f}",
         "country_iso": _safe_str(session.get("country_iso")).upper(),
         "user_id": _safe_str(session.get("user_id")),
         "user_email": _safe_str(
@@ -167,7 +182,7 @@ def _build_success_payload(
     *,
     base_amount: float,
     charged_amount: float,
-    points_used: float,
+    credit_used: float,
     transaction_id: Optional[int],
     transaction_reference: str,
 ) -> Dict[str, Any]:
@@ -191,7 +206,7 @@ def _build_success_payload(
 
         # data
         "charged_amount": charged_amount,
-        "points_used": points_used,
+        "credit_used": credit_used,
         "transaction_id": transaction_id,
 
         # reference
@@ -335,6 +350,24 @@ def _resolve_payment_status() -> Dict[str, Any]:
 @payment_bp.get("/card")
 def card_get():
 
+    # ---------------------------
+    # Amount from shared link
+    # ---------------------------
+    amount_param = request.args.get("amount")
+
+    if amount_param:
+        try:
+            amount = float(amount_param)
+
+            session["recharge_amount"] = amount
+            session["recharge_total_amount"] = amount
+
+        except Exception:
+            pass
+
+    # ---------------------------
+    # EXISTING LOGIC (UNCHANGED)
+    # ---------------------------
     if session.get("payment_selected_method") != "card":
         return redirect(url_for("payment.method_get"))
 
@@ -383,12 +416,11 @@ def card_get():
         amount=amount,
         forfait_display=_get_forfait_display(),
         final_amount=ctx["final_amount"],
-        points_used=ctx["points_used"],
+        credit_used=ctx.get("credit_used", 0),
         save_card=session.get("payment_save_card", True),
         cards=OrderService.get_saved_cards(session.get("user_id")),
         received_display=received_display
     )
-
 
 # ---------------------------
 # Payment method
@@ -396,11 +428,26 @@ def card_get():
 @payment_bp.get("/method")
 def method_get():
 
+    amount_param = request.args.get("amount")
+
+    if amount_param:
+        try:
+            amount = float(amount_param)
+
+            session["recharge_amount"] = amount
+            session["recharge_total_amount"] = amount
+
+        except Exception:
+            pass
+
     ctx = _get_payment_context()
     amount = ctx.get("recharge_amount")
 
     if amount is None:
         return redirect(url_for("recharge.select_amount_get"))
+
+    # IMPORTANT ICI
+    from_wallet = bool(request.args.get("amount"))
 
     # ---------------------------
     # FIX Reloadly quote
@@ -438,26 +485,26 @@ def method_get():
         phone=ctx["phone"],
         amount=amount,
         forfait_display=_get_forfait_display(),
-        points_available=ctx["points_available"],
-        use_points=ctx["use_points"],
-        points_used=ctx["points_used"],
+        credit_available=ctx["credit_available"],
+        use_credit=ctx["use_credit"],
+        credit_used=ctx["credit_used"],
         final_amount=ctx["final_amount"],
         selected_method=session.get("payment_selected_method", "card"),
         save_card=session.get("payment_save_card", True),
         is_forfait_minutes=False,
-        received_display=received_display
+        received_display=received_display,
+        from_wallet=from_wallet   # IMPORTANT
     )
-
 
 @payment_bp.post("/method")
 def method_post():
     selected_method = request.form.get("selected_method", "card")
     save_card = request.form.get("save_card") == "1"
-    use_points = request.form.get("use_points") == "1"
+    use_credit = request.form.get("use_credit") == "1"
 
     session["payment_selected_method"] = selected_method
     session["payment_save_card"] = save_card
-    session["payment_use_points"] = use_points
+    session["payment_use_credit"] = use_credit
 
     if selected_method != "card":
         session["payment_toast"] = "payment.methodUnavailable"
@@ -572,7 +619,7 @@ def stripe_webhook_post():
 
     base_amount = _safe_float(metadata.get("base_amount"), 0.0)
     charged_amount = _safe_float(metadata.get("charged_amount"), 0.0)
-    points_used = _safe_float(metadata.get("points_used"), 0.0)
+    credit_used = _safe_float(metadata.get("credit_used"), 0.0)
 
     if not phone or base_amount <= 0:
         IdempotencyService.store_result(
@@ -617,10 +664,24 @@ def stripe_webhook_post():
         payload_obj = _build_success_payload(
             base_amount=base_amount,
             charged_amount=charged_amount,
-            points_used=points_used,
+              credit_used=credit_used,
             transaction_id=result.transaction_id,
             transaction_reference=result.custom_identifier,
-        )
+       )
+
+        CreditService.add_credit(
+          user_id=user_id,
+         amount=charged_amount
+       )
+        
+        # ---------------------------
+        # Refresh wallet session
+        # ---------------------------
+        try:
+            new_balance = CreditService.get_balance(user_id)
+            session["user_balance"] = new_balance
+        except Exception:
+            pass
 
         if result.status in {"FAILED", "REFUNDED"}:
             payload_obj["status"] = "FAILED"
@@ -749,7 +810,7 @@ def success_finish_post():
     session.pop("payment_toast", None)
     session.pop("payment_selected_method", None)
     session.pop("payment_save_card", None)
-    session.pop("payment_use_points", None)
+    session.pop("payment_use_credit", None)
     session.pop("last_payment_intent_id", None)
 
     session.pop("recharge_phone", None)

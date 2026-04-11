@@ -1,112 +1,99 @@
 # ---------------------------
-# User Service (FINAL PRO)
+# User Service (POSTGRES FINAL)
 # ---------------------------
 
-import json
-import os
-import uuid
-from datetime import datetime
-
-USERS_FILE = "data/users.json"
+from db.database import SessionLocal
+from db.models.user import User
 
 
 class UserService:
 
     # ---------------------------
-    # Load users
+    # Get user
     # ---------------------------
     @staticmethod
-    def _load():
-        if not os.path.exists(USERS_FILE):
-            return []
-
-        try:
-            with open(USERS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
-
-    # ---------------------------
-    # Save users
-    # ---------------------------
-    @staticmethod
-    def _save(data):
-        os.makedirs("data", exist_ok=True)
-
-        with open(USERS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-
-    # ---------------------------
-    # Find or create user
-    # ---------------------------
-    @classmethod
-    def find_or_create(cls, email=None, phone=None, name=None):
-
-        users = cls._load()
-
-        for u in users:
-            if email and u.get("email") == email:
-                return u
-
-            if phone and u.get("phone") == phone:
-                return u
-
-        user = {
-            "user_id": uuid.uuid4().hex,
-            "email": email,
-            "phone": phone,
-            "name": name or "Utilisateur",
-            "avatar": None,
-            "created_at": datetime.utcnow().isoformat()
-        }
-
-        users.append(user)
-        cls._save(users)
-
-        return user
-
-    # ---------------------------
-    # Get user by id
-    # ---------------------------
-    @classmethod
-    def get_by_id(cls, user_id):
+    def get_by_id(user_id):
 
         if not user_id:
             return None
 
-        users = cls._load()
+        db = SessionLocal()
 
-        for u in users:
-            if u.get("user_id") == user_id:
-                return u
-
-        return None
+        return db.query(User).filter(
+            User.id == user_id
+        ).first()
 
     # ---------------------------
-    # Update profile
+    # Get balance
     # ---------------------------
-    @classmethod
-    def update(cls, user_id, name=None):
+    @staticmethod
+    def get_balance(user_id):
 
-        users = cls._load()
+        db = SessionLocal()
 
-        for u in users:
-            if u["user_id"] == user_id:
-                if name:
-                    u["name"] = name
+        user = db.query(User).filter(
+            User.id == user_id
+        ).first()
 
-        cls._save(users)
+        if not user:
+            return 0.0
+
+        return float(user.balance or 0.0)
+
+    # ---------------------------
+    # Add balance
+    # ---------------------------
+    @staticmethod
+    def add_balance(user_id, amount):
+
+        db = SessionLocal()
+
+        user = db.query(User).filter(
+            User.id == user_id
+        ).first()
+
+        if not user:
+            return
+
+        user.balance = float(user.balance or 0) + float(amount)
+
+        db.commit()
+
+    # ---------------------------
+    # Update name
+    # ---------------------------
+    @staticmethod
+    def update(user_id, name=None):
+
+        db = SessionLocal()
+
+        user = db.query(User).filter(
+            User.id == user_id
+        ).first()
+
+        if not user:
+            return
+
+        if name:
+            user.name = name
+
+        db.commit()
 
     # ---------------------------
     # Update avatar
     # ---------------------------
-    @classmethod
-    def update_avatar(cls, user_id, avatar_url):
+    @staticmethod
+    def update_avatar(user_id, avatar_url):
 
-        users = cls._load()
+        db = SessionLocal()
 
-        for u in users:
-            if u["user_id"] == user_id:
-                u["avatar"] = avatar_url
+        user = db.query(User).filter(
+            User.id == user_id
+        ).first()
 
-        cls._save(users)
+        if not user:
+            return
+
+        user.avatar = avatar_url
+
+        db.commit()

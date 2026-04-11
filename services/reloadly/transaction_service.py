@@ -232,7 +232,7 @@ def _build_store_payload(
 
 def _db_find_by_reference(reference: str):
     from db.database import SessionLocal
-    from models.transaction import Transaction
+    from db.models.transaction import Transaction
 
     db = SessionLocal()
     try:
@@ -267,7 +267,7 @@ def _db_create_or_get_processing(
     operator_id: int | None,
 ):
     from db.database import SessionLocal
-    from models.transaction import Transaction
+    from db.models.transaction import Transaction
 
     db = SessionLocal()
     try:
@@ -312,7 +312,7 @@ def _db_update_status(
     reloadly_transaction_id: int | None = None,
 ):
     from db.database import SessionLocal
-    from models.transaction import Transaction
+    from db.models.transaction import Transaction
 
     db = SessionLocal()
     try:

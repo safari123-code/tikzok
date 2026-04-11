@@ -1826,3 +1826,69 @@ opacity:1;
 body.tz-keyboard-open .tz-primary-btn{
 transform: translateY(0);
 }
+
+.tz-navbar-inner{
+display:flex;
+align-items:center;
+justify-content:space-between;
+}
+
+.tz-navbar-left{
+display:flex;
+align-items:center;
+gap:6px;
+font-weight:700;
+
+flex:1;
+min-width:0;
+}
+
+.tz-navbar-left .tz-strong{
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
+
+.tz-navbar-right{
+display:flex;
+align-items:center;
+gap:8px;
+flex-shrink:0;
+}
+
+/* balance */
+.tz-balance-pill{
+display:flex;
+align-items:center;
+gap:6px;
+padding:6px 10px;
+border-radius:999px;
+background:#f5f7ff;
+font-weight:600;
+font-size:13px;
+text-decoration:none;
+color:#111;
+
+animation: tzBalanceIn .4s ease;
+transition:all .2s ease;
+}
+
+.tz-balance-pill:hover{
+transform:translateY(-1px);
+box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+
+.tz-share-btn{
+margin-top:12px;
+width:100%;
+height:44px;
+border-radius:12px;
+border:1px dashed #d9e2f1;
+background:#f7faff;
+font-weight:600;
+color:#2f7de1;
+}
+
+.tz-share-btn:active{
+transform:scale(.98);
+}

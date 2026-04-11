@@ -26,7 +26,20 @@
     href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css"
   >
 
-  {% block extra_css %}{% endblock %}
+{% block extra_css %}{% endblock %}
+
+<!-- Google favicon -->
+<link rel="icon" type="image/png" sizes="32x32"
+href="{{ url_for('static', filename='images/logo.png') }}">
+
+<link rel="icon" type="image/png" sizes="192x192"
+href="{{ url_for('static', filename='images/logo.png') }}">
+
+<link rel="apple-touch-icon"
+href="{{ url_for('static', filename='images/logo.png') }}">
+
+<meta name="theme-color" content="#2f7de1">
+
 </head>
 
 <body>

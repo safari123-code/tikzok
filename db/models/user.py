@@ -2,7 +2,7 @@
 # User Model
 # ---------------------------
 
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Float
 from db.database import Base
 from datetime import datetime
 
@@ -16,6 +16,9 @@ class User(Base):
     phone = Column(String, unique=True, index=True, nullable=True)
 
     name = Column(String, nullable=True)
+
+    # NEW (safe)
+    balance = Column(Float, default=0.0)
 
     status = Column(String, default="active")
 

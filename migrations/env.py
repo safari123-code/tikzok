@@ -12,9 +12,9 @@ import os
 sys.path.append(os.getcwd())
 
 from db.database import Base
-from models.user import User
-from models.otp_challenge import OtpChallenge
-from models.recharge_order import RechargeOrder
+from db.models.user import User
+from db.models.otp_challenge import OtpChallenge
+from db.models.recharge_order import RechargeOrder
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

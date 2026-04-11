@@ -96,12 +96,22 @@
 
       <input type="hidden" name="amount" id="amountInput" value="{{ amount }}">
 
-      <div class="tz-row" style="margin-top:10px;">
-        <div class="tz-check">
-          <span aria-hidden="true">🎁</span>
-          <span id="pointsEarnedText">{{ t("recharge.selectAmount.pointsEarned", {"points": ("%.2f"|format(amount * 0.025)) }) }}</span>
-        </div>
-      </div>
+{# ---------------------------
+   Wallet credit earned
+--------------------------- #}
+<div class="tz-row" style="margin-top:10px;">
+  <div class="tz-check">
+    <span aria-hidden="true">💰</span>
+    <span
+      id="creditEarnedText"
+      data-template="{{ t('wallet.creditEarned', {'amount':'{amount}'}) }}"
+    >
+      {{ t("wallet.creditEarned", {
+        "amount": ("%.2f"|format(amount * 0.025))
+      }) }}
+    </span>
+  </div>
+</div>
     </section>
 
 {# ---------------------------

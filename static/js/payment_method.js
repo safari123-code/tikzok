@@ -1,5 +1,5 @@
 // ---------------------------
-// Feature: Payment Method UX
+// Feature: Payment Method UX (Wallet Credit)
 // ---------------------------
 (function () {
 
@@ -7,14 +7,16 @@
   if (!form) return;
 
   const amount = parseFloat(form.dataset.amount || "0");
-  const points = parseFloat(form.dataset.points || "0");
 
-  const toastKey = form.dataset.toastKey || "";
+  const walletBalance =
+    parseFloat(
+      document.getElementById("walletBalance")?.textContent || "0"
+    );
 
-  const usePointsToggle = document.getElementById("usePointsToggle");
+  const useCreditToggle = document.getElementById("useCreditToggle");
   const saveCardToggle = document.getElementById("saveCardToggle");
 
-  const usePointsInput = document.getElementById("usePointsInput");
+  const useCreditInput = document.getElementById("useCreditInput");
   const saveCardInput = document.getElementById("saveCardInput");
   const selectedMethodInput = document.getElementById("selectedMethodInput");
 
@@ -24,7 +26,6 @@
   // ---------------------------
   // Force payment method = card
   // ---------------------------
-
   if (selectedMethodInput) {
     selectedMethodInput.value = "card";
   }
@@ -32,7 +33,6 @@
   // ---------------------------
   // Utils
   // ---------------------------
-
   function formatAmount(v) {
     return (Math.round(v * 100) / 100).toFixed(2);
   }
@@ -40,41 +40,43 @@
   // ---------------------------
   // Compute final amount
   // ---------------------------
-
   function computeFinal() {
 
-    const usePoints = usePointsToggle ? usePointsToggle.checked : false;
+    const useCredit =
+      useCreditToggle ? useCreditToggle.checked : false;
 
-    const pointsUsed = usePoints
-      ? Math.min(points, amount)
+    const creditUsed = useCredit
+      ? Math.min(walletBalance, amount)
       : 0;
 
     const finalAmount = Math.max(
       0,
-      amount - pointsUsed
+      amount - creditUsed
     );
 
     if (finalAmountText) {
-      finalAmountText.textContent = `${formatAmount(finalAmount)} €`;
+      finalAmountText.textContent =
+        `${formatAmount(finalAmount)} €`;
     }
 
     if (payBtn) {
-      payBtn.textContent = payBtn.textContent.replace(
-        /[0-9]+(\.[0-9]+)?/,
-        formatAmount(finalAmount)
-      );
+      payBtn.textContent =
+        payBtn.textContent.replace(
+          /[0-9]+(\.[0-9]+)?/,
+          formatAmount(finalAmount)
+        );
     }
 
-    if (usePointsInput) {
-      usePointsInput.value = usePoints ? "1" : "0";
+    if (useCreditInput) {
+      useCreditInput.value =
+        useCredit ? "1" : "0";
     }
   }
 
   // ---------------------------
-  // Points toggle
+  // Credit toggle
   // ---------------------------
-
-  usePointsToggle?.addEventListener(
+  useCreditToggle?.addEventListener(
     "change",
     computeFinal
   );
@@ -82,7 +84,6 @@
   // ---------------------------
   // Save card toggle
   // ---------------------------
-
   saveCardToggle?.addEventListener(
     "change",
     () => {
@@ -96,7 +97,6 @@
   // ---------------------------
   // Prevent double submit
   // ---------------------------
-
   let submitting = false;
 
   form.addEventListener("submit", () => {

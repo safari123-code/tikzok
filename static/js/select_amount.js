@@ -15,7 +15,7 @@
   const rowAmount = document.getElementById("rowAmount");
   const rowTax = document.getElementById("rowTax");
   const rowReceived = document.getElementById("rowReceived");
-  const pointsEarnedText = document.getElementById("pointsEarnedText");
+  const creditEarnedText = document.getElementById("creditEarnedText"); 
 
   const moneyBtn = document.getElementById("moneyAccordionBtn");
   const moneyPanel = document.getElementById("moneyPanel");
@@ -31,7 +31,11 @@
   const forfaitPrice = document.getElementById("forfaitPrice");
 
   const taxRate = parseFloat(amountCard?.dataset?.taxRate || "0.10");
-  const pointsRate = parseFloat(amountCard?.dataset?.pointsRate || "0.025");
+  const creditRate = parseFloat(
+  amountCard?.dataset?.creditRate ||
+  amountCard?.dataset?.pointsRate ||
+  "0.025"
+);
 
   const userCurrency = "€";
 
@@ -105,11 +109,23 @@ function setAmountLocked(locked) {
     if (rowTax)
       rowTax.textContent = `${fmt2(a * taxRate)} ${userCurrency}`;
 
-    if (pointsEarnedText) {
-      const points = fmt2(a * pointsRate);
-      pointsEarnedText.textContent =
-        pointsEarnedText.textContent.replace(/[0-9]+(\.[0-9]+)?/, points);
-    }
+// ---------------------------
+// Credit earned
+// ---------------------------
+if (creditEarnedText) {
+
+  const credit = fmt2(a * creditRate);
+
+  const template = creditEarnedText.dataset.template;
+
+  if (template && template.includes("{amount}")) {
+    creditEarnedText.textContent =
+      template.replace("{amount}", credit);
+  } else {
+    creditEarnedText.textContent =
+      `Vous gagnez ${credit} € de crédit`;
+  }
+}
 
     const total = a + (a * taxRate);
 

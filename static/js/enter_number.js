@@ -54,7 +54,30 @@
   function digitsOnly(value) {
     return String(value || "").replace(/[^\d]/g, "");
   }
+function digitsOnly(value) {
+  return String(value || "").replace(/[^\d]/g, "");
+}
 
+// ---------------------------
+// Phone rules validation
+// ---------------------------
+function validateByCountry(iso, e164) {
+  const rules = window.TZ_PHONE_RULES || {};
+  const rule = rules[iso];
+
+  if (!rule) return true;
+
+  const digits = digitsOnly(e164);
+  const country = getSelectedCountry();
+  const dial = digitsOnly(country?.dial || "");
+
+  const national = digits.slice(dial.length);
+
+  return (
+    national.length >= rule.min &&
+    national.length <= rule.max
+  );
+}
   function sanitizeIso(value) {
     const iso = String(value || "").trim().toLowerCase();
     return /^[a-z]{2}$/.test(iso) ? iso : "fr";
@@ -499,8 +522,8 @@ function setCityByIso(iso) {
       setPhoneValue(display);
     }
 
-    const digits = digitsOnly(e164);
-    const validLength = digits.length >= 9 && digits.length <= 15;
+    const iso = getSelectedIso();
+    const validLength = validateByCountry(iso, e164);
 
     if (!validLength) {
       lastLookupValid = false;

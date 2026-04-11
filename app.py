@@ -26,12 +26,25 @@ from routes.i18n import bp as i18n_bp
 from routes.account import account_bp
 from routes.history import history_bp
 from routes.admin import admin_bp
-
+from routes.wallet import wallet_bp
 # ---------------------------
 # Create tables (TEMP)
 # ---------------------------
 from db.database import Base, engine
 Base.metadata.create_all(bind=engine)
+# ---------------------------
+# Auto migrate: add balance column
+# ---------------------------
+from sqlalchemy import text
+
+with engine.connect() as conn:
+    try:
+        conn.execute(text(
+            "ALTER TABLE users ADD COLUMN balance FLOAT DEFAULT 0"
+        ))
+        conn.commit()
+    except Exception:
+        pass
 # ---------------------------
 # Helpers
 # ---------------------------
@@ -59,7 +72,8 @@ def create_app() -> Flask:
     app = Flask(__name__)
     from datetime import timedelta
     app.permanent_session_lifetime = timedelta(days=365 * 5)
-    # Proxy (Google Cloud / reverse proxy safe)
+
+    # Proxy
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     # ---------------------------
@@ -104,7 +118,7 @@ def create_app() -> Flask:
         )
 
     # ---------------------------
-    # I18n (JSON based + modular files)
+    # I18n loader
     # ---------------------------
     def _load_json_file(path: str) -> dict:
         try:
@@ -131,6 +145,9 @@ def create_app() -> Flask:
 
         return _deep_merge_dict(base_data, admin_data)
 
+    # ---------------------------
+    # Set lang
+    # ---------------------------
     @app.before_request
     def _set_lang():
 
@@ -154,6 +171,28 @@ def create_app() -> Flask:
         session["is_admin"] = user_email in config.ADMIN_EMAILS
 
     # ---------------------------
+    # Inject user balance (cached)
+    # ---------------------------
+    @app.before_request
+    def inject_user_balance():
+
+        user_id = session.get("user_id")
+
+        if not user_id:
+            session["user_balance"] = 0.0
+            return
+
+        if "user_balance" in session:
+            return
+
+        try:
+            from services.user.user_service import UserService
+            balance = UserService.get_balance(user_id)
+            session["user_balance"] = float(balance or 0.0)
+        except Exception:
+            session["user_balance"] = 0.0
+
+    # ---------------------------
     # Translation helper
     # ---------------------------
     def t(key: str, params: dict | None = None, default: str = "") -> str:
@@ -161,10 +200,8 @@ def create_app() -> Flask:
         cur = g.get("l10n", {})
 
         for part in key.split("."):
-
             if not isinstance(cur, dict) or part not in cur:
                 return default or key
-
             cur = cur[part]
 
         if not isinstance(cur, str):
@@ -178,7 +215,6 @@ def create_app() -> Flask:
 
     app.jinja_env.globals["t"] = t
 
-
     # ---------------------------
     # Blueprints
     # ---------------------------
@@ -189,6 +225,7 @@ def create_app() -> Flask:
     app.register_blueprint(account_bp)
     app.register_blueprint(history_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(wallet_bp)
 
     return app
 

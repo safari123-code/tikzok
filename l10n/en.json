@@ -27,6 +27,16 @@
     "about": "About"
   },
 
+  "wallet": {
+    "creditEarned": "You earn {amount} € credit",
+    "creditAvailable": "Available credit",
+    "addCredit": "Add credit",
+    "copyLink": "Copy referral link",
+    "shareAfterPayment": "Share the link to receive credit",
+    "continue": "Continue",
+    "balance": "Available balance"
+  },
+
   "auth": {
     "name": "Name",
     "name_placeholder": "Your name or first name",
@@ -60,8 +70,8 @@
     "otp_title": "Verification",
     "otp_sent_to": "Code sent to",
     "otp_label": "Code",
-    "otp_placeholder": "Enter code",
-    "otp_help": "You can paste the code. It is one-time use.",
+    "otp_placeholder": "Enter the code",
+    "otp_help": "You can paste the code. One-time use.",
     "otp_invalid": "Invalid or expired code",
 
     "resend": "Resend",
@@ -72,7 +82,7 @@
 
     "or_continue": "Or continue with",
 
-    "legal_notice": "By continuing, you agree to our Terms of Service and Privacy Policy."
+    "legal_notice": "By continuing, you accept our Terms of Use and Privacy Policy."
   },
 
   "lang": {
@@ -103,7 +113,7 @@
     },
 
     "selectForfait": {
-      "title": "Choose plan",
+      "title": "Choose a plan",
       "internet": "Internet",
       "days": "{days} days"
     },
@@ -111,7 +121,7 @@
     "selectAmount": {
       "title": "Choose amount",
       "operatorNotDetected": "Operator not detected",
-      "editOperator": "Edit operator",
+      "editOperator": "Change operator",
       "amountLabel": "Amount",
       "chooseInternetPlan": "Choose internet plan",
       "creditAndTotal": "Credit & total",
@@ -119,7 +129,6 @@
       "taxesRow": "Taxes",
       "receivedAmountTitle": "They receive",
       "goToPay": "Pay",
-      "pointsEarned": "You earn {points} points",
       "operatorPickerSoon": "Operator selection coming soon",
       "choose": "Choose"
     }
@@ -131,7 +140,7 @@
       "points": "Points",
       "saveCard": "Save card",
       "chooseMethod": "Choose a method",
-      "cardPayment": "Card payment",
+      "cardPayment": "Credit card",
       "cardPaymentDesc": "Secure payment",
       "applePay": "Apple Pay",
       "applePayDesc": "Coming soon",
@@ -152,19 +161,19 @@
       "payment.points.title": "Points",
       "payment.points.available": "Available points: {points}",
       "payment.saveCard": "Save card",
-      "payment.chooseMethod": "Choose a payment method",
-      "payment.methods.card.title": "Card payment",
-      "payment.methods.card.desc": "Pay with your Visa or Mastercard",
+      "payment.chooseMethod": "Choose payment method",
+      "payment.methods.card.title": "Credit card",
+      "payment.methods.card.desc": "Pay with Visa or Mastercard",
       "payment.methodSelected": "Method selected",
       "payment.pay": "Pay {amount} €",
       "currency.eur": "€",
 
       "legacy_errors": {
-        "emptyName": "Please enter the name on card",
+        "emptyName": "Please enter cardholder name",
         "invalidName": "Invalid name",
         "invalidCardNumber": "Invalid card number",
         "incompleteCardNumber": "Incomplete card number",
-        "invalidExpiry": "Invalid expiry date",
+        "invalidExpiry": "Invalid expiration date",
         "invalidCvc": "Invalid security code",
         "paymentFailed": "Payment failed",
         "paymentNotCompleted": "Payment not completed",
@@ -179,13 +188,13 @@
 
     "methods": {
       "card": {
-        "title": "Card payment",
-        "desc": "Pay with your Visa or Mastercard"
+        "title": "Credit card",
+        "desc": "Pay with Visa or Mastercard"
       }
     },
 
     "saveCard": "Save card",
-    "chooseMethod": "Choose a payment method",
+    "chooseMethod": "Choose payment method",
     "methodSelected": "Method selected",
     "pay": "Pay {amount} €",
 
@@ -206,14 +215,14 @@
       "invalidCardNumber": "Invalid card number",
       "invalidExpiry": "Invalid date",
       "invalidCvv": "Invalid CVV",
-      "formError": "Please fix the errors",
+      "formError": "Please fix errors",
 
       "errors": {
-        "emptyName": "Please enter the name on card",
+        "emptyName": "Please enter cardholder name",
         "invalidName": "Invalid name",
         "invalidCardNumber": "Invalid card number",
         "incompleteCardNumber": "Incomplete card number",
-        "invalidExpiry": "Invalid expiry date",
+        "invalidExpiry": "Invalid expiration date",
         "invalidCvc": "Invalid security code",
         "paymentFailed": "Payment failed",
         "paymentNotCompleted": "Payment not completed",
@@ -264,7 +273,7 @@
   },
 
   "about": {
-    "description": "Simple and fast mobile top-up application.",
+    "description": "Simple and fast mobile top-up app.",
     "privacy": "Privacy policy",
     "terms": "Terms of use"
   },

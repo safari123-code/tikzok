@@ -3,7 +3,7 @@
 # ---------------------------
 
 from db.database import SessionLocal
-from models.transaction import Transaction
+from db.models.transaction import Transaction
 
 
 class HistoryService:
