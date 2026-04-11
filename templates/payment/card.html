@@ -286,18 +286,35 @@ if (result.paymentIntent?.status === "succeeded") {
 
     <!-- ================= SUMMARY ================= -->
 
-    <section class="tz-card tz-card--soft">
-      <div class="tz-row">
-        <div class="tz-strong">{{ phone }}</div>
-          <div class="tz-strong" style="color:#2196f3;">
-           {% if forfait_display %}
-           {{ forfait_display }}
-          {% else %}
-          {{ received_display if received_display else amount ~ " €" }}
-          {% endif %}
-          </div>
+<section class="tz-card tz-card--soft">
+  <div class="tz-row">
+
+    {% if request.args.get("amount") %}
+      <div class="tz-strong">
+        {{ t("wallet.addCredit") }}
       </div>
-    </section>
+
+      <div class="tz-strong" style="color:#2196f3;">
+        {{ "%.2f"|format(amount|float) }} €
+      </div>
+    {% else %}
+      <div class="tz-strong">
+        {{ phone }}
+      </div>
+
+      <div class="tz-strong" style="color:#2196f3;">
+        {% if forfait_display %}
+          {{ forfait_display }}
+        {% elif received_display %}
+          {{ received_display }}
+        {% else %}
+          {{ "%.2f"|format(amount|float) }} €
+        {% endif %}
+      </div>
+    {% endif %}
+
+  </div>
+</section>
 <!-- ================= SAVED CARDS ================= -->
 
 {% if cards %}
