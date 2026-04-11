@@ -95,18 +95,18 @@ def profile():
 
         return redirect(url_for("account.profile"))
 
-    # =========================
-    # READ (IMPORTANT)
-    # =========================
-    user_data = UserService.get_by_id(user_id) or {}
+# =========================
+# READ (IMPORTANT)
+# =========================
+    user_data = UserService.get_by_id(user_id)
 
     user = {
-        "name": user_data.get("name") or session.get("user_name", "Utilisateur"),
-        "email": user_data.get("email") or session.get("user_email", ""),
-        "phone": user_data.get("phone") or session.get("user_phone", ""),
-        "birthdate": session.get("user_birthdate", ""),
-        "avatar": session.get("user_avatar"),
-    }
+    "name": getattr(user_data, "name", None) or session.get("user_name", "Utilisateur"),
+    "email": getattr(user_data, "email", None) or session.get("user_email", ""),
+    "phone": getattr(user_data, "phone", None) or session.get("user_phone", ""),
+    "birthdate": getattr(user_data, "birthdate", None) or session.get("user_birthdate", ""),
+    "avatar": getattr(user_data, "avatar", None) or session.get("user_avatar"),
+}
 
     return render_template(
         "account/profile.html",
