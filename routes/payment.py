@@ -543,7 +543,7 @@ def card_post():
         return jsonify({"success": True, "already_processed": True})
 
     metadata = _build_checkout_metadata(idem_key)
-
+    print("PAYMENT METADATA DEBUG:", metadata)
     try:
         intent = StripeService.create_payment_intent(
             amount=ctx["final_amount"],

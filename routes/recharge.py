@@ -268,11 +268,11 @@ def lookup_number():
             or result.get("country_code")
             or country
         ),
-        "supports_data": bool(
-            result.get("supports_data")
-            or result.get("supports_bundles")
-            or result.get("bundle")
-            or result.get("data")
+      "supports_data": bool(
+      result.get("data")
+      or result.get("bundle")
+      or result.get("comboProduct")
+
         ),
         "raw": result.get("raw") or result,
     })
