@@ -226,14 +226,34 @@ form.addEventListener("submit", async (e) => {
       return;
     }
 
-    if (result.paymentIntent?.status === "succeeded") {
-      setTimeout(() => {
-        window.location.href =
-          "/payment/success?payment_intent=" +
-          result.paymentIntent.id;
-      }, 300);
-      return;
-    }
+if (result.paymentIntent?.status === "succeeded") {
+
+  // ---------------------------
+  // Wallet link -> close page
+  // ---------------------------
+  if (window.location.search.includes("amount=")) {
+
+    document.body.innerHTML =
+      "<div class='tz-page'><div class='tz-card tz-card--soft'>Paiement OK</div></div>";
+
+    setTimeout(() => {
+      window.close();
+    }, 1200);
+
+    return;
+  }
+
+  // ---------------------------
+  // Normal flow
+  // ---------------------------
+  setTimeout(() => {
+    window.location.href =
+      "/payment/success?payment_intent=" +
+      result.paymentIntent.id;
+  }, 300);
+
+  return;
+}
 
     tzToast?.(tr("payment.card.genericError", "Une erreur est survenue"));
     lock = false;
