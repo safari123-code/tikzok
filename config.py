@@ -58,7 +58,7 @@ TELNYX_SMS_FROM = os.getenv("TELNYX_SMS_FROM", "")
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BREVO_FROM_EMAIL = os.getenv("BREVO_FROM_EMAIL")
-BREVO_FROM_NAME = os.getenv("BREVO_FROM_NAME", "tikzok")
+BREVO_FROM_NAME = os.getenv("BREVO_FROM_NAME", "Yeslek")
 
 # ---------------------------
 # Stripe
@@ -88,14 +88,14 @@ ADMIN_EMAILS_ENV = {
 }
 
 ADMIN_EMAILS_STATIC = {
-    "info@tikzok.com",
+    "admin@yeslek.com",
     "safarigulahmad616@gmail.com",
     "admin3@email.com"
 }
 
 ADMIN_EMAILS = ADMIN_EMAILS_ENV.union(ADMIN_EMAILS_STATIC)
 
-SUPER_ADMIN_EMAIL = "info@tikzok.com"
+SUPER_ADMIN_EMAIL = "admin@yeslek.com"
 
 # ---------------------------
 # App
@@ -114,5 +114,5 @@ MAX_CONTENT_LENGTH = 2 * 1024 * 1024
 # ---------------------------
 
 if not IS_PROD:
-    print("🔗 RELOADLY:", RELOADLY_BASE_URL)
-    print("💳 STRIPE MODE:", STRIPE_MODE)
+    print("[RELOADLY]", RELOADLY_BASE_URL)
+    print("[STRIPE MODE]", STRIPE_MODE)

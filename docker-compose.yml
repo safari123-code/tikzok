@@ -1,54 +1,15 @@
-# ---------------------------
-# Docker Compose - Tikzok
-# ---------------------------
-
-version: "3.9"
-
 services:
 
-  # ---------------------------
-  # PostgreSQL
-  # ---------------------------
-  db:
-    image: postgres:15
-    container_name: tikzok_db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Zabiullah123.
-      POSTGRES_DB: tikzok
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  # ---------------------------
-  # Redis (OTP)
-  # ---------------------------
-  redis:
-    image: redis:7
-    container_name: tikzok_redis
-    restart: always
-    ports:
-      - "6379:6379"
-
-  # ---------------------------
-  # Flask App
-  # ---------------------------
   web:
     build: .
-    container_name: tikzok_app
+    container_name: yeslek_app
     restart: always
-    depends_on:
-      - db
-      - redis
     ports:
       - "5000:5000"
+
     environment:
-      DATABASE_URL: postgresql://postgres:Zabiullah123.@db:5432/tikzok
-      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://postgres:Zabiullah123.@34.155.189.12:5432/yeslek
+      REDIS_URL: rediss://default:AZmhAAIncDE4Zjk3YjcwOTllYTk0YzcwOWYwZWIxNzdjNWNkYWM3MHAxMzkzMjk@modern-basilisk-39329.upstash.io:6379
+
     volumes:
       - .:/app
-
-volumes:
-  postgres_data:

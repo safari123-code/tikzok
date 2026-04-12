@@ -1,5 +1,5 @@
 # ---------------------------
-# Tikzok - Application Entry
+# yeslek - Application Entry
 # ---------------------------
 
 import os

@@ -1,6 +1,6 @@
-# Tikzok
+# Yeslek
 
-Tikzok est une plateforme web permettant d'envoyer des recharges mobiles internationales rapidement et en toute sécurité.
+Yeslek est une plateforme web permettant d'envoyer des recharges mobiles internationales rapidement et en toute sécurité.
 
 L'application est construite avec **Python Flask**, déployée avec **Docker** et **Google Cloud Run**, et utilise plusieurs APIs pour les paiements et la délivrance des recharges.
 

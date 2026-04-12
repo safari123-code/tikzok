@@ -1,5 +1,5 @@
 # ---------------------------
-# Tikzok — requirements.txt
+# yeslek — requirements.txt
 # ---------------------------
 
 Flask==3.1.3
